@@ -1,0 +1,74 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+
+export function ResolveDisputeActions({ disputeId }: { disputeId: string }) {
+  const router = useRouter();
+  const [resolutionNotes, setResolutionNotes] = useState("");
+  const [bookingStatus, setBookingStatus] = useState<"keep" | "completed" | "cancelled">("keep");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function submit(status: "investigating" | "resolved" | "closed") {
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(`/api/admin/disputes/${disputeId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status,
+          resolutionNotes,
+          bookingStatus: bookingStatus === "keep" ? undefined : bookingStatus,
+        }),
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to update dispute.");
+      }
+
+      router.refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Unable to update dispute.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <Textarea
+        value={resolutionNotes}
+        onChange={(event) => setResolutionNotes(event.target.value)}
+        placeholder="Admin notes, evidence summary, refund/credit decision, next action"
+      />
+      <select
+        value={bookingStatus}
+        onChange={(event) => setBookingStatus(event.target.value as "keep" | "completed" | "cancelled")}
+        className="h-11 rounded-xl border border-border bg-surface px-3 text-sm text-text"
+      >
+        <option value="keep">Keep booking status as-is</option>
+        <option value="completed">Mark booking completed</option>
+        <option value="cancelled">Mark booking cancelled</option>
+      </select>
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" variant="secondary" disabled={isSubmitting} onClick={() => submit("investigating")}>
+          Mark investigating
+        </Button>
+        <Button type="button" disabled={isSubmitting} onClick={() => submit("resolved")}>
+          Resolve dispute
+        </Button>
+        <Button type="button" variant="secondary" disabled={isSubmitting} onClick={() => submit("closed")}>
+          Close
+        </Button>
+      </div>
+      {error ? <p className="text-sm text-error">{error}</p> : null}
+    </div>
+  );
+}

@@ -1,0 +1,21 @@
+import { Card } from "@/components/ui/card";
+import { PageIntro } from "@/components/layout/page-intro";
+
+export default function VerifyPage() {
+  return (
+    <main className="page-shell">
+      <PageIntro
+        eyebrow="Auth"
+        title="Check your email"
+        description="Email verification is part of the trust layer for both customers and carriers."
+      />
+
+      <Card className="p-4">
+        <p className="subtle-text">
+          After signup, Supabase sends the verification email. Once confirmed, customers can head
+          back to search and carriers can continue to onboarding.
+        </p>
+      </Card>
+    </main>
+  );
+}

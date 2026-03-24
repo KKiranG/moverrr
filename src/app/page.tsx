@@ -1,101 +1,113 @@
-import Image from "next/image";
+import Link from "next/link";
 
-export default function Home() {
+import { ConfigBanner } from "@/components/shared/config-banner";
+import { SearchBar } from "@/components/search/search-bar";
+import { TripCard } from "@/components/trip/trip-card";
+import { hasSupabaseEnv } from "@/lib/env";
+import { listPublicTrips } from "@/lib/data/trips";
+
+const useCases = [
+  {
+    title: "Marketplace pickups",
+    description:
+      "Bought a sofa in Penrith and need it in Bondi without paying full removalist rates.",
+  },
+  {
+    title: "Student moves",
+    description:
+      "A desk, a bookshelf, and a few boxes fit the awkward middle better than a whole truck.",
+  },
+  {
+    title: "Business overflow",
+    description:
+      "Small runs for stock, produce, and equipment when dedicated courier pricing makes no sense.",
+  },
+];
+
+export default async function HomePage() {
+  const featuredTrips = await listPublicTrips(3);
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <main className="page-shell">
+      <section className="flex flex-col gap-6 pt-4">
+        <div className="flex flex-col gap-3">
+          <p className="section-label">Sydney spare-capacity marketplace</p>
+          <h1 className="max-w-2xl text-4xl leading-tight text-text sm:text-5xl">
+            Browse posted truck space instead of waiting for quotes.
+          </h1>
+          <p className="max-w-2xl text-base leading-7 text-text-secondary sm:text-lg">
+            moverrr is built for the awkward middle: sofas, desks, appliances,
+            boxes, and small business runs that are too big for couriers and too
+            small for a full removalist booking.
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+        <SearchBar />
+
+        {!hasSupabaseEnv() ? (
+          <ConfigBanner message="Add Supabase, Maps, and Stripe environment variables to switch this shell into the live MVP. The UI is ready, but the backend services need credentials." />
+        ) : null}
+
+        <div className="surface-card flex flex-col gap-4 p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="section-label">Why this works</p>
+              <h2 className="mt-1 text-xl text-text">Inventory first</h2>
+            </div>
+            <span className="rounded-xl border border-success/20 bg-success/10 px-3 py-2 text-sm font-medium text-success">
+              Browse in seconds
+            </span>
+          </div>
+          <p className="subtle-text">
+            Carriers post where they are already going and how much space they
+            have. Customers browse that inventory and book into it with a clear
+            price, route, and time window upfront.
+          </p>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="section-label">Built for MVP validation</p>
+            <h2 className="mt-1 text-2xl text-text">The jobs we need to win</h2>
+          </div>
+          <Link
+            href="/search?from=Penrith&to=Bondi&when=2026-03-26&what=furniture"
+            className="text-sm font-medium text-accent"
+          >
+            View sample search
+          </Link>
+        </div>
+        <div className="grid gap-3">
+          {useCases.map((useCase) => (
+            <div key={useCase.title} className="surface-card p-4">
+              <h3 className="text-lg text-text">{useCase.title}</h3>
+              <p className="mt-2 subtle-text">{useCase.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-4 pb-10">
+        <div>
+          <p className="section-label">Example inventory</p>
+          <h2 className="mt-1 text-2xl text-text">Trips customers can book now</h2>
+        </div>
+        <div className="grid gap-4">
+          {featuredTrips.map((trip) => (
+            <TripCard key={trip.id} trip={trip} href={`/trip/${trip.id}`} />
+          ))}
+        </div>
+        {featuredTrips.length === 0 ? (
+          <div className="surface-card p-4">
+            <p className="subtle-text">
+              No live trips yet. Carrier onboarding and trip posting are now wired, so this section
+              will populate from real listings once supply is added.
+            </p>
+          </div>
+        ) : null}
+      </section>
+    </main>
   );
 }

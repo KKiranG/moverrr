@@ -1,0 +1,43 @@
+import Link from "next/link";
+
+import { Button } from "@/components/ui/button";
+
+const navItems = [
+  { href: "/search", label: "Browse trips" },
+  { href: "/carrier/dashboard", label: "Carrier" },
+  { href: "/admin/dashboard", label: "Admin" },
+];
+
+export function SiteHeader() {
+  return (
+    <header className="border-b border-border bg-background/90 backdrop-blur">
+      <div className="mx-auto flex w-full max-w-content items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <Link href="/" className="flex flex-col">
+          <span className="font-heading text-xl tracking-[-0.04em] text-text">
+            moverrr
+          </span>
+          <span className="text-xs text-text-secondary">
+            Spare capacity for big stuff
+          </span>
+        </Link>
+
+        <nav className="hidden items-center gap-5 text-sm text-text-secondary sm:flex">
+          {navItems.map((item) => (
+            <Link key={item.href} href={item.href} className="hover:text-text">
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-2">
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/login">Log in</Link>
+          </Button>
+          <Button asChild size="sm">
+            <Link href="/signup">Post a trip</Link>
+          </Button>
+        </div>
+      </div>
+    </header>
+  );
+}

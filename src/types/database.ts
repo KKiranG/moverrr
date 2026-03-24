@@ -1,0 +1,473 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
+export interface Database {
+  public: {
+    Tables: {
+      carriers: {
+        Row: {
+          id: string;
+          user_id: string;
+          business_name: string;
+          contact_name: string;
+          phone: string;
+          email: string;
+          abn: string | null;
+          is_verified: boolean;
+          verification_status: "pending" | "submitted" | "verified" | "rejected";
+          licence_photo_url: string | null;
+          insurance_photo_url: string | null;
+          bio: string | null;
+          profile_photo_url: string | null;
+          service_suburbs: string[] | null;
+          total_trips: number;
+          total_bookings_completed: number;
+          average_rating: number;
+          rating_count: number;
+          stripe_account_id: string | null;
+          stripe_onboarding_complete: boolean;
+          onboarding_completed_at: string | null;
+          verification_submitted_at: string | null;
+          verified_at: string | null;
+          verification_notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          business_name: string;
+          contact_name: string;
+          phone: string;
+          email: string;
+          abn?: string | null;
+          is_verified?: boolean;
+          verification_status?: "pending" | "submitted" | "verified" | "rejected";
+          licence_photo_url?: string | null;
+          insurance_photo_url?: string | null;
+          bio?: string | null;
+          profile_photo_url?: string | null;
+          service_suburbs?: string[] | null;
+          total_trips?: number;
+          total_bookings_completed?: number;
+          average_rating?: number;
+          rating_count?: number;
+          stripe_account_id?: string | null;
+          stripe_onboarding_complete?: boolean;
+          onboarding_completed_at?: string | null;
+          verification_submitted_at?: string | null;
+          verified_at?: string | null;
+          verification_notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["carriers"]["Insert"]>;
+      };
+      vehicles: {
+        Row: {
+          id: string;
+          carrier_id: string;
+          type: "van" | "ute" | "small_truck" | "large_truck" | "trailer";
+          make: string | null;
+          model: string | null;
+          year: number | null;
+          rego_plate: string | null;
+          rego_state: string | null;
+          max_volume_m3: number | null;
+          max_weight_kg: number | null;
+          has_tailgate: boolean;
+          has_blankets: boolean;
+          has_straps: boolean;
+          photo_urls: string[] | null;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          carrier_id: string;
+          type: "van" | "ute" | "small_truck" | "large_truck" | "trailer";
+          make?: string | null;
+          model?: string | null;
+          year?: number | null;
+          rego_plate?: string | null;
+          rego_state?: string | null;
+          max_volume_m3?: number | null;
+          max_weight_kg?: number | null;
+          has_tailgate?: boolean;
+          has_blankets?: boolean;
+          has_straps?: boolean;
+          photo_urls?: string[] | null;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["vehicles"]["Insert"]>;
+      };
+      capacity_listings: {
+        Row: {
+          id: string;
+          carrier_id: string;
+          vehicle_id: string;
+          origin_suburb: string;
+          origin_postcode: string;
+          origin_point: unknown;
+          destination_suburb: string;
+          destination_postcode: string;
+          destination_point: unknown;
+          route_line: unknown | null;
+          route_distance_km: number | null;
+          detour_radius_km: number;
+          trip_date: string;
+          time_window: "morning" | "afternoon" | "evening" | "flexible";
+          departure_earliest: string | null;
+          departure_latest: string | null;
+          space_size: "S" | "M" | "L" | "XL";
+          available_volume_m3: number | null;
+          available_weight_kg: number | null;
+          price_cents: number;
+          suggested_price_cents: number | null;
+          accepts_furniture: boolean;
+          accepts_boxes: boolean;
+          accepts_appliances: boolean;
+          accepts_fragile: boolean;
+          stairs_ok: boolean;
+          stairs_extra_cents: number;
+          helper_available: boolean;
+          helper_extra_cents: number;
+          special_notes: string | null;
+          status: "draft" | "active" | "booked_partial" | "booked_full" | "expired" | "cancelled";
+          remaining_capacity_pct: number;
+          created_at: string;
+          updated_at: string;
+          expires_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          carrier_id: string;
+          vehicle_id: string;
+          origin_suburb: string;
+          origin_postcode: string;
+          origin_point: unknown;
+          destination_suburb: string;
+          destination_postcode: string;
+          destination_point: unknown;
+          route_line?: unknown | null;
+          route_distance_km?: number | null;
+          detour_radius_km?: number;
+          trip_date: string;
+          time_window: "morning" | "afternoon" | "evening" | "flexible";
+          departure_earliest?: string | null;
+          departure_latest?: string | null;
+          space_size: "S" | "M" | "L" | "XL";
+          available_volume_m3?: number | null;
+          available_weight_kg?: number | null;
+          price_cents: number;
+          suggested_price_cents?: number | null;
+          accepts_furniture?: boolean;
+          accepts_boxes?: boolean;
+          accepts_appliances?: boolean;
+          accepts_fragile?: boolean;
+          stairs_ok?: boolean;
+          stairs_extra_cents?: number;
+          helper_available?: boolean;
+          helper_extra_cents?: number;
+          special_notes?: string | null;
+          status?: "draft" | "active" | "booked_partial" | "booked_full" | "expired" | "cancelled";
+          remaining_capacity_pct?: number;
+          created_at?: string;
+          updated_at?: string;
+          expires_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["capacity_listings"]["Insert"]>;
+      };
+      customers: {
+        Row: {
+          id: string;
+          user_id: string;
+          full_name: string;
+          phone: string;
+          email: string;
+          total_bookings: number;
+          average_rating: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          full_name: string;
+          phone: string;
+          email: string;
+          total_bookings?: number;
+          average_rating?: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["customers"]["Insert"]>;
+      };
+      bookings: {
+        Row: {
+          id: string;
+          listing_id: string;
+          customer_id: string;
+          carrier_id: string;
+          item_description: string;
+          item_category: "furniture" | "boxes" | "appliance" | "fragile" | "other";
+          item_dimensions: string | null;
+          item_weight_kg: number | null;
+          item_photo_urls: string[] | null;
+          needs_stairs: boolean;
+          needs_helper: boolean;
+          special_instructions: string | null;
+          pickup_address: string;
+          pickup_suburb: string;
+          pickup_postcode: string;
+          pickup_point: unknown;
+          pickup_access_notes: string | null;
+          pickup_contact_name: string | null;
+          pickup_contact_phone: string | null;
+          dropoff_address: string;
+          dropoff_suburb: string;
+          dropoff_postcode: string;
+          dropoff_point: unknown;
+          dropoff_access_notes: string | null;
+          dropoff_contact_name: string | null;
+          dropoff_contact_phone: string | null;
+          base_price_cents: number;
+          stairs_fee_cents: number;
+          helper_fee_cents: number;
+          booking_fee_cents: number;
+          total_price_cents: number;
+          carrier_payout_cents: number;
+          platform_commission_cents: number;
+          stripe_payment_intent_id: string | null;
+          payment_status: "pending" | "authorized" | "captured" | "refunded" | "failed";
+          status: "pending" | "confirmed" | "picked_up" | "in_transit" | "delivered" | "completed" | "cancelled" | "disputed";
+          pickup_proof_photo_url: string | null;
+          delivery_proof_photo_url: string | null;
+          pickup_at: string | null;
+          delivered_at: string | null;
+          completed_at: string | null;
+          customer_confirmed_at: string | null;
+          cancelled_at: string | null;
+          cancellation_reason: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          listing_id: string;
+          customer_id: string;
+          carrier_id: string;
+          item_description: string;
+          item_category: "furniture" | "boxes" | "appliance" | "fragile" | "other";
+          item_dimensions?: string | null;
+          item_weight_kg?: number | null;
+          item_photo_urls?: string[] | null;
+          needs_stairs?: boolean;
+          needs_helper?: boolean;
+          special_instructions?: string | null;
+          pickup_address: string;
+          pickup_suburb: string;
+          pickup_postcode: string;
+          pickup_point: unknown;
+          pickup_access_notes?: string | null;
+          pickup_contact_name?: string | null;
+          pickup_contact_phone?: string | null;
+          dropoff_address: string;
+          dropoff_suburb: string;
+          dropoff_postcode: string;
+          dropoff_point: unknown;
+          dropoff_access_notes?: string | null;
+          dropoff_contact_name?: string | null;
+          dropoff_contact_phone?: string | null;
+          base_price_cents: number;
+          stairs_fee_cents?: number;
+          helper_fee_cents?: number;
+          booking_fee_cents?: number;
+          total_price_cents: number;
+          carrier_payout_cents: number;
+          platform_commission_cents: number;
+          stripe_payment_intent_id?: string | null;
+          payment_status?: "pending" | "authorized" | "captured" | "refunded" | "failed";
+          status?: "pending" | "confirmed" | "picked_up" | "in_transit" | "delivered" | "completed" | "cancelled" | "disputed";
+          pickup_proof_photo_url?: string | null;
+          delivery_proof_photo_url?: string | null;
+          pickup_at?: string | null;
+          delivered_at?: string | null;
+          completed_at?: string | null;
+          customer_confirmed_at?: string | null;
+          cancelled_at?: string | null;
+          cancellation_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["bookings"]["Insert"]>;
+      };
+      booking_events: {
+        Row: {
+          id: string;
+          booking_id: string;
+          event_type: string;
+          actor_user_id: string | null;
+          actor_role: string;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          booking_id: string;
+          event_type: string;
+          actor_user_id?: string | null;
+          actor_role: string;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["booking_events"]["Insert"]>;
+      };
+      reviews: {
+        Row: {
+          id: string;
+          booking_id: string;
+          reviewer_type: "customer" | "carrier";
+          reviewer_id: string;
+          reviewee_id: string;
+          rating: number;
+          comment: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          booking_id: string;
+          reviewer_type: "customer" | "carrier";
+          reviewer_id: string;
+          reviewee_id: string;
+          rating: number;
+          comment?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["reviews"]["Insert"]>;
+      };
+      disputes: {
+        Row: {
+          id: string;
+          booking_id: string;
+          raised_by: "customer" | "carrier";
+          raiser_id: string;
+          category: "damage" | "no_show" | "late" | "wrong_item" | "overcharge" | "other";
+          description: string;
+          photo_urls: string[] | null;
+          status: "open" | "investigating" | "resolved" | "closed";
+          resolution_notes: string | null;
+          resolved_by: string | null;
+          created_at: string;
+          resolved_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          booking_id: string;
+          raised_by: "customer" | "carrier";
+          raiser_id: string;
+          category: "damage" | "no_show" | "late" | "wrong_item" | "overcharge" | "other";
+          description: string;
+          photo_urls?: string[] | null;
+          status?: "open" | "investigating" | "resolved" | "closed";
+          resolution_notes?: string | null;
+          resolved_by?: string | null;
+          created_at?: string;
+          resolved_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["disputes"]["Insert"]>;
+      };
+      analytics_events: {
+        Row: {
+          id: string;
+          event_name: string;
+          user_id: string | null;
+          session_id: string | null;
+          pathname: string | null;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_name: string;
+          user_id?: string | null;
+          session_id?: string | null;
+          pathname?: string | null;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["analytics_events"]["Insert"]>;
+      };
+      waitlist_entries: {
+        Row: {
+          id: string;
+          email: string;
+          from_location: string;
+          to_location: string;
+          item_category: string;
+          preferred_date: string | null;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          from_location: string;
+          to_location: string;
+          item_category: string;
+          preferred_date?: string | null;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["waitlist_entries"]["Insert"]>;
+      };
+      admin_users: {
+        Row: {
+          id: string;
+          user_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["admin_users"]["Insert"]>;
+      };
+    };
+    Functions: {
+      find_matching_listings: {
+        Args: {
+          p_pickup_lat: number;
+          p_pickup_lng: number;
+          p_dropoff_lat: number;
+          p_dropoff_lng: number;
+          p_date?: string | null;
+          p_category?: string | null;
+          p_limit?: number;
+        };
+        Returns: Array<{
+          listing_id: string;
+          carrier_id: string;
+          carrier_name: string;
+          carrier_rating: number;
+          vehicle_type: string;
+          origin_suburb: string;
+          destination_suburb: string;
+          trip_date: string;
+          time_window: string;
+          space_size: string;
+          price_cents: number;
+          detour_radius_km: number;
+          pickup_distance_km: number;
+          dropoff_distance_km: number;
+          match_score: number;
+        }>;
+      };
+    };
+  };
+}

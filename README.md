@@ -1,36 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# moverrr
+
+Browse-first spare-capacity marketplace for the awkward middle in Sydney.
+
+Carriers post trips with spare room. Customers browse those trips and book into them instead of posting a job and waiting for quotes.
+
+## Current Status
+
+- The app now runs as a real browse-first MVP shell with live Supabase-backed auth, listings, bookings, admin review tools, dispute handling, and review capture.
+- Carrier onboarding, trip posting, trip editing, customer booking, booking-state progression, waitlist capture, smoke-dataset bootstrap, and admin verification are wired in code.
+- External services still need real credentials before production behavior is fully live for Maps, Stripe, Resend, Sentry, and deployment hosting.
+
+## The Most Important Question
+
+The best validation question right now is:
+
+Can we get 10+ Sydney carriers to reliably post spare capacity every week if posting takes under 60 seconds and the customer sees transparent, route-fit inventory instantly?
+
+That question matters more than pixel polish because if carriers will not post inventory consistently, the browse-first model breaks.
+
+## Stack
+
+- Frontend: Next.js 14 App Router
+- Styling: Tailwind CSS
+- Backend: Supabase Postgres + Auth + Storage + Edge Functions
+- Spatial: PostGIS
+- Payments: Stripe Connect
+- Email: Resend
+- Maps: Google Maps Platform
+- Monitoring: Sentry
+- Hosting: Vercel
 
 ## Getting Started
 
-First, run the development server:
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Copy the environment template and fill in credentials:
+
+```bash
+cp .env.example .env.local
+```
+
+3. Start the app:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Optional local database flow with Supabase CLI:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run supabase:start
+npm run supabase:db:reset
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The reset path now seeds auth-backed carrier/customer records plus a live listing and booking record, so a fresh local stack no longer depends on pre-existing `auth.users`.
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+- `npm run dev` starts Next.js locally
+- `npm run build` runs a production build
+- `npm run lint` runs ESLint
+- `npm run typecheck` runs TypeScript checks
+- `npm run check` runs lint and typecheck
+- `npm run supabase:start` boots the local Supabase stack
+- `npm run supabase:db:push` pushes migrations
+- `npm run supabase:db:reset` resets and seeds the local database
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```text
+src/app              Next.js routes and API routes
+src/components       UI primitives and feature components
+src/lib              Domain logic, integrations, validation, demo data
+src/hooks            Client hooks for future live wiring
+src/types            Shared TypeScript models
+supabase             Config, migrations, edge function stubs, seed data
+.agent-skills        Project-specific agent guidance for future AI work
+```
 
-## Deploy on Vercel
+## What Is Implemented
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Browse-first landing page with MVP framing
+- Search results backed by Supabase listings and PostGIS matching when Maps geocoding is available
+- Trip detail with live booking creation, item photo upload, and payment-intent creation
+- Customer booking list/detail with confirmation, review submission, and dispute intake
+- Carrier onboarding with document uploads, trip posting wizard, live listing editing, and proof-backed booking status controls
+- Admin dashboard with validation metrics, carrier verification, dispute resolution, and smoke-dataset bootstrap controls
+- Waitlist capture for no-result searches and analytics event logging
+- Supabase schema, RLS, indexes, matching function, private storage buckets, and audit/event tables
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## What Still Needs Live Wiring
+
+- Real Google Maps credentials for autocomplete/geocoding in production
+- Real Stripe keys, webhook secret, and Connect account onboarding flow completion
+- Real Resend domain/from-address setup for outbound email delivery
+- Sentry DSN and production instrumentation hookup
+- Actual Vercel deployment and project linking
+
+## Notes
+
+- Carrier and admin pages are routed under `/carrier/*` and `/admin/*` so the app can route correctly in Next.js. The original markdown used route groups for organization, but route groups alone do not create URL prefixes.
+- `.agent-skills/` mirrors the master plan so future coding agents have product context without rereading the full strategy document.
