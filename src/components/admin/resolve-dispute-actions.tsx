@@ -7,6 +7,29 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
+const RESOLUTION_TEMPLATES = [
+  {
+    label: "Delivery confirmed",
+    notes:
+      "Resolved: both parties confirmed delivery and the evidence trail now matches the booking timeline. No refund is required and the booking can proceed normally.",
+  },
+  {
+    label: "Partial refund",
+    notes:
+      "Resolved: a partial refund is appropriate because the service delivered did not fully match the agreed booking scope. Customer and carrier have both been updated on the outcome.",
+  },
+  {
+    label: "Cancelled after issue",
+    notes:
+      "Closed: the booking should be cancelled because the service could not be completed safely or as promised. Evidence and communications have been recorded for follow-up.",
+  },
+  {
+    label: "More evidence needed",
+    notes:
+      "Investigating: more evidence is still required from both parties before a final outcome can be set. Admin follow-up is in progress and the booking status remains unchanged for now.",
+  },
+] as const;
+
 export function ResolveDisputeActions({ disputeId }: { disputeId: string }) {
   const router = useRouter();
   const [resolutionNotes, setResolutionNotes] = useState("");
@@ -54,6 +77,25 @@ export function ResolveDisputeActions({ disputeId }: { disputeId: string }) {
 
   return (
     <div className="space-y-3">
+      <div className="space-y-2">
+        <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">
+          Resolution templates
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {RESOLUTION_TEMPLATES.map((template) => (
+            <Button
+              key={template.label}
+              type="button"
+              variant={resolutionNotes === template.notes ? "secondary" : "ghost"}
+              size="sm"
+              disabled={isSubmitting}
+              onClick={() => setResolutionNotes(template.notes)}
+            >
+              {template.label}
+            </Button>
+          ))}
+        </div>
+      </div>
       <Textarea
         value={resolutionNotes}
         onChange={(event) => setResolutionNotes(event.target.value)}

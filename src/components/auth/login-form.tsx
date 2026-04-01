@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,14 @@ export function LoginForm() {
           required
         />
       </label>
+      <div className="flex items-center justify-between gap-3 text-sm">
+        <Link href="/reset-password" className="inline-flex min-h-[44px] items-center text-accent">
+          Forgot password?
+        </Link>
+        <Link href="/signup" className="inline-flex min-h-[44px] items-center text-text-secondary">
+          No account yet? Sign up
+        </Link>
+      </div>
       {error ? <p className="text-sm text-error">{error}</p> : null}
       <Button type="submit" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? "Signing in..." : "Continue"}

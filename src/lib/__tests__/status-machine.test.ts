@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { canTransitionBooking } from "@/lib/status-machine";
+import { ALLOWED_BOOKING_TRANSITIONS, canTransitionBooking } from "@/lib/status-machine";
 
 const validTransitions: Array<[string, string]> = [
   ["pending", "confirmed"],
@@ -9,7 +9,6 @@ const validTransitions: Array<[string, string]> = [
   ["confirmed", "picked_up"],
   ["confirmed", "cancelled"],
   ["picked_up", "in_transit"],
-  ["picked_up", "delivered"],
   ["in_transit", "delivered"],
   ["delivered", "completed"],
   ["delivered", "disputed"],
@@ -22,6 +21,7 @@ const invalidTransitions: Array<[string, string]> = [
   ["pending", "picked_up"],
   ["confirmed", "completed"],
   ["picked_up", "confirmed"],
+  ["picked_up", "delivered"],
   ["in_transit", "picked_up"],
   ["delivered", "confirmed"],
   ["completed", "pending"],
@@ -53,3 +53,16 @@ test("booking state machine allows only documented transitions", () => {
   }
 });
 
+test("exported booking transitions stay aligned with the transition helper", () => {
+  for (const [currentStatus, nextStatuses] of Object.entries(ALLOWED_BOOKING_TRANSITIONS)) {
+    for (const nextStatus of nextStatuses) {
+      assert.equal(
+        canTransitionBooking(
+          currentStatus as Parameters<typeof canTransitionBooking>[0],
+          nextStatus,
+        ),
+        true,
+      );
+    }
+  }
+});

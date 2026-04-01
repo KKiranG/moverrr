@@ -8,55 +8,6 @@ import { StatusBadge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import type { Booking } from "@/types/booking";
-import type { Database } from "@/types/database";
-
-type BookingRow = Database["public"]["Tables"]["bookings"]["Row"];
-
-function toBooking(row: BookingRow): Booking {
-  return {
-    id: row.id,
-    bookingReference: row.booking_reference,
-    listingId: row.listing_id,
-    carrierId: row.carrier_id,
-    customerId: row.customer_id,
-    itemDescription: row.item_description,
-    itemCategory: row.item_category,
-    itemDimensions: row.item_dimensions,
-    itemWeightKg: row.item_weight_kg,
-    itemPhotoUrls: row.item_photo_urls ?? [],
-    pickupAddress: row.pickup_address,
-    pickupSuburb: row.pickup_suburb,
-    pickupPostcode: row.pickup_postcode,
-    dropoffAddress: row.dropoff_address,
-    dropoffSuburb: row.dropoff_suburb,
-    dropoffPostcode: row.dropoff_postcode,
-    pickupAccessNotes: row.pickup_access_notes,
-    dropoffAccessNotes: row.dropoff_access_notes,
-    needsStairs: row.needs_stairs,
-    needsHelper: row.needs_helper,
-    status: row.status,
-    pricing: {
-      basePriceCents: row.base_price_cents,
-      stairsFeeCents: row.stairs_fee_cents,
-      helperFeeCents: row.helper_fee_cents,
-      bookingFeeCents: row.booking_fee_cents,
-      totalPriceCents: row.total_price_cents,
-      carrierPayoutCents: row.carrier_payout_cents,
-      platformCommissionCents: row.platform_commission_cents,
-    },
-    paymentStatus: row.payment_status,
-    stripePaymentIntentId: row.stripe_payment_intent_id,
-    pickupProofPhotoUrl: row.pickup_proof_photo_url,
-    deliveryProofPhotoUrl: row.delivery_proof_photo_url,
-    customerConfirmedAt: row.customer_confirmed_at,
-    cancelledAt: row.cancelled_at,
-    cancellationReason: row.cancellation_reason,
-    pendingExpiresAt: row.pending_expires_at,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    events: [],
-  };
-}
 
 export function LiveBookingsList({
   carrierId,
@@ -70,6 +21,33 @@ export function LiveBookingsList({
   const [newBookingCount, setNewBookingCount] = useState(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const knownBookingIdsRef = useRef(new Set(initialBookings.map((booking) => booking.id)));
+
+  useEffect(() => {
+    setBookings(initialBookings);
+    knownBookingIdsRef.current = new Set(initialBookings.map((booking) => booking.id));
+  }, [initialBookings]);
+
+  async function refreshBookings() {
+    const response = await fetch("/api/carrier/bookings/live", {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return;
+    }
+
+    const payload = (await response.json()) as { bookings?: Booking[] };
+    const nextBookings = payload.bookings ?? [];
+    const nextIds = new Set(nextBookings.map((booking) => booking.id));
+    const additionalCount = nextBookings.filter(
+      (booking) => !knownBookingIdsRef.current.has(booking.id),
+    ).length;
+
+    knownBookingIdsRef.current = nextIds;
+    setNewBookingCount((current) => current + additionalCount);
+    setBookings(nextBookings);
+  }
 
   useEffect(() => {
     if (
@@ -93,22 +71,8 @@ export function LiveBookingsList({
           filter: `carrier_id=eq.${carrierId}`,
         },
         async () => {
-          const { data } = await supabase
-            .from("bookings")
-            .select("*")
-            .eq("carrier_id", carrierId)
-            .order("created_at", { ascending: false });
-
-          if (!cancelled && data) {
-            const nextBookings = (data as BookingRow[]).map(toBooking);
-            const nextIds = new Set(nextBookings.map((booking) => booking.id));
-            const additionalCount = nextBookings.filter(
-              (booking) => !knownBookingIdsRef.current.has(booking.id),
-            ).length;
-
-            knownBookingIdsRef.current = nextIds;
-            setNewBookingCount((current) => current + additionalCount);
-            setBookings(nextBookings);
+          if (!cancelled) {
+            await refreshBookings();
           }
         },
       )
@@ -189,7 +153,7 @@ export function LiveBookingsList({
           {bookings.map((booking) => (
             <Link
               key={booking.id}
-              href={`/carrier/trips/${booking.listingId}`}
+              href={`/carrier/trips/${booking.listingId}?focus=${booking.id}#booking-${booking.id}`}
               className="block rounded-xl border border-border p-3 active:opacity-95"
             >
               <div className="flex items-start justify-between gap-3">

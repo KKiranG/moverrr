@@ -1,7 +1,7 @@
 import { BootstrapDatasetForm } from "@/components/admin/bootstrap-dataset-form";
 import { OpsFunnelCard } from "@/components/admin/ops-funnel-card";
 import { requirePageAdminUser } from "@/lib/auth";
-import { getValidationMetrics } from "@/lib/data/admin";
+import { getAdminDashboardData, getValidationMetrics } from "@/lib/data/admin";
 import { PageIntro } from "@/components/layout/page-intro";
 import { ReviewQueue } from "@/components/admin/review-queue";
 import { Card } from "@/components/ui/card";
@@ -21,8 +21,7 @@ function formatMetricValue(metric: Awaited<ReturnType<typeof getValidationMetric
 
 export default async function AdminDashboardPage() {
   await requirePageAdminUser();
-  const metrics = await getValidationMetrics();
-  const lastUpdated = new Date();
+  const { metrics, lastUpdatedAt } = await getAdminDashboardData();
 
   return (
     <main id="main-content" className="page-shell">
@@ -33,7 +32,10 @@ export default async function AdminDashboardPage() {
       />
 
       <p className="text-sm text-text-secondary">
-        Last updated {lastUpdated.toLocaleString("en-AU")}
+        Last updated{" "}
+        {lastUpdatedAt
+          ? new Date(lastUpdatedAt).toLocaleString("en-AU")
+          : "No booking events yet"}
       </p>
 
       <OpsFunnelCard metrics={metrics} />

@@ -1,3 +1,6 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
 import { SignupForm } from "@/components/auth/signup-form";
 import { Card } from "@/components/ui/card";
 import { PageIntro } from "@/components/layout/page-intro";
@@ -15,7 +18,14 @@ const roles = [
   },
 ];
 
+export const metadata: Metadata = {
+  title: "Create an account",
+  description: "Create a moverrr account to book spare capacity or post your next carrier run.",
+};
+
 export default function SignupPage() {
+  const showDevBanner = process.env.NODE_ENV === "development" && !hasSupabaseEnv();
+
   return (
     <main id="main-content" className="page-shell">
       <PageIntro
@@ -24,7 +34,7 @@ export default function SignupPage() {
         description="Customers can browse without auth, but booking and carrier posting both require an account."
       />
 
-      {!hasSupabaseEnv() ? (
+      {showDevBanner ? (
         <ConfigBanner message="Signup requires Supabase environment variables before accounts can be created." />
       ) : null}
 
@@ -37,7 +47,14 @@ export default function SignupPage() {
         ))}
       </div>
 
-      <Card className="p-4">{hasSupabaseEnv() ? <SignupForm /> : null}</Card>
+      <Card className="p-4">
+        {hasSupabaseEnv() ? <SignupForm /> : null}
+        <div className="mt-4 border-t border-border pt-4">
+          <Link href="/login" className="inline-flex min-h-[44px] items-center text-sm text-accent">
+            Have an account? Log in
+          </Link>
+        </div>
+      </Card>
     </main>
   );
 }

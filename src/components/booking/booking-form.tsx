@@ -61,6 +61,8 @@ export function BookingForm({
   const [retryBookingId, setRetryBookingId] = useState<string | null>(null);
   const bookingIdempotencyKeyRef = useRef<string | null>(null);
   const draftKey = useMemo(() => `moverrr:booking-draft:${trip.id}`, [trip.id]);
+  const stairsUnsupported = needsStairs && !trip.rules.stairsOk;
+  const isAddressResolved = Boolean(pickup && dropoff);
 
   const defaultPickup = useMemo(
     () => `${trip.route.originSuburb} NSW ${trip.route.originPostcode ?? ""}`.trim(),
@@ -352,7 +354,7 @@ export function BookingForm({
 
   return (
     <form id={id} className="grid gap-4" onSubmit={handleSubmit}>
-      <fieldset disabled={isSubmitting} className="grid gap-4">
+      <fieldset disabled={isSubmitting || Boolean(retryBookingId)} className="grid gap-4">
       <label className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-3">
           <span className="text-sm font-medium text-text">What are you moving?</span>
@@ -474,12 +476,40 @@ export function BookingForm({
           initialResolvedValue={pickup ?? undefined}
           onResolved={setPickup}
         />
+        <span className={`text-xs ${pickup ? "text-success" : "text-text-secondary"}`}>
+          {pickup ? "Pickup address confirmed." : "Select a suggested address to confirm pickup."}
+        </span>
       </label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="grid gap-2">
+          <span className="text-sm font-medium text-text">Pickup contact name</span>
+          <Input
+            name="pickupContactName"
+            value={pickupContactName}
+            maxLength={120}
+            onChange={(event) => setPickupContactName(event.target.value)}
+            placeholder="Pickup contact name"
+          />
+        </label>
+        <label className="grid gap-2">
+          <span className="text-sm font-medium text-text">Pickup contact phone</span>
+          <Input
+            name="pickupContactPhone"
+            value={pickupContactPhone}
+            onChange={(event) => setPickupContactPhone(event.target.value)}
+            placeholder="Pickup contact phone"
+          />
+        </label>
+      </div>
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-text">Pickup access notes</span>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-medium text-text">Pickup access notes</span>
+          <span className="text-xs text-text-secondary">{pickupAccessNotes.length}/240</span>
+        </div>
         <Textarea
           name="pickupAccessNotes"
           value={pickupAccessNotes}
+          maxLength={240}
           onChange={(event) => setPickupAccessNotes(event.target.value)}
           placeholder="Stairs, loading dock, gate code"
         />
@@ -494,12 +524,40 @@ export function BookingForm({
           initialResolvedValue={dropoff ?? undefined}
           onResolved={setDropoff}
         />
+        <span className={`text-xs ${dropoff ? "text-success" : "text-text-secondary"}`}>
+          {dropoff ? "Dropoff address confirmed." : "Select a suggested address to confirm dropoff."}
+        </span>
       </label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="grid gap-2">
+          <span className="text-sm font-medium text-text">Dropoff contact name</span>
+          <Input
+            name="dropoffContactName"
+            value={dropoffContactName}
+            maxLength={120}
+            onChange={(event) => setDropoffContactName(event.target.value)}
+            placeholder="Dropoff contact name"
+          />
+        </label>
+        <label className="grid gap-2">
+          <span className="text-sm font-medium text-text">Dropoff contact phone</span>
+          <Input
+            name="dropoffContactPhone"
+            value={dropoffContactPhone}
+            onChange={(event) => setDropoffContactPhone(event.target.value)}
+            placeholder="Dropoff contact phone"
+          />
+        </label>
+      </div>
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-text">Dropoff access notes</span>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-medium text-text">Dropoff access notes</span>
+          <span className="text-xs text-text-secondary">{dropoffAccessNotes.length}/240</span>
+        </div>
         <Textarea
           name="dropoffAccessNotes"
           value={dropoffAccessNotes}
+          maxLength={240}
           onChange={(event) => setDropoffAccessNotes(event.target.value)}
           placeholder="Apartment access or delivery notes"
         />
@@ -531,53 +589,18 @@ export function BookingForm({
           </select>
         </label>
       </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="grid gap-2">
-          <span className="text-sm font-medium text-text">Pickup contact name</span>
-          <Input
-            name="pickupContactName"
-            value={pickupContactName}
-            onChange={(event) => setPickupContactName(event.target.value)}
-            placeholder="Pickup contact name"
-          />
-        </label>
-        <label className="grid gap-2">
-          <span className="text-sm font-medium text-text">Pickup contact phone</span>
-          <Input
-            name="pickupContactPhone"
-            value={pickupContactPhone}
-            onChange={(event) => setPickupContactPhone(event.target.value)}
-            placeholder="Pickup contact phone"
-          />
-        </label>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="grid gap-2">
-          <span className="text-sm font-medium text-text">Dropoff contact name</span>
-          <Input
-            name="dropoffContactName"
-            value={dropoffContactName}
-            onChange={(event) => setDropoffContactName(event.target.value)}
-            placeholder="Dropoff contact name"
-          />
-        </label>
-        <label className="grid gap-2">
-          <span className="text-sm font-medium text-text">Dropoff contact phone</span>
-          <Input
-            name="dropoffContactPhone"
-            value={dropoffContactPhone}
-            onChange={(event) => setDropoffContactPhone(event.target.value)}
-            placeholder="Dropoff contact phone"
-          />
-        </label>
-      </div>
+      {stairsUnsupported ? (
+        <div className="rounded-xl border border-warning/20 bg-warning/10 p-3 text-sm text-text">
+          This carrier does not offer stairs support. Choose &quot;No&quot; for stairs or find a different trip before continuing.
+        </div>
+      ) : null}
 
       <label className="flex flex-col gap-2">
         <span className="text-sm font-medium text-text">Anything the carrier should know?</span>
         <Textarea
           name="specialInstructions"
           value={specialInstructions}
+          maxLength={280}
           onChange={(event) => setSpecialInstructions(event.target.value)}
           placeholder="Fragile edges, preferred loading side, timing constraints"
         />
@@ -600,9 +623,17 @@ export function BookingForm({
             {isSubmitting ? "Retrying payment..." : "Try payment setup again"}
           </Button>
         ) : null}
-        <Button type="submit" disabled={isSubmitting}>
+        <Button
+          type="submit"
+          disabled={isSubmitting || Boolean(retryBookingId) || stairsUnsupported || !isAddressResolved}
+        >
           {isSubmitting ? "Creating booking..." : "Continue to payment"}
         </Button>
+        {!isAddressResolved ? (
+          <p className="text-sm text-text-secondary">
+            Confirm both addresses from the suggestions before continuing.
+          </p>
+        ) : null}
       </div>
     </form>
   );

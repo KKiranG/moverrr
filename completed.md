@@ -594,6 +594,53 @@
   - Wired a lightweight `npm run test` path into the repo so these invariants run alongside the normal checks.
 - **Verification:** `npm run test`; `npm run check`
 
+### `COMP-2026-04-01-33` — Upload boundaries, trip mutation safety, and carrier trip controls were hardened
+- **When:** `2026-04-01`
+- **By:** `Codex`
+- **Files changed:** `src/app/api/upload/route.ts`, `src/app/api/trips/[id]/route.ts`, `src/app/api/payments/webhook/route.ts`, `src/lib/data/trips.ts`, `src/lib/status-machine.ts`, `src/components/booking/status-update-actions.tsx`, `src/lib/data/bookings.ts`, `src/app/(carrier)/carrier/trips/[id]/page.tsx`, `src/lib/data/mappers.ts`, `src/types/carrier.ts`, `src/lib/demo-data.ts`
+- **Why it mattered:** Silent upload failures, unvalidated trip edits, webhook throttling, and weak carrier-side booking controls were all trust-critical breakpoints in the live marketplace loop.
+- **What was done:**
+  - Added WebP magic-byte detection, normalized reported MIME handling, and empty-`file.type` tolerance so HEIC/HEIF and WebP uploads are validated by content instead of failing early.
+  - Swapped the trip PATCH route from a loose cast to real Zod parsing, with invalid payloads now rejected before any trip write.
+  - Removed the shared Stripe webhook throttle, filtered nearby-date fallback results to future inventory only, and aligned fallback scoring away from bogus hardcoded values.
+  - Exported the server transition map, removed the `picked_up -> delivered` shortcut, and added a carrier-side cancellation confirmation so the UI stays aligned with booking-state truth.
+  - Locked the carrier trip detail page to the owning carrier, fetched only trip-scoped bookings, gated dispute intake to valid statuses, extracted the booking card out of the JSX IIFE, and made repost links omit missing coordinates safely.
+- **Verification:** `npm run check`; `npm run test`
+
+### `COMP-2026-04-01-34` — Public navigation, recovery flows, and ops visibility became more actionable
+- **When:** `2026-04-01`
+- **By:** `Codex`
+- **Files changed:** `src/components/layout/site-header.tsx`, `src/components/layout/mobile-nav.tsx`, `src/app/page.tsx`, `src/app/layout.tsx`, `src/components/layout/site-footer.tsx`, `src/app/(marketing)/become-a-carrier/page.tsx`, `src/app/(marketing)/privacy/page.tsx`, `src/app/(marketing)/terms/page.tsx`, `src/app/(auth)/login/page.tsx`, `src/app/(auth)/signup/page.tsx`, `src/components/auth/login-form.tsx`, `src/app/(auth)/reset-password/page.tsx`, `src/components/auth/reset-password-form.tsx`, `src/app/not-found.tsx`, `src/app/error.tsx`, `src/app/(carrier)/carrier/dashboard/page.tsx`, `src/app/(carrier)/carrier/payouts/page.tsx`, `src/app/(admin)/admin/bookings/page.tsx`, `src/app/api/admin/bookings/route.ts`, `src/components/admin/admin-pagination.tsx`, `src/components/admin/resolve-dispute-actions.tsx`, `src/components/admin/verification-queue.tsx`, `src/lib/data/admin.ts`, `src/app/(admin)/admin/dashboard/page.tsx`
+- **Why it mattered:** The browse-first product loses both supply and trust when navigation sends people to the wrong place, auth flows strand them, or ops cannot quickly see booking/payment state.
+- **What was done:**
+  - Reworked the site header around real user state: authenticated carriers now post directly, non-carriers see a public carrier acquisition path, the logo and sample-search CTA now meet the iOS tap-target contract, and mobile menu open/close state resets cleanly on navigation.
+  - Added a public `become-a-carrier` landing page, a global footer with privacy/terms/contact links, a custom 404/error recovery surface, and above-the-fold homepage CTAs plus a more truthful empty-inventory headline.
+  - Added cross-links between login and signup, wired a password-reset flow, and made auth/dev banners safer by limiting them to development on the touched pages.
+  - Made carrier dashboard metric cards navigable, deep-linked activity feed booking items to the exact booking card, fixed the payouts “Released this month” value, added a first-trip CTA empty state, and parallelized lane-insight loading.
+  - Added admin payment-status filters and counts, dispute resolution templates, verification queue age signals, and a data-freshness timestamp sourced from real booking-event data instead of render time.
+- **Verification:** `npm run check`; `npm run test`
+
+### `COMP-2026-04-01-35` — Backlog reconciliation closed the current P1/P2 wave and tightened browse loops
+- **When:** `2026-04-01`
+- **By:** `Codex`
+- **Files changed:** `src/app/api/carrier/bookings/live/route.ts`, `src/components/carrier/live-bookings-list.tsx`, `src/components/carrier/trip-edit-form.tsx`, `src/components/search/search-bar.tsx`, `src/components/search/search-refine-button.tsx`, `src/app/(customer)/search/page.tsx`, `src/app/(customer)/trip/[id]/page.tsx`, `src/components/search/saved-searches-manager.tsx`, `todolist.md`, `completed.md`
+- **Why it mattered:** After the larger worker pass, the active backlog still mixed genuinely open work with stale claims about issues that were already fixed. The browse loop also still had one live-data regression and a few mobile navigation gaps.
+- **What was done:**
+  - Replaced the live carrier-bookings row remap with an authenticated refresh endpoint so Supabase realtime updates preserve the full booking payload instead of stripping fields and events.
+  - Hardened trip-edit navigation-guard cleanup so a successful save does not leave a stale unsaved-changes prompt behind on the next navigation.
+  - Added a mobile “Refine search” shortcut, preserved search context when customers move from results to trip detail and back again, and added a direct “Search now” action plus clearer last-match context on saved searches.
+  - Reconciled `todolist.md` against verified code, removing the cleared P1/P2 wave plus verified P3 items and rewriting stale partials like metadata coverage and health monitoring into the narrower issues that are still actually open.
+- **Backlog items moved from active to completed:**
+  - `B1`, `B4`, `B5`, `B6`, `B7`, `B8`, `B9`, `B10`, `B11`, `B12`, `B13`, `B14`, `B16`, `B17`, `B18`, `B19`, `B20`, `B22`
+  - `C1`, `C2`, `C5`, `C6`, `C7`, `C8`, `C9`, `C10`, `C11`, `C12`, `C13`, `C15`, `C17`, `C18`, `C20`, `C21`, `C22`, `C24`, `C27`
+  - `ES1`, `ES2`, `ES3`, `ED1`, `ED2`, `ED3`, `ED5`, `ED7`
+  - `EP3`, `EP6`, `EP7`, `EP8`, `EP13`
+  - `EA3`, `EA4`
+  - `EQ1`, `EQ2`
+  - `V5`, `V9`, `V10`
+  - `X5`
+- **Verification:** `npm run check`; `npm run test`
+
 ---
 
 ## Already Present In Repo Before This Pass

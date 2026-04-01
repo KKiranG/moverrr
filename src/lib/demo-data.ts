@@ -14,6 +14,7 @@ function getFutureIsoDate(daysFromToday: number) {
 const carriers: CarrierProfile[] = [
   {
     id: "6b5e5d8b-271c-49f4-b528-3a3e8fdf4497",
+    userId: "demo-user-1",
     businessName: "Harbour Backloads",
     contactName: "Dave Nolan",
     phone: "+61 400 111 222",
@@ -28,6 +29,7 @@ const carriers: CarrierProfile[] = [
   },
   {
     id: "a7c418d0-c10d-48dd-8a56-4ed2087f17b0",
+    userId: "demo-user-2",
     businessName: "Metro Van Runs",
     contactName: "Priya Kapoor",
     phone: "+61 400 333 444",
@@ -42,6 +44,7 @@ const carriers: CarrierProfile[] = [
   },
   {
     id: "f8221b8a-c65a-4a0d-afc0-e5df1ae44f20",
+    userId: "demo-user-3",
     businessName: "Student Shift Express",
     contactName: "Tom Hirst",
     phone: "+61 400 555 666",

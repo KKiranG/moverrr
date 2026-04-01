@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { formatCurrency, getTodayIsoDate } from "@/lib/utils";
 import type { Trip } from "@/types/trip";
 
 const acceptOptions = [
@@ -17,6 +18,7 @@ const acceptOptions = [
 
 export function TripEditForm({ trip }: { trip: Trip }) {
   const router = useRouter();
+  const minimumTripDate = useMemo(() => getTodayIsoDate(), []);
   const initialState = useMemo(
     () => ({
       tripDate: trip.tripDate,
@@ -40,13 +42,30 @@ export function TripEditForm({ trip }: { trip: Trip }) {
   const [isDirty, setIsDirty] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [navigationGuardEnabled, setNavigationGuardEnabled] = useState(true);
+  const beforeUnloadHandlerRef = useRef<((event: BeforeUnloadEvent) => void) | null>(null);
+  const documentClickHandlerRef = useRef<((event: MouseEvent) => void) | null>(null);
+
+  function clearNavigationGuardListeners() {
+    if (beforeUnloadHandlerRef.current) {
+      window.removeEventListener("beforeunload", beforeUnloadHandlerRef.current);
+      beforeUnloadHandlerRef.current = null;
+    }
+
+    if (documentClickHandlerRef.current) {
+      document.removeEventListener("click", documentClickHandlerRef.current, true);
+      documentClickHandlerRef.current = null;
+    }
+  }
 
   useEffect(() => {
     setIsDirty(JSON.stringify(formState) !== JSON.stringify(initialState));
   }, [formState, initialState]);
 
   useEffect(() => {
-    if (!isDirty) {
+    clearNavigationGuardListeners();
+
+    if (!isDirty || !navigationGuardEnabled) {
       return;
     }
 
@@ -74,14 +93,15 @@ export function TripEditForm({ trip }: { trip: Trip }) {
       }
     };
 
+    beforeUnloadHandlerRef.current = handleBeforeUnload;
+    documentClickHandlerRef.current = handleDocumentClick;
     window.addEventListener("beforeunload", handleBeforeUnload);
     document.addEventListener("click", handleDocumentClick, true);
 
     return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      document.removeEventListener("click", handleDocumentClick, true);
+      clearNavigationGuardListeners();
     };
-  }, [isDirty]);
+  }, [isDirty, navigationGuardEnabled]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -116,6 +136,8 @@ export function TripEditForm({ trip }: { trip: Trip }) {
         throw new Error(payload.error ?? "Unable to update trip.");
       }
 
+      clearNavigationGuardListeners();
+      setNavigationGuardEnabled(false);
       setIsDirty(false);
       router.refresh();
     } catch (caught) {
@@ -138,6 +160,7 @@ export function TripEditForm({ trip }: { trip: Trip }) {
         <Input
           name="tripDate"
           type="date"
+          min={minimumTripDate}
           value={formState.tripDate}
           onChange={(event) => setFormState((current) => ({ ...current, tripDate: event.target.value }))}
           required
@@ -210,6 +233,13 @@ export function TripEditForm({ trip }: { trip: Trip }) {
           required
         />
       </div>
+
+      {trip.suggestedPriceCents ? (
+        <p className="text-sm text-text-secondary">
+          Suggested at posting: {formatCurrency(Math.max(0, trip.suggestedPriceCents - 1000))} to{" "}
+          {formatCurrency(trip.suggestedPriceCents + 1000)}
+        </p>
+      ) : null}
 
       <div className="grid gap-3">
         <div className="grid gap-2 sm:grid-cols-2">

@@ -2,17 +2,24 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { requireSessionUser } from "@/lib/auth";
 import { cancelTripForCarrier, getTripById, updateTripForCarrier } from "@/lib/data/trips";
-import { toErrorResponse } from "@/lib/errors";
+import { AppError, toErrorResponse } from "@/lib/errors";
 import { sanitizeText } from "@/lib/utils";
-import type { TripUpdateInput } from "@/lib/validation/trip";
+import { tripUpdateSchema } from "@/lib/validation/trip";
 
-function sanitizeTripUpdatePayload(payload: Record<string, unknown>): TripUpdateInput {
-  return Object.fromEntries(
+function sanitizeTripUpdatePayload(payload: Record<string, unknown>) {
+  const sanitizedPayload = Object.fromEntries(
     Object.entries(payload).map(([key, value]) => [
       key,
       typeof value === "string" ? sanitizeText(value) : value,
     ]),
-  ) as TripUpdateInput;
+  );
+  const parsed = tripUpdateSchema.safeParse(sanitizedPayload);
+
+  if (!parsed.success) {
+    throw new AppError(parsed.error.issues[0]?.message ?? "Trip update payload is invalid.", 400, "invalid_trip_update");
+  }
+
+  return parsed.data;
 }
 
 export async function GET(
@@ -39,9 +46,13 @@ export async function PATCH(
 ) {
   try {
     const user = await requireSessionUser();
-    const payload = sanitizeTripUpdatePayload(
-      (await request.json()) as Record<string, unknown>,
-    );
+    const rawPayload = await request.json();
+
+    if (!rawPayload || typeof rawPayload !== "object" || Array.isArray(rawPayload)) {
+      throw new AppError("Trip update payload is invalid.", 400, "invalid_trip_update");
+    }
+
+    const payload = sanitizeTripUpdatePayload(rawPayload as Record<string, unknown>);
     const trip = await updateTripForCarrier(user.id, params.id, payload);
 
     return NextResponse.json({ trip });

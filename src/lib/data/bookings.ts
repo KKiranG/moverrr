@@ -12,7 +12,10 @@ import { createClient as createServerSupabaseClient } from "@/lib/supabase/serve
 import { toBooking, type BookingJoinedRecord } from "@/lib/data/mappers";
 import { bookingSchema, type BookingInput } from "@/lib/validation/booking";
 import type { Database } from "@/types/database";
-import type { BookingCancellationReasonCode } from "@/types/booking";
+import type {
+  BookingCancellationReasonCode,
+  BookingPaymentStatus,
+} from "@/types/booking";
 import { getConfirmedBookingChecklist } from "@/lib/booking-presenters";
 
 async function getBookingRowByRole(params: {
@@ -254,7 +257,12 @@ export async function listUserBookings(userId: string) {
   return ((data ?? []) as unknown as BookingJoinedRecord[]).map(toBooking);
 }
 
-export async function listCarrierBookings(userId: string) {
+export async function listCarrierBookings(
+  userId: string,
+  options?: {
+    listingId?: string;
+  },
+) {
   if (!hasSupabaseEnv()) {
     return [];
   }
@@ -270,11 +278,17 @@ export async function listCarrierBookings(userId: string) {
     return [];
   }
 
-  const { data, error } = await supabase
+  const query = supabase
     .from("bookings")
     .select("*, events:booking_events(*)")
     .eq("carrier_id", carrier.id)
     .order("created_at", { ascending: false });
+
+  if (options?.listingId) {
+    query.eq("listing_id", options.listingId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw new AppError(error.message, 500, "carrier_booking_query_failed");
@@ -840,10 +854,53 @@ async function getAdminBookingSearchEntityIds(searchQuery: string) {
   };
 }
 
+const ADMIN_BOOKING_PAYMENT_STATUSES = [
+  "pending",
+  "authorized",
+  "captured",
+  "capture_failed",
+  "refunded",
+  "failed",
+  "authorization_cancelled",
+] as const satisfies BookingPaymentStatus[];
+
+function applyAdminBookingFilters<T>(query: T, params: {
+  searchQuery?: string;
+  customerIds: string[];
+  carrierIds: string[];
+  paymentStatus?: BookingPaymentStatus;
+}) {
+  let nextQuery = query as {
+    or: (filter: string) => unknown;
+    eq: (column: string, value: string) => unknown;
+  };
+
+  if (params.searchQuery) {
+    const filters = [`booking_reference.ilike.%${params.searchQuery}%`];
+
+    if (params.customerIds.length > 0) {
+      filters.push(`customer_id.in.(${params.customerIds.join(",")})`);
+    }
+
+    if (params.carrierIds.length > 0) {
+      filters.push(`carrier_id.in.(${params.carrierIds.join(",")})`);
+    }
+
+    nextQuery = nextQuery.or(filters.join(",")) as typeof nextQuery;
+  }
+
+  if (params.paymentStatus) {
+    nextQuery = nextQuery.eq("payment_status", params.paymentStatus) as typeof nextQuery;
+  }
+
+  return nextQuery as T;
+}
+
 export async function listAdminBookingsPageData(params?: {
   page?: number;
   pageSize?: number;
   query?: string;
+  paymentStatus?: BookingPaymentStatus;
 }) {
   if (!hasSupabaseAdminEnv()) {
     return {
@@ -851,6 +908,9 @@ export async function listAdminBookingsPageData(params?: {
       totalCount: 0,
       page: params?.page ?? 1,
       pageSize: params?.pageSize ?? 25,
+      paymentCounts: Object.fromEntries(
+        ADMIN_BOOKING_PAYMENT_STATUSES.map((status) => [status, 0]),
+      ) as Record<BookingPaymentStatus, number>,
     };
   }
 
@@ -859,31 +919,54 @@ export async function listAdminBookingsPageData(params?: {
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  const supabase = createAdminClient();
-  let query = supabase
-    .from("bookings")
-    .select("*, events:booking_events(*)", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range(from, to);
-
   const searchQuery = params?.query?.trim();
+  let customerIds: string[] = [];
+  let carrierIds: string[] = [];
 
   if (searchQuery) {
-    const { customerIds, carrierIds } = await getAdminBookingSearchEntityIds(searchQuery);
-    const filters = [`booking_reference.ilike.%${searchQuery}%`];
-
-    if (customerIds.length > 0) {
-      filters.push(`customer_id.in.(${customerIds.join(",")})`);
-    }
-
-    if (carrierIds.length > 0) {
-      filters.push(`carrier_id.in.(${carrierIds.join(",")})`);
-    }
-
-    query = query.or(filters.join(","));
+    const relatedIds = await getAdminBookingSearchEntityIds(searchQuery);
+    customerIds = relatedIds.customerIds;
+    carrierIds = relatedIds.carrierIds;
   }
 
-  const { data, error, count } = await query;
+  const supabase = createAdminClient();
+  const filterParams = {
+    searchQuery,
+    customerIds,
+    carrierIds,
+    paymentStatus: params?.paymentStatus,
+  };
+  const dataQuery = applyAdminBookingFilters(
+    supabase
+      .from("bookings")
+      .select("*, events:booking_events(*)", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(from, to),
+    filterParams,
+  );
+  const paymentCountQueries = ADMIN_BOOKING_PAYMENT_STATUSES.map(async (status) => {
+    const countQuery = applyAdminBookingFilters(
+      supabase.from("bookings").select("id", { count: "exact", head: true }),
+      {
+        searchQuery,
+        customerIds,
+        carrierIds,
+        paymentStatus: status,
+      },
+    );
+    const { count, error } = await countQuery;
+
+    if (error) {
+      throw new AppError(error.message, 500, "admin_booking_payment_count_failed");
+    }
+
+    return [status, count ?? 0] as const;
+  });
+
+  const [{ data, error, count }, paymentCountsEntries] = await Promise.all([
+    dataQuery,
+    Promise.all(paymentCountQueries),
+  ]);
 
   if (error) {
     throw new AppError(error.message, 500, "admin_booking_query_failed");
@@ -894,10 +977,16 @@ export async function listAdminBookingsPageData(params?: {
     totalCount: count ?? 0,
     page,
     pageSize,
+    paymentCounts: Object.fromEntries(paymentCountsEntries) as Record<BookingPaymentStatus, number>,
   };
 }
 
-export async function listAdminBookings(params?: { page?: number; pageSize?: number; query?: string }) {
+export async function listAdminBookings(params?: {
+  page?: number;
+  pageSize?: number;
+  query?: string;
+  paymentStatus?: BookingPaymentStatus;
+}) {
   const { bookings } = await listAdminBookingsPageData(params);
   return bookings;
 }
@@ -1044,6 +1133,15 @@ export async function getCarrierPerformanceStats(userId: string) {
       .eq("user_id", userId)
       .maybeSingle(),
   ]);
+  const carrierId = carrierRows.data?.id;
+  const supabase = createServerSupabaseClient();
+  const { data: reviews } = carrierId
+    ? await supabase
+        .from("reviews")
+        .select("rating, created_at")
+        .eq("reviewee_id", carrierId)
+        .order("created_at", { ascending: true })
+    : { data: [] as Array<{ rating: number; created_at: string }> };
 
   const totalBookings = bookings.length;
   const confirmedBookings = bookings.filter((booking) =>
@@ -1051,7 +1149,8 @@ export async function getCarrierPerformanceStats(userId: string) {
   ).length;
   const completedBookings = bookings.filter((booking) => booking.status === "completed").length;
   const disputedBookings = bookings.filter((booking) => booking.status === "disputed").length;
-  const routeUsage = Array.from(
+  const cancelledBookings = bookings.filter((booking) => booking.status === "cancelled").length;
+  const topCorridors = Array.from(
     bookings.reduce((map, booking) => {
       const key = `${booking.pickupSuburb ?? "Unknown"} -> ${booking.dropoffSuburb ?? "Unknown"}`;
       map.set(key, (map.get(key) ?? 0) + 1);
@@ -1060,14 +1159,54 @@ export async function getCarrierPerformanceStats(userId: string) {
   )
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
+  const monthlyEarnings = Array.from(
+    bookings
+      .filter((booking) => booking.status === "completed")
+      .reduce((map, booking) => {
+        const month = (booking.completedAt ?? booking.updatedAt ?? booking.createdAt ?? "").slice(0, 7);
+
+        if (!month) {
+          return map;
+        }
+
+        const current = map.get(month) ?? { month, earningsCents: 0, jobs: 0 };
+        current.earningsCents += booking.pricing.carrierPayoutCents;
+        current.jobs += 1;
+        map.set(month, current);
+        return map;
+      }, new Map<string, { month: string; earningsCents: number; jobs: number }>())
+      .values(),
+  ).sort((left, right) => left.month.localeCompare(right.month));
+  const ratingTrend = Array.from(
+    (reviews ?? []).reduce((map, review) => {
+      const month = review.created_at.slice(0, 7);
+      const current = map.get(month) ?? { month, total: 0, count: 0 };
+      current.total += review.rating;
+      current.count += 1;
+      map.set(month, current);
+      return map;
+    }, new Map<string, { month: string; total: number; count: number }>())
+      .values(),
+  )
+    .map((entry) => ({
+      month: entry.month,
+      averageRating: entry.count > 0 ? Number((entry.total / entry.count).toFixed(1)) : 0,
+      count: entry.count,
+    }))
+    .sort((left, right) => left.month.localeCompare(right.month));
 
   return {
     acceptanceRatePct: totalBookings > 0 ? Math.round((confirmedBookings / totalBookings) * 100) : 0,
     completionRatePct: confirmedBookings > 0 ? Math.round((completedBookings / confirmedBookings) * 100) : 0,
+    cancellationRatePct: totalBookings > 0 ? Math.round((cancelledBookings / totalBookings) * 100) : 0,
+    completedJobs: completedBookings,
     averageRating: Number(carrierRows.data?.average_rating ?? 0),
     ratingCount: carrierRows.data?.rating_count ?? 0,
     disputeCount: disputedBookings,
-    repeatRoutes: routeUsage,
+    repeatRoutes: topCorridors,
+    topCorridors,
+    monthlyEarnings,
+    ratingTrend,
   };
 }
 

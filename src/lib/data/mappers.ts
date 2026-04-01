@@ -55,6 +55,7 @@ function parsePoint(
 export function toCarrierProfile(row: CarrierRow): CarrierProfile {
   return {
     id: row.id,
+    userId: row.user_id,
     businessName: row.business_name,
     contactName: row.contact_name,
     phone: row.phone,

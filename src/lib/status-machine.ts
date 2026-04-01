@@ -1,9 +1,9 @@
 import type { BookingStatus } from "@/types/booking";
 
-const allowedTransitions: Record<BookingStatus, BookingStatus[]> = {
+export const ALLOWED_BOOKING_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
   pending: ["confirmed", "cancelled"],
   confirmed: ["picked_up", "cancelled"],
-  picked_up: ["in_transit", "delivered"],
+  picked_up: ["in_transit"],
   in_transit: ["delivered"],
   delivered: ["completed", "disputed"],
   completed: ["disputed"],
@@ -15,5 +15,5 @@ export function canTransitionBooking(
   currentStatus: BookingStatus,
   nextStatus: BookingStatus,
 ) {
-  return allowedTransitions[currentStatus].includes(nextStatus);
+  return ALLOWED_BOOKING_TRANSITIONS[currentStatus].includes(nextStatus);
 }

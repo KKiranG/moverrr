@@ -42,6 +42,13 @@ function detectMimeType(bytes: Uint8Array) {
     return "image/png";
   }
 
+  if (
+    hasMagicPrefix(bytes, [0x52, 0x49, 0x46, 0x46]) &&
+    String.fromCharCode(...Array.from(bytes.slice(8, 12))) === "WEBP"
+  ) {
+    return "image/webp";
+  }
+
   if (hasMagicPrefix(bytes, [0x25, 0x50, 0x44, 0x46])) {
     return "application/pdf";
   }
@@ -57,6 +64,22 @@ function detectMimeType(bytes: Uint8Array) {
 
 function isPrivateBucketName(value: string): value is PrivateBucketName {
   return allowedBuckets.includes(value as PrivateBucketName);
+}
+
+function normalizeMimeType(mimeType: string) {
+  if (!mimeType) {
+    return null;
+  }
+
+  if (mimeType === "image/jpg") {
+    return "image/jpeg";
+  }
+
+  if (mimeType === "image/heif") {
+    return "image/heic";
+  }
+
+  return mimeType;
 }
 
 export async function POST(request: NextRequest) {
@@ -93,7 +116,9 @@ export async function POST(request: NextRequest) {
       throw new AppError("A file is required.", 400, "file_required");
     }
 
-    if (!ALLOWED_MIME_TYPES.has(file.type)) {
+    const normalizedMimeType = normalizeMimeType(file.type);
+
+    if (normalizedMimeType && !ALLOWED_MIME_TYPES.has(normalizedMimeType)) {
       throw new AppError("Unsupported file type.", 400, "invalid_file_type");
     }
 
@@ -117,10 +142,11 @@ export async function POST(request: NextRequest) {
       throw new AppError("Only image uploads are allowed for this bucket.", 415, "invalid_file_type");
     }
 
-    const normalizedMimeType =
-      file.type === "image/jpg" ? "image/jpeg" : file.type === "image/heif" ? "image/heic" : file.type;
+    if (!ALLOWED_MIME_TYPES.has(detectedMimeType)) {
+      throw new AppError("Unsupported file content.", 415, "invalid_file_type");
+    }
 
-    if (normalizedMimeType !== detectedMimeType) {
+    if (normalizedMimeType && normalizedMimeType !== detectedMimeType) {
       throw new AppError("File type does not match file contents.", 415, "invalid_file_signature");
     }
 

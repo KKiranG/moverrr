@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,12 @@ function SavedSearchCard({ search }: { search: SavedSearch }) {
   const [isActive, setIsActive] = useState(search.isActive);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const searchHref = `/search?${new URLSearchParams({
+    from: search.fromSuburb,
+    to: search.toSuburb,
+    ...(search.dateFrom ? { when: search.dateFrom } : {}),
+    ...(search.itemCategory ? { what: search.itemCategory } : {}),
+  }).toString()}`;
 
   async function saveChanges(nextIsActive = isActive) {
     setIsSaving(true);
@@ -108,6 +115,9 @@ function SavedSearchCard({ search }: { search: SavedSearch }) {
         </div>
 
         <div className="flex flex-wrap gap-2">
+          <Button asChild type="button">
+            <Link href={searchHref}>Search now</Link>
+          </Button>
           <Button type="button" variant="secondary" disabled={isSaving} onClick={() => saveChanges()}>
             {isSaving ? "Saving..." : "Save edits"}
           </Button>
@@ -129,8 +139,10 @@ function SavedSearchCard({ search }: { search: SavedSearch }) {
         </div>
 
         <p className="text-caption text-text-secondary">
-          Alerts sent {search.notificationCount} time(s). Last notified{" "}
-          {search.lastNotifiedAt ? new Date(search.lastNotifiedAt).toLocaleDateString("en-AU") : "never"}.
+          Alerts sent {search.notificationCount} time(s).{" "}
+          {search.lastNotifiedAt
+            ? `Last notified ${new Date(search.lastNotifiedAt).toLocaleDateString("en-AU")}.`
+            : "No matches yet."}
         </p>
         {error ? <p className="text-sm text-error">{error}</p> : null}
       </div>

@@ -28,6 +28,24 @@ const acceptOptions = [
   { value: "fragile", label: "Fragile" },
 ] as const;
 
+function getDistanceKm(origin: AddressValue | null, destination: AddressValue | null) {
+  if (!origin || !destination) {
+    return 35;
+  }
+
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const dLat = toRadians(destination.latitude - origin.latitude);
+  const dLng = toRadians(destination.longitude - origin.longitude);
+  const lat1 = toRadians(origin.latitude);
+  const lat2 = toRadians(destination.latitude);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+
+  return Math.max(1, Math.round(earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))));
+}
+
 export function CarrierTripWizard({
   initialOrigin = null,
   initialDestination = null,
@@ -56,25 +74,44 @@ export function CarrierTripWizard({
   const [specialNotes, setSpecialNotes] = useState("");
   const [detourRadiusKm, setDetourRadiusKm] = useState(initialDetourRadiusKm ?? "5");
   const [isReturnTrip, setIsReturnTrip] = useState(false);
+  const [tripDate, setTripDate] = useState(getTodayIsoDate());
+  const [timeWindow, setTimeWindow] = useState<"morning" | "afternoon" | "evening" | "flexible">("flexible");
+  const [availableVolumeM3, setAvailableVolumeM3] = useState("1");
+  const [availableWeightKg, setAvailableWeightKg] = useState("100");
   const [priceGuidance, setPriceGuidance] = useState<RoutePriceGuidance | null>(null);
   const [isGuidanceLoading, setIsGuidanceLoading] = useState(false);
+  const [hasEditedPrice, setHasEditedPrice] = useState(Boolean(initialPriceDollars));
   const guidanceAbortRef = useRef<AbortController | null>(null);
   const guidanceTimerRef = useRef<number | null>(null);
+  const routeDistanceKm = useMemo(
+    () => getDistanceKm(origin, destination),
+    [destination, origin],
+  );
 
   const pricingSuggestion = useMemo(
     () =>
       suggestPrice({
-        distanceKm: 35,
+        distanceKm: routeDistanceKm,
         spaceSize,
         needsStairs: false,
         needsHelper: false,
         isReturn: isReturnTrip,
       }),
-    [spaceSize, isReturnTrip],
+    [isReturnTrip, routeDistanceKm, spaceSize],
   );
   const [priceDollars, setPriceDollars] = useState(
     initialPriceDollars ?? Math.round(pricingSuggestion.midCents / 100).toString(),
   );
+
+  useEffect(() => {
+    if (hasEditedPrice || initialPriceDollars) {
+      return;
+    }
+
+    setPriceDollars(
+      Math.round((priceGuidance?.medianCents ?? pricingSuggestion.midCents) / 100).toString(),
+    );
+  }, [hasEditedPrice, initialPriceDollars, priceGuidance?.medianCents, pricingSuggestion.midCents]);
 
   function validateCurrentStep(index: number) {
     if (index === 0) {
@@ -90,11 +127,6 @@ export function CarrierTripWizard({
     }
 
     if (index === 1) {
-      const tripDate = String((document.querySelector('input[name="tripDate"]') as HTMLInputElement | null)?.value ?? "");
-      const timeWindow = String(
-        (document.querySelector('select[name="timeWindow"]') as HTMLSelectElement | null)?.value ?? "",
-      );
-
       if (!tripDate || tripDate < getTodayIsoDate()) {
         setError("Choose a trip date today or later.");
         return false;
@@ -133,6 +165,23 @@ export function CarrierTripWizard({
 
     setError(null);
     setStepIndex((value) => Math.min(steps.length - 1, value + 1));
+  }
+
+  function handleStepChange(targetIndex: number) {
+    if (targetIndex <= stepIndex) {
+      setError(null);
+      setStepIndex(targetIndex);
+      return;
+    }
+
+    for (let index = stepIndex; index < targetIndex; index += 1) {
+      if (!validateCurrentStep(index)) {
+        return;
+      }
+    }
+
+    setError(null);
+    setStepIndex(targetIndex);
   }
 
   useEffect(() => {
@@ -193,6 +242,11 @@ export function CarrierTripWizard({
     event.preventDefault();
     setError(null);
 
+    if (stepIndex !== steps.length - 1) {
+      handleNext();
+      return;
+    }
+
     if (!origin || !destination) {
       setError("Choose origin and destination from the address suggestions.");
       return;
@@ -215,12 +269,12 @@ export function CarrierTripWizard({
           destinationLatitude: destination.latitude,
           destinationLongitude: destination.longitude,
           detourRadiusKm: Number(detourRadiusKm),
-          tripDate: formData.get("tripDate"),
-          timeWindow: formData.get("timeWindow"),
+          tripDate,
+          timeWindow,
           spaceSize,
-          availableVolumeM3: Number(formData.get("availableVolumeM3")),
-          availableWeightKg: Number(formData.get("availableWeightKg")),
-          priceCents: Math.round(Number(formData.get("priceDollars")) * 100),
+          availableVolumeM3: Number(availableVolumeM3),
+          availableWeightKg: Number(availableWeightKg),
+          priceCents: Math.round(Number(priceDollars) * 100),
           suggestedPriceCents: priceGuidance?.medianCents ?? pricingSuggestion.midCents,
           accepts,
           stairsOk: formData.get("stairsOk") === "yes",
@@ -231,7 +285,7 @@ export function CarrierTripWizard({
             Math.round(Number(formData.get("helperExtraDollars") || 0) * 100),
           isReturnTrip,
           status: formData.get("status"),
-          specialNotes: formData.get("specialNotes"),
+          specialNotes: specialNotes,
         }),
       });
       const payload = await response.json();
@@ -258,13 +312,26 @@ export function CarrierTripWizard({
   }
 
   return (
-    <form className="grid gap-4 pb-28" onSubmit={handleSubmit}>
+    <form
+      className="grid gap-4 pb-28"
+      onSubmit={handleSubmit}
+      onKeyDown={(event) => {
+        if (
+          event.key === "Enter" &&
+          stepIndex < steps.length - 1 &&
+          event.target instanceof HTMLInputElement &&
+          event.target.type === "number"
+        ) {
+          event.preventDefault();
+        }
+      }}
+    >
       <div className="flex gap-2 overflow-x-auto">
         {steps.map((label, index) => (
           <button
             key={label}
             type="button"
-            onClick={() => setStepIndex(index)}
+            onClick={() => handleStepChange(index)}
             className={`min-h-[44px] min-w-[44px] rounded-xl border px-3 py-2 text-sm transition-colors ${
               index === stepIndex
                 ? "border-accent bg-accent/10 text-accent"
@@ -360,14 +427,24 @@ export function CarrierTripWizard({
         <div className="grid gap-4">
           <label className="grid gap-2">
             <span className="text-sm font-medium text-text">Trip date</span>
-            <Input name="tripDate" type="date" min={getTodayIsoDate()} required />
+            <Input
+              name="tripDate"
+              type="date"
+              min={getTodayIsoDate()}
+              value={tripDate}
+              onChange={(event) => setTripDate(event.target.value)}
+              required
+            />
           </label>
           <label className="grid gap-2">
             <span className="text-sm font-medium text-text">Time window</span>
             <select
               name="timeWindow"
               className="h-11 rounded-xl border border-border bg-surface px-3 text-sm text-text"
-              defaultValue="flexible"
+              value={timeWindow}
+              onChange={(event) =>
+                setTimeWindow(event.target.value as "morning" | "afternoon" | "evening" | "flexible")
+              }
             >
               <option value="morning">Morning</option>
               <option value="afternoon">Afternoon</option>
@@ -399,7 +476,8 @@ export function CarrierTripWizard({
               name="availableVolumeM3"
               type="number"
               step="0.1"
-              defaultValue="1"
+              value={availableVolumeM3}
+              onChange={(event) => setAvailableVolumeM3(event.target.value)}
               placeholder="Available volume m3"
               required
             />
@@ -410,7 +488,8 @@ export function CarrierTripWizard({
               name="availableWeightKg"
               type="number"
               step="1"
-              defaultValue="100"
+              value={availableWeightKg}
+              onChange={(event) => setAvailableWeightKg(event.target.value)}
               placeholder="Available weight kg"
               required
             />
@@ -434,6 +513,9 @@ export function CarrierTripWizard({
                   "Spare-capacity pricing normally sits below dedicated-truck pricing because you are filling space on a route that is already happening."}
               </p>
               <p className="mt-2 text-xs text-text-secondary">
+                Based on an estimated {routeDistanceKm}km between your resolved origin and destination.
+              </p>
+              <p className="mt-2 text-xs text-text-secondary">
                 {priceGuidance?.usedFallback
                   ? "Using the Sydney fallback guide until we have at least 5 route examples."
                   : `Built from ${priceGuidance?.exampleCount ?? 0} moverrr examples on a similar corridor.`}
@@ -446,7 +528,10 @@ export function CarrierTripWizard({
               type="number"
               step="1"
               value={priceDollars}
-              onChange={(event) => setPriceDollars(event.target.value)}
+              onChange={(event) => {
+                setHasEditedPrice(true);
+                setPriceDollars(event.target.value);
+              }}
               placeholder="Price in dollars"
               required
             />

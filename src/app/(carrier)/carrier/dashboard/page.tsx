@@ -30,12 +30,12 @@ function isTripActive(tripDate: string, status?: string | null) {
 }
 
 async function CarrierDashboardContent({ userId }: { userId: string }) {
-  const [carrier, carrierTrips, carrierBookings] = await Promise.all([
+  const [carrier, carrierTrips, carrierBookings, laneInsights] = await Promise.all([
     getCarrierByUserId(userId),
     listCarrierTrips(userId),
     listCarrierBookings(userId),
+    getCarrierLaneInsights(userId),
   ]);
-  const laneInsights = await getCarrierLaneInsights(userId);
   const templates = carrier ? await listCarrierTemplates(carrier.id) : [];
   const liveListings = carrierTrips.filter((trip) => isTripActive(trip.tripDate, trip.status)).length;
   const pendingBookings = carrierBookings.filter((booking) => booking.status === "pending");
@@ -64,7 +64,7 @@ async function CarrierDashboardContent({ userId }: { userId: string }) {
             ? "Booking confirmed"
             : "Booking updated",
       description: `${booking.bookingReference} · ${booking.status.replaceAll("_", " ")} · ${formatCurrency(booking.pricing.totalPriceCents)}`,
-      href: `/carrier/trips/${booking.listingId}`,
+      href: `/carrier/trips/${booking.listingId}?focus=${booking.id}#booking-${booking.id}`,
     })),
   ]
     .sort((left, right) => new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime())
@@ -77,22 +77,30 @@ async function CarrierDashboardContent({ userId }: { userId: string }) {
       <PendingBookingsAlert bookings={pendingBookings} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="p-4">
+        <Link href="/carrier/trips" className="block min-h-11 active:opacity-95">
+          <Card className="p-4">
           <p className="section-label">Live listings</p>
           <p className="mt-2 text-3xl text-text">{liveListings}</p>
-        </Card>
-        <Card className="p-4">
+          </Card>
+        </Link>
+        <Link href="/carrier/trips?filter=pending" className="block min-h-11 active:opacity-95">
+          <Card className="p-4">
           <p className="section-label">Awaiting decision</p>
           <p className="mt-2 text-3xl text-text">{awaitingDecision}</p>
-        </Card>
-        <Card className="p-4">
+          </Card>
+        </Link>
+        <Link href="/carrier/trips" className="block min-h-11 active:opacity-95">
+          <Card className="p-4">
           <p className="section-label">Booked work</p>
           <p className="mt-2 text-3xl text-text">{bookedWork}</p>
-        </Card>
-        <Card className="p-4">
+          </Card>
+        </Link>
+        <Link href="/carrier/payouts" className="block min-h-11 active:opacity-95">
+          <Card className="p-4">
           <p className="section-label">Projected payout</p>
           <p className="mt-2 text-3xl text-text">{formatCurrency(projectedPayoutCents)}</p>
-        </Card>
+          </Card>
+        </Link>
       </div>
 
       <TripChecklist carrier={carrier} />
@@ -187,9 +195,14 @@ async function CarrierDashboardContent({ userId }: { userId: string }) {
         ))}
         {activeTrips.length === 0 ? (
           <Card className="p-4">
-            <p className="subtle-text">
-              No trips yet. Complete onboarding and post your first spare-capacity run.
-            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="subtle-text">
+                No trips yet. Complete onboarding and post your first spare-capacity run.
+              </p>
+              <Button asChild>
+                <Link href="/carrier/post">Post your first trip</Link>
+              </Button>
+            </div>
           </Card>
         ) : null}
       </div>

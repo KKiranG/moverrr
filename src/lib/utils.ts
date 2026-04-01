@@ -21,6 +21,14 @@ export function formatDate(date: string) {
   }).format(new Date(date));
 }
 
+export function formatLongDate(date: string) {
+  return new Intl.DateTimeFormat("en-AU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(date));
+}
+
 export function formatSavings(savingsPct: number) {
   return `${Math.round(savingsPct)}% cheaper`;
 }

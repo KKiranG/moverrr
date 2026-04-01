@@ -69,6 +69,20 @@ function getExpiryTone(daysUntilExpiry: number | null) {
   };
 }
 
+function getQueueAgeHours(submittedAt?: string | null) {
+  if (!submittedAt) {
+    return null;
+  }
+
+  const parsed = new Date(submittedAt);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return Math.max(0, Math.round((Date.now() - parsed.getTime()) / (60 * 60 * 1000)));
+}
+
 function getDocumentHealthRank(carrier: CarrierProfile) {
   const licence = getExpiryTone(getDaysUntil(carrier.licenceExpiryDate));
   const insurance = getExpiryTone(getDaysUntil(carrier.insuranceExpiryDate));
@@ -200,6 +214,14 @@ function QueueCard({
   const licenceExpiry = getExpiryTone(getDaysUntil(carrier.licenceExpiryDate));
   const insuranceExpiry = getExpiryTone(getDaysUntil(carrier.insuranceExpiryDate));
   const documentHealth = Math.min(licenceExpiry.rank, insuranceExpiry.rank);
+  const queueAgeHours = getQueueAgeHours(carrier.verificationSubmittedAt);
+  const queueAgeLabel =
+    queueAgeHours === null
+      ? "Submission time unavailable"
+      : queueAgeHours >= 24
+        ? `Submitted ${Math.floor(queueAgeHours / 24)}d ago`
+        : `Submitted ${queueAgeHours}h ago`;
+  const isQueueStale = queueAgeHours !== null && queueAgeHours >= 48;
   const handleNotesChange = useCallback(
     (value: string) => onNotesChange(carrier.id, value),
     [carrier.id, onNotesChange],
@@ -272,6 +294,23 @@ function QueueCard({
             </div>
           </div>
 
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge
+              className={
+                isQueueStale
+                  ? "border-warning/30 bg-warning/10 text-warning"
+                  : "border-border bg-black/[0.03] text-text-secondary dark:bg-white/[0.04]"
+              }
+            >
+              {queueAgeLabel}
+            </Badge>
+            {isQueueStale ? (
+              <Badge className="border-error/30 bg-error/10 text-error">
+                Waiting more than 48h
+              </Badge>
+            ) : null}
+          </div>
+
           {carrier.bio ? <p className="text-sm text-text">{carrier.bio}</p> : null}
 
           <div className="grid gap-2 sm:grid-cols-2">
@@ -319,6 +358,7 @@ function QueueCard({
               <p className="mt-2 text-sm text-text">
                 {formatSubmittedAt(carrier.verificationSubmittedAt)}
               </p>
+              <p className="mt-1 text-sm text-text-secondary">{queueAgeLabel}</p>
             </div>
             <div className="rounded-xl border border-border px-3 py-3">
               <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">

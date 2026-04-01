@@ -18,8 +18,22 @@ interface TripCardProps {
   href?: string;
 }
 
+const VEHICLE_TYPE_LABELS: Record<Trip["vehicle"]["type"], string> = {
+  van: "Van",
+  ute: "Ute",
+  small_truck: "Small truck",
+  large_truck: "Large truck",
+  trailer: "Trailer",
+};
+
 export function TripCard({ trip, href }: TripCardProps) {
   const capacityIndicator = getCapacityIndicator(trip.remainingCapacityPct);
+  const isFullyBooked = trip.remainingCapacityPct <= 0 || trip.status === "booked_full";
+  const searchHref = `/search?${new URLSearchParams({
+    from: trip.route.originSuburb,
+    to: trip.route.destinationSuburb,
+  }).toString()}`;
+  const cardHref = isFullyBooked ? searchHref : href;
 
   const content = (
     <Card className="p-4">
@@ -37,7 +51,7 @@ export function TripCard({ trip, href }: TripCardProps) {
                   Verified
                 </span>
               ) : null}
-              <Badge>{trip.vehicle.type}</Badge>
+              <Badge>{VEHICLE_TYPE_LABELS[trip.vehicle.type]}</Badge>
               {trip.isReturnTrip ? (
                 <Badge className="border-success/20 bg-success/10 text-success">
                   Return trip
@@ -60,18 +74,29 @@ export function TripCard({ trip, href }: TripCardProps) {
             <TimeBar timeWindow={trip.timeWindow} />
             <div className="flex flex-wrap items-center gap-2 text-sm text-text-secondary">
               <span>{formatDate(trip.tripDate)}</span>
-              <span>
-                Space {SPACE_SIZE_LABELS[trip.spaceSize]}
-              </span>
-              <span>Detour {trip.detourRadiusKm}km</span>
+              <span>Space {SPACE_SIZE_LABELS[trip.spaceSize]}</span>
+              <span>Picks up within {trip.detourRadiusKm}km of the route</span>
             </div>
-            <p className="text-sm text-text-secondary">{SPACE_SIZE_DESCRIPTIONS[trip.spaceSize]}</p>
-            <p className="text-sm text-text-secondary">
-              Best for {trip.rules.accepts.map((item) => ITEM_CATEGORY_LABELS[item]).join(", ").toLowerCase()}.
-            </p>
+            <div className="hidden space-y-2 sm:block">
+              <p className="text-sm text-text-secondary">{SPACE_SIZE_DESCRIPTIONS[trip.spaceSize]}</p>
+              <p className="text-sm text-text-secondary">
+                Best for {trip.rules.accepts.map((item) => ITEM_CATEGORY_LABELS[item]).join(", ").toLowerCase()}.
+              </p>
+            </div>
+            <details className="sm:hidden">
+              <summary className="inline-flex min-h-[44px] cursor-pointer items-center text-sm font-medium text-accent">
+                More info
+              </summary>
+              <div className="space-y-2 pb-1">
+                <p className="text-sm text-text-secondary">{SPACE_SIZE_DESCRIPTIONS[trip.spaceSize]}</p>
+                <p className="text-sm text-text-secondary">
+                  Best for {trip.rules.accepts.map((item) => ITEM_CATEGORY_LABELS[item]).join(", ").toLowerCase()}.
+                </p>
+              </div>
+            </details>
             {trip.isReturnTrip ? (
               <p className="text-sm font-medium text-success">
-                Backload pricing usually means a bigger saving than booking a dedicated van.
+                Return trips often cost less because the carrier is already coming back.
               </p>
             ) : null}
           </div>
@@ -99,18 +124,18 @@ export function TripCard({ trip, href }: TripCardProps) {
       </div>
       <div className="mt-4 flex items-center justify-end">
         <span className="inline-flex min-h-[44px] items-center rounded-xl bg-accent px-4 text-sm font-medium text-white active:bg-[#0047b3]">
-          Book into this trip
+          {isFullyBooked ? "Fully booked - see similar trips" : "Book into this trip"}
         </span>
       </div>
     </Card>
   );
 
-  if (!href) {
+  if (!cardHref) {
     return content;
   }
 
   return (
-    <Link href={href} className="group block active:opacity-95">
+    <Link href={cardHref} className="group block active:opacity-95">
       {content}
     </Link>
   );

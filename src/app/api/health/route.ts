@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Redis } from "@upstash/redis";
 
 import requiredProductionEnv from "../../../../config/required-production-env.json";
 import { getStripeServerClient } from "@/lib/stripe/client";
@@ -8,9 +9,10 @@ import { hasStripeEnv, hasSupabaseAdminEnv, hasSupabaseEnv } from "@/lib/env";
 
 export async function GET() {
   const missingEnv = (requiredProductionEnv as string[]).filter((key) => !process.env[key]);
-  const envStatus: "ok" | "error" = missingEnv.length === 0 ? "ok" : "error";
-  let dbStatus: "ok" | "error" = "error";
-  let stripeStatus: "configured" | "missing" | "error" = hasStripeEnv() ? "configured" : "missing";
+  const envStatus: "ok" | "degraded" = missingEnv.length === 0 ? "ok" : "degraded";
+  let supabaseStatus: "ok" | "degraded" = "degraded";
+  let stripeStatus: "ok" | "degraded" = "degraded";
+  let redisStatus: "ok" | "degraded" = "degraded";
   const timestamp = new Date().toISOString();
 
   if (hasSupabaseEnv()) {
@@ -24,7 +26,7 @@ export async function GET() {
       .limit(1);
 
     if (!error) {
-      dbStatus = "ok";
+      supabaseStatus = "ok";
     }
   }
 
@@ -32,29 +34,49 @@ export async function GET() {
     try {
       const stripe = getStripeServerClient();
       await stripe.balance.retrieve();
-      stripeStatus = "configured";
+      stripeStatus = "ok";
     } catch {
-      stripeStatus = "error";
+      stripeStatus = "degraded";
+    }
+  }
+
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    try {
+      const redis = Redis.fromEnv();
+      await redis.get("__moverrr_healthcheck__");
+      redisStatus = "ok";
+    } catch {
+      redisStatus = "degraded";
     }
   }
 
   const failing = [
-    envStatus === "error" ? "env" : null,
-    dbStatus === "error" ? "db" : null,
-    stripeStatus === "error" ? "stripe" : null,
-    stripeStatus === "missing" ? "stripe" : null,
+    envStatus === "degraded" ? "env" : null,
+    supabaseStatus === "degraded" ? "supabase" : null,
+    stripeStatus === "degraded" ? "stripe" : null,
+    redisStatus === "degraded" ? "redis" : null,
   ].filter(Boolean);
+  const overall = failing.length === 0 ? "ok" : "degraded";
 
   return NextResponse.json(
     {
-      env: envStatus,
-      db: dbStatus,
+      overall,
+      supabase: supabaseStatus,
       stripe: stripeStatus,
+      redis: redisStatus,
+      components: {
+        env: envStatus,
+        supabase: supabaseStatus,
+        stripe: stripeStatus,
+        redis: redisStatus,
+      },
+      env: envStatus,
+      db: supabaseStatus,
       timestamp,
       failing,
-      status: failing.length === 0 ? "ok" : "degraded",
+      status: overall,
       missingEnv,
     },
-    { status: failing.length === 0 ? 200 : 503 },
+    { status: overall === "ok" ? 200 : 503 },
   );
 }

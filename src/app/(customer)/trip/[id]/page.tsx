@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BookingCheckoutPanel } from "@/components/booking/booking-checkout-panel";
@@ -9,6 +10,10 @@ import { Card } from "@/components/ui/card";
 import { TripDetailSummary } from "@/components/trip/trip-detail-summary";
 import { getOptionalSessionUser } from "@/lib/auth";
 import { getTripById } from "@/lib/data/trips";
+
+function getSearchValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
 
 export async function generateMetadata({
   params,
@@ -45,8 +50,10 @@ export async function generateMetadata({
 
 export default async function TripDetailPage({
   params,
+  searchParams,
 }: {
   params: { id: string };
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const [trip, user] = await Promise.all([
     getTripById(params.id),
@@ -57,8 +64,29 @@ export default async function TripDetailPage({
     notFound();
   }
 
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const searchFrom = getSearchValue(resolvedSearchParams.from);
+  const searchTo = getSearchValue(resolvedSearchParams.to);
+  const searchWhen = getSearchValue(resolvedSearchParams.when);
+  const searchWhat = getSearchValue(resolvedSearchParams.what);
+  const searchSort = getSearchValue(resolvedSearchParams.sort);
+  const searchBackload = getSearchValue(resolvedSearchParams.backload);
   const price = `$${Math.round(trip.priceCents / 100)}`;
   const savingsCents = Math.max(0, trip.dedicatedEstimateCents - trip.priceCents);
+  const isBookable = trip.remainingCapacityPct > 0 && trip.status !== "booked_full";
+  const backHref = `/search?${new URLSearchParams({
+    from: searchFrom || trip.route.originSuburb,
+    to: searchTo || trip.route.destinationSuburb,
+    when: searchWhen || trip.tripDate,
+    ...(searchWhat ? { what: searchWhat } : {}),
+    ...(searchSort ? { sort: searchSort } : {}),
+    ...(searchBackload ? { backload: searchBackload } : {}),
+  }).toString()}`;
+  const similarTripsHref = `/search?${new URLSearchParams({
+    from: trip.route.originSuburb,
+    to: trip.route.destinationSuburb,
+    when: trip.tripDate,
+  }).toString()}`;
 
   return (
     <main id="main-content" className="page-shell pb-28 lg:pb-0">
@@ -66,13 +94,42 @@ export default async function TripDetailPage({
         eyebrow="Trip detail"
         title="Confirm fit, then book into the trip"
         description="The booking flow stays transactional: route, price, item details, addresses, payment."
+        actions={
+          <Link href={backHref} className="inline-flex min-h-[44px] items-center text-sm font-medium text-accent">
+            Back to results
+          </Link>
+        }
       />
 
       <TripDetailSummary trip={trip} />
-      <StickyBookingCta priceCents={trip.priceCents} savingsCents={savingsCents} />
+      <StickyBookingCta
+        priceCents={trip.priceCents}
+        savingsCents={savingsCents}
+        savingsNote="Add-ons can change the final total."
+        isBookable={isBookable}
+        href={isBookable ? "#booking-form" : similarTripsHref}
+      />
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <BookingCheckoutPanel trip={trip} isAuthenticated={Boolean(user)} />
+        {isBookable ? (
+          <BookingCheckoutPanel trip={trip} isAuthenticated={Boolean(user)} />
+        ) : (
+          <Card className="p-4">
+            <p className="section-label">Trip availability</p>
+            <h2 className="mt-1 text-lg text-text">This trip is fully booked</h2>
+            <p className="mt-2 text-sm text-text-secondary">
+              The carrier has no spare capacity left on this run. Browse similar trips on the same corridor instead of starting a booking that cannot be completed.
+            </p>
+            <div className="mt-4">
+              <Link
+                href={similarTripsHref}
+                className="inline-flex min-h-[44px] items-center rounded-xl bg-accent px-4 text-sm font-medium text-white active:opacity-80"
+              >
+                See similar trips
+              </Link>
+            </div>
+          </Card>
+        )}
 
         <div className="space-y-4">
           <Card className="p-4">

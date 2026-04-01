@@ -1,23 +1,79 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { PageIntro } from "@/components/layout/page-intro";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { SaveSearchForm } from "@/components/search/save-search-form";
 import { SearchBar } from "@/components/search/search-bar";
+import { SearchRefineButton } from "@/components/search/search-refine-button";
 import { SearchResultsSkeleton } from "@/components/search/search-results-skeleton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getOptionalSessionUser } from "@/lib/auth";
 import { TripCard } from "@/components/trip/trip-card";
 import { searchTrips } from "@/lib/data/trips";
-import { getDateOffsetIso } from "@/lib/utils";
+import { formatDate, formatLongDate, getDateOffsetIso, getTodayIsoDate } from "@/lib/utils";
 import type { ItemCategory } from "@/types/trip";
 
 type SearchSort = "date" | "price" | "rating";
 
+function buildSearchCanonical({
+  from,
+  to,
+  what,
+  backload,
+}: {
+  from: string;
+  to: string;
+  what: ItemCategory;
+  backload: boolean;
+}) {
+  const params = new URLSearchParams();
+
+  if (from.trim()) {
+    params.set("from", from.trim());
+  }
+
+  if (to.trim()) {
+    params.set("to", to.trim());
+  }
+
+  if (what && what !== "furniture") {
+    params.set("what", what);
+  }
+
+  if (backload) {
+    params.set("backload", "1");
+  }
+
+  const query = params.toString();
+  return query ? `/search?${query}` : "/search";
+}
+
 function getValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+function buildTripDetailHref(params: {
+  tripId: string;
+  from: string;
+  to: string;
+  when?: string;
+  what: ItemCategory;
+  backload: boolean;
+  sort: SearchSort;
+}) {
+  const query = new URLSearchParams({
+    from: params.from,
+    to: params.to,
+    ...(params.when ? { when: params.when } : {}),
+    ...(params.what ? { what: params.what } : {}),
+    ...(params.backload ? { backload: "1" } : {}),
+    ...(params.sort !== "date" ? { sort: params.sort } : {}),
+  }).toString();
+
+  return `/trip/${params.tripId}${query ? `?${query}` : ""}`;
 }
 
 function sortResults<T extends { tripDate: string; priceCents: number; carrier: { averageRating: number; ratingCount: number } }>(
@@ -96,19 +152,21 @@ async function SearchResultsSection({
     searchResponse.nearbyDateOptions.length > 0
       ? searchResponse.nearbyDateOptions
       : when
-        ? [-3, -2, -1, 1, 2, 3].map((offset) => getDateOffsetIso(when, offset))
+        ? [-3, -2, -1, 1, 2, 3]
+            .map((offset) => getDateOffsetIso(when, offset))
+            .filter((date) => date >= getTodayIsoDate())
         : [];
+  const resultSummary = `${sortedResults.length} trips for ${from} to ${to}${
+    when ? ` on ${formatLongDate(when)}` : ""
+  }.`;
 
   return (
-    <div className="flex flex-col gap-2">
-      <p className="text-sm text-text-secondary">
-        {sortedResults.length} trips for {from} to {to}
-        {when ? ` on ${when}` : ""}.
-      </p>
+    <div id="search-results" className="flex flex-col gap-2">
+      <p className="text-sm text-text-secondary">{resultSummary}</p>
       {!searchResponse.geocodingAvailable ? (
         <div className="rounded-xl border border-warning/20 bg-warning/10 p-3 text-sm text-text">
-          We hit a location lookup issue for this search, so these results use suburb matching
-          instead of route distance.
+          Showing results near these suburbs. They may include nearby areas when route-distance
+          lookup is unavailable.
         </div>
       ) : null}
       {searchResponse.fallbackUsed || sortedResults.length === 0 ? (
@@ -132,7 +190,7 @@ async function SearchResultsSection({
                 }).toString()}`}
                 className="inline-flex min-h-[44px] items-center rounded-xl border border-border px-3 py-2 text-sm font-medium text-text active:bg-black/[0.04] dark:active:bg-white/[0.08]"
               >
-                {date}
+                {formatDate(date)}
               </Link>
             ))}
           </div>
@@ -141,7 +199,19 @@ async function SearchResultsSection({
       {sortedResults.length > 0 ? (
         <div className="grid gap-4">
           {sortedResults.map((trip) => (
-            <TripCard key={trip.id} trip={trip} href={`/trip/${trip.id}`} />
+            <TripCard
+              key={trip.id}
+              trip={trip}
+              href={buildTripDetailHref({
+                tripId: trip.id,
+                from,
+                to,
+                when,
+                what,
+                backload,
+                sort,
+              })}
+            />
           ))}
         </div>
       ) : (
@@ -223,18 +293,13 @@ export default async function SearchPage({
         eyebrow="Browse & book"
         title="Search matching trips"
         description="Browse-first means customers see live listings first, with waitlist capture only when supply is missing."
-        actions={
-          <Link href="/" className="text-sm font-medium text-accent">
-            Back to landing
-          </Link>
-        }
       />
 
       <SearchBar
         defaults={{
           from,
           to,
-          when: when ?? "",
+          when: when ?? getTodayIsoDate(),
           what,
           backload,
           sort,
@@ -255,6 +320,38 @@ export default async function SearchPage({
           />
         </Suspense>
       </ErrorBoundary>
+
+      {from || to || when ? <SearchRefineButton /> : null}
     </main>
   );
+}
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const from = getValue(params.from);
+  const to = getValue(params.to);
+  const what = (getValue(params.what) || "furniture") as ItemCategory;
+  const backload = getValue(params.backload) === "1";
+  const canonical = buildSearchCanonical({ from, to, what, backload });
+
+  if (!from && !to) {
+    return {
+      title: "Search trips",
+      description: "Browse live spare-capacity trips across Sydney by route, date, and item type.",
+      alternates: { canonical },
+    };
+  }
+
+  const routeLabel = [from, to].filter(Boolean).join(" to ");
+  const categoryLabel = what === "furniture" ? "moves" : `${what} moves`;
+
+  return {
+    title: `${routeLabel} ${categoryLabel}`,
+    description: `Browse live spare-capacity trips for ${routeLabel} on moverrr and compare transparent route-first pricing.`,
+    alternates: { canonical },
+  };
 }

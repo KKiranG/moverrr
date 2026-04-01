@@ -125,7 +125,7 @@ export default async function BookingDetailPage({
                 <p className="text-sm text-text-secondary">Phone</p>
                 <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
                   <p className="text-sm text-text">{booking.carrierPhone}</p>
-                  <Button asChild variant="secondary">
+                  <Button asChild variant="secondary" className="min-h-[44px]">
                     <a href={`tel:${booking.carrierPhone}`}>Call carrier</a>
                   </Button>
                 </div>
@@ -147,13 +147,13 @@ export default async function BookingDetailPage({
                 bucket={PRIVATE_BUCKETS.proofPhotos}
                 path={booking.pickupProofPhotoUrl}
                 title="Pickup proof"
-                subtitle={pickupProofAt ? `Uploaded after ${formatDateTime(pickupProofAt)}` : undefined}
+                subtitle={pickupProofAt ? `Uploaded at ${formatDateTime(pickupProofAt)}` : undefined}
               />
               <PrivateProofTile
                 bucket={PRIVATE_BUCKETS.proofPhotos}
                 path={booking.deliveryProofPhotoUrl}
                 title="Delivery proof"
-                subtitle={deliveredAt ? `Uploaded ${formatDateTime(deliveredAt)}` : undefined}
+                subtitle={deliveredAt ? `Uploaded at ${formatDateTime(deliveredAt)}` : undefined}
               />
             </div>
           </div>

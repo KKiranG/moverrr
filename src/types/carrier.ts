@@ -13,6 +13,7 @@ export type VehicleType =
 
 export interface CarrierProfile {
   id: string;
+  userId: string;
   businessName: string;
   contactName: string;
   phone: string;

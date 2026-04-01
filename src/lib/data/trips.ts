@@ -53,6 +53,7 @@ async function queryTripsByDateWindow(params: {
   const query = getJoinedTripsQuery()
     .in("status", ["active", "booked_partial"])
     .lte("publish_at", new Date().toISOString())
+    .gte("trip_date", getTodayIsoDate())
     .in("trip_date", params.dates)
     .ilike("origin_suburb", `%${params.from}%`)
     .ilike("destination_suburb", `%${params.to}%`)
@@ -88,7 +89,7 @@ async function queryTripsByDateWindow(params: {
   }
 
   return ((data ?? []) as unknown as ListingJoinedRecord[]).map((record) =>
-    toTripSearchResult(toTrip(record), 42),
+    toTripSearchResult(toTrip(record), 0),
   );
 }
 
@@ -169,6 +170,7 @@ async function cachedTextSearch(
     const query = getJoinedTripsQuery()
       .in("status", ["active", "booked_partial"])
       .lte("publish_at", new Date().toISOString())
+      .gte("trip_date", getTodayIsoDate())
       .ilike("origin_suburb", `%${from}%`)
       .ilike("destination_suburb", `%${to}%`)
       .order("trip_date", { ascending: true })
@@ -205,7 +207,7 @@ async function cachedTextSearch(
     }
 
     return ((data ?? []) as unknown as ListingJoinedRecord[])
-      .map((record) => toTripSearchResult(toTrip(record), 50));
+      .map((record) => toTripSearchResult(toTrip(record), 0));
   },
     [
       "trip-text-search",
@@ -232,7 +234,9 @@ export async function searchTrips(input: TripSearchInput) {
 
   const geocoded = await geocodeSearchInput(input);
   const nearbyDates = input.when
-    ? [-3, -2, -1, 1, 2, 3].map((offset) => getDateOffsetIso(input.when!, offset))
+    ? [-3, -2, -1, 1, 2, 3]
+        .map((offset) => getDateOffsetIso(input.when!, offset))
+        .filter((date) => date >= getTodayIsoDate())
     : [];
 
   if (!geocoded) {

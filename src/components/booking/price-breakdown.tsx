@@ -69,6 +69,16 @@ export function PriceBreakdown({
             You save {formatCurrency(savings)} on this route-fit booking.
           </p>
         ) : null}
+        {!needsStairs && stairsExtraCents > 0 ? (
+          <p className="text-sm text-text-secondary">
+            Available: stairs support ({formatCurrency(stairsExtraCents)}).
+          </p>
+        ) : null}
+        {!needsHelper && helperExtraCents > 0 ? (
+          <p className="text-sm text-text-secondary">
+            Available: helper ({formatCurrency(helperExtraCents)}).
+          </p>
+        ) : null}
       </div>
     </Card>
   );

@@ -8,18 +8,16 @@ import { Button } from "@/components/ui/button";
 import { FileSelectionPreview } from "@/components/ui/file-selection-preview";
 import { Textarea } from "@/components/ui/textarea";
 import { BOOKING_CANCELLATION_REASONS } from "@/lib/constants";
+import { ALLOWED_BOOKING_TRANSITIONS } from "@/lib/status-machine";
 import type { BookingStatus } from "@/types/booking";
 
-const transitions: Record<BookingStatus, BookingStatus[]> = {
-  pending: ["confirmed", "cancelled"],
-  confirmed: ["picked_up", "cancelled"],
-  picked_up: ["in_transit", "delivered"],
-  in_transit: ["delivered"],
-  delivered: [],
-  completed: [],
-  cancelled: [],
-  disputed: [],
-};
+const CARRIER_MANAGED_TRANSITIONS = new Set<BookingStatus>([
+  "confirmed",
+  "cancelled",
+  "picked_up",
+  "in_transit",
+  "delivered",
+]);
 
 export function StatusUpdateActions({
   bookingId,
@@ -35,6 +33,7 @@ export function StatusUpdateActions({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmCancellation, setConfirmCancellation] = useState(false);
 
   useEffect(() => {
     if (!proofFile || !proofFile.type.startsWith("image/")) {
@@ -113,6 +112,7 @@ export function StatusUpdateActions({
         throw new Error(payload.error ?? "Unable to update booking status.");
       }
 
+      setConfirmCancellation(false);
       router.refresh();
     } catch (caught) {
       setError(
@@ -123,13 +123,17 @@ export function StatusUpdateActions({
     }
   }
 
-  if (transitions[currentStatus].length === 0) {
+  const transitions = (ALLOWED_BOOKING_TRANSITIONS[currentStatus] ?? []).filter((status) =>
+    CARRIER_MANAGED_TRANSITIONS.has(status),
+  );
+
+  if (transitions.length === 0) {
     return null;
   }
 
   return (
     <div className="space-y-2">
-      {transitions[currentStatus].some((status) => status === "picked_up" || status === "delivered") ? (
+      {transitions.some((status) => status === "picked_up" || status === "delivered") ? (
         <div className="space-y-2">
           <div className="flex flex-col gap-3 sm:flex-row">
             <label className="flex min-h-[44px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-accent px-4 text-sm font-medium text-white active:opacity-80">
@@ -164,7 +168,7 @@ export function StatusUpdateActions({
           ) : null}
         </div>
       ) : null}
-      {transitions[currentStatus].includes("cancelled") ? (
+      {transitions.includes("cancelled") ? (
         <div className="space-y-2">
           <select
             value={cancellationReasonCode}
@@ -182,16 +186,55 @@ export function StatusUpdateActions({
             onChange={(event) => setCancellationReason(event.target.value)}
             placeholder="Add optional context for ops and the customer."
           />
+          {confirmCancellation ? (
+            <div className="rounded-xl border border-warning/20 bg-warning/10 p-3 text-sm text-text">
+              <p className="font-medium text-warning">Cancel this booking?</p>
+              <p className="mt-1 text-text-secondary">
+                This action is immediate and cannot be undone from the carrier dashboard.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={isSubmitting}
+                  onClick={() => setConfirmCancellation(false)}
+                >
+                  Keep booking
+                </Button>
+                <Button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => void update("cancelled")}
+                >
+                  Confirm cancellation
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
       <div className="flex flex-wrap gap-2">
-        {transitions[currentStatus].map((status) => (
+        {transitions.map((status) => (
           <Button
             key={status}
             type="button"
             variant={status === "cancelled" ? "secondary" : "primary"}
             disabled={isSubmitting}
-            onClick={() => update(status)}
+            onClick={() => {
+              if (status === "cancelled") {
+                if (!cancellationReason.trim()) {
+                  setError("Add a short cancellation reason for audit history.");
+                  return;
+                }
+
+                setError(null);
+                setConfirmCancellation(true);
+                return;
+              }
+
+              setConfirmCancellation(false);
+              void update(status);
+            }}
           >
             {status.replace("_", " ")}
           </Button>

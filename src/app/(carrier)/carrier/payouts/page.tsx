@@ -10,6 +10,9 @@ import { formatCurrency } from "@/lib/utils";
 export default async function CarrierPayoutsPage() {
   const user = await requirePageSessionUser();
   const dashboard = await getCarrierPayoutDashboard(user.id);
+  const currentMonthKey = new Date().toISOString().slice(0, 7);
+  const releasedThisMonthCents =
+    dashboard.historyByMonth.find((entry) => entry.month === currentMonthKey)?.releasedCents ?? 0;
 
   return (
     <main id="main-content" className="page-shell">
@@ -47,7 +50,7 @@ export default async function CarrierPayoutsPage() {
         <Card className="p-4">
           <p className="section-label">Released this month</p>
           <p className="mt-1 text-sm text-text-secondary">Payouts captured or released in the current history window.</p>
-          <p className="mt-2 text-3xl text-text">{dashboard.historyByMonth.length}</p>
+          <p className="mt-2 text-3xl text-text">{formatCurrency(releasedThisMonthCents)}</p>
         </Card>
       </div>
 

@@ -1,24 +1,87 @@
+import Link from "next/link";
+
 import { AdminBookingSupportPanel } from "@/components/admin/admin-booking-support-panel";
 import { AdminPagination } from "@/components/admin/admin-pagination";
 import { requirePageAdminUser } from "@/lib/auth";
 import { ADMIN_PAGE_SIZE } from "@/lib/constants";
 import { getBookingPaymentStateSummary } from "@/lib/booking-presenters";
-import { listAdminBookings } from "@/lib/data/bookings";
+import { listAdminBookingsPageData } from "@/lib/data/bookings";
 import { PageIntro } from "@/components/layout/page-intro";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import type { BookingPaymentStatus } from "@/types/booking";
+
+const PAYMENT_STATUS_OPTIONS = [
+  { value: "pending", label: "Pending" },
+  { value: "authorized", label: "Authorized" },
+  { value: "captured", label: "Captured" },
+  { value: "capture_failed", label: "Capture failed" },
+  { value: "refunded", label: "Refunded" },
+  { value: "failed", label: "Failed" },
+  { value: "authorization_cancelled", label: "Auth cancelled" },
+] as const satisfies ReadonlyArray<{
+  value: BookingPaymentStatus;
+  label: string;
+}>;
+
+function buildAdminBookingsHref(params: {
+  query?: string;
+  page?: number;
+  paymentStatus?: BookingPaymentStatus;
+}) {
+  const searchParams = new URLSearchParams();
+
+  if (params.query?.trim()) {
+    searchParams.set("q", params.query.trim());
+  }
+
+  if (params.page && params.page > 1) {
+    searchParams.set("page", String(params.page));
+  }
+
+  if (params.paymentStatus) {
+    searchParams.set("paymentStatus", params.paymentStatus);
+  }
+
+  const query = searchParams.toString();
+  return query ? `/admin/bookings?${query}` : "/admin/bookings";
+}
 
 export default async function AdminBookingsPage({
   searchParams,
 }: {
-  searchParams?: { q?: string; page?: string };
+  searchParams?: { q?: string; page?: string; paymentStatus?: string };
 }) {
   await requirePageAdminUser();
   const query = searchParams?.q?.trim() ?? "";
   const page = Math.max(1, Number(searchParams?.page ?? "1") || 1);
-  const bookings = await listAdminBookings({ query, page, pageSize: ADMIN_PAGE_SIZE });
-  const hasNext = bookings.length === ADMIN_PAGE_SIZE;
+  const paymentStatus = PAYMENT_STATUS_OPTIONS.some(
+    (option) => option.value === searchParams?.paymentStatus,
+  )
+    ? (searchParams?.paymentStatus as BookingPaymentStatus)
+    : undefined;
+  const { bookings, totalCount, paymentCounts } = await listAdminBookingsPageData({
+    query,
+    page,
+    pageSize: ADMIN_PAGE_SIZE,
+    paymentStatus,
+  });
+  const hasNext = page * ADMIN_PAGE_SIZE < totalCount;
+  const paymentFilterCards = [
+    {
+      href: buildAdminBookingsHref({ query }),
+      label: "All payments",
+      count: totalCount,
+      active: !paymentStatus,
+    },
+    ...PAYMENT_STATUS_OPTIONS.map((option) => ({
+      href: buildAdminBookingsHref({ query, paymentStatus: option.value }),
+      label: option.label,
+      count: paymentCounts[option.value],
+      active: paymentStatus === option.value,
+    })),
+  ];
 
   return (
     <main id="main-content" className="page-shell">
@@ -29,10 +92,42 @@ export default async function AdminBookingsPage({
       />
 
       <div className="grid gap-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {paymentFilterCards.map((card) => (
+            <Link
+              key={card.label}
+              href={card.href}
+              className={`rounded-2xl border p-4 transition-colors active:bg-black/[0.04] dark:active:bg-white/[0.08] ${
+                card.active
+                  ? "border-accent bg-accent/10 text-accent"
+                  : "border-border bg-surface text-text"
+              }`}
+            >
+              <p className="section-label">{card.label}</p>
+              <p className="mt-2 text-3xl">{card.count}</p>
+            </Link>
+          ))}
+        </div>
+
         <form className="grid gap-2 sm:max-w-md" method="get">
           <label className="grid gap-2">
             <span className="text-sm font-medium text-text">Find by booking reference</span>
             <Input name="q" defaultValue={query} placeholder="MVR-2026-0421" />
+          </label>
+          <label className="grid gap-2">
+            <span className="text-sm font-medium text-text">Payment state</span>
+            <select
+              name="paymentStatus"
+              defaultValue={paymentStatus ?? ""}
+              className="h-11 rounded-xl border border-border bg-surface px-3 text-sm text-text"
+            >
+              <option value="">All payment states</option>
+              {PAYMENT_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </label>
           <input type="hidden" name="page" value="1" />
           <Button type="submit" className="sm:w-fit">
@@ -79,7 +174,13 @@ export default async function AdminBookingsPage({
             </p>
           </Card>
         ) : null}
-        <AdminPagination basePath="/admin/bookings" page={page} hasNext={hasNext} query={query} />
+        <AdminPagination
+          basePath="/admin/bookings"
+          page={page}
+          hasNext={hasNext}
+          query={query}
+          params={{ paymentStatus }}
+        />
       </div>
     </main>
   );

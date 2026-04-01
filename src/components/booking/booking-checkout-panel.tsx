@@ -58,6 +58,28 @@ export function BookingCheckoutPanel({
         )}
       </Card>
 
+      <Card className="p-4">
+        <details className="group">
+          <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 text-left [&::-webkit-details-marker]:hidden">
+            <div>
+              <p className="section-label">What happens next</p>
+              <h3 className="mt-1 text-lg text-text">Know the booking timeline before you pay</h3>
+            </div>
+            <span className="text-xs uppercase tracking-[0.18em] text-text-secondary group-open:hidden">
+              Open
+            </span>
+            <span className="hidden text-xs uppercase tracking-[0.18em] text-text-secondary group-open:block">
+              Close
+            </span>
+          </summary>
+          <div className="mt-3 space-y-2 text-sm text-text-secondary">
+            <p>1. The carrier confirms the booking, usually within 24 hours.</p>
+            <p>2. Pickup happens on the trip date during the listed time window.</p>
+            <p>3. You confirm receipt after delivery so payout can be released.</p>
+          </div>
+        </details>
+      </Card>
+
       <PriceBreakdown
         basePriceCents={trip.priceCents}
         needsStairs={needsStairs}

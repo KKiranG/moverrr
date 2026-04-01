@@ -7,15 +7,35 @@ import { getCarrierByUserId } from "@/lib/data/carriers";
 import { saveCarrierOnboarding } from "./actions";
 
 const steps = [
-  "Business profile and contact details",
-  "Vehicle registration and capacity",
-  "Licence and insurance upload",
-  "Manual admin approval before search visibility",
-];
+  {
+    label: "Business profile and contact details",
+    isComplete: (carrier: NonNullable<Awaited<ReturnType<typeof getCarrierByUserId>>>) =>
+      Boolean(carrier.businessName && carrier.contactName && carrier.phone && carrier.email),
+  },
+  {
+    label: "Vehicle registration and capacity",
+    isComplete: (carrier: NonNullable<Awaited<ReturnType<typeof getCarrierByUserId>>>) =>
+      Boolean(carrier.vehiclePhotoUrl),
+  },
+  {
+    label: "Licence and insurance upload",
+    isComplete: (carrier: NonNullable<Awaited<ReturnType<typeof getCarrierByUserId>>>) =>
+      Boolean(carrier.licencePhotoUrl && carrier.insurancePhotoUrl),
+  },
+  {
+    label: "Manual admin approval before search visibility",
+    isComplete: (carrier: NonNullable<Awaited<ReturnType<typeof getCarrierByUserId>>>) =>
+      carrier.verificationStatus === "verified",
+  },
+] as const;
 
 export default async function CarrierOnboardingPage() {
   const user = await requirePageSessionUser();
   const existingCarrier = await getCarrierByUserId(user.id);
+  const onboardingSteps = steps.map((step) => ({
+    label: step.label,
+    complete: existingCarrier ? step.isComplete(existingCarrier) : false,
+  }));
 
   return (
     <main id="main-content" className="page-shell">
@@ -31,10 +51,15 @@ export default async function CarrierOnboardingPage() {
         <div className="space-y-3">
           <p className="section-label">Steps</p>
           <div className="grid gap-2">
-            {steps.map((step, index) => (
-              <div key={step} className="rounded-xl border border-border px-3 py-2">
+            {onboardingSteps.map((step, index) => (
+              <div
+                key={step.label}
+                className={`rounded-xl border px-3 py-2 ${
+                  step.complete ? "border-success/30 bg-success/10" : "border-border"
+                }`}
+              >
                 <span className="text-sm text-text">
-                  {index + 1}. {step}
+                  {step.complete ? "✓" : index + 1}. {step.label}
                 </span>
               </div>
             ))}

@@ -21,12 +21,14 @@ export function AdminPagination({
   hasNext,
   query,
   label = "Page",
+  params,
 }: {
   basePath: string;
   page: number;
   hasNext: boolean;
   query?: string;
   label?: string;
+  params?: Record<string, string | number | undefined>;
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
@@ -40,12 +42,12 @@ export function AdminPagination({
           </Button>
         ) : (
           <Button asChild variant="secondary" size="sm" className="justify-start">
-            <Link href={buildHref(basePath, { q: query, page: page - 1 })}>Previous</Link>
+            <Link href={buildHref(basePath, { ...params, q: query, page: page - 1 })}>Previous</Link>
           </Button>
         )}
         {hasNext ? (
           <Button asChild variant="secondary" size="sm" className="justify-start">
-            <Link href={buildHref(basePath, { q: query, page: page + 1 })}>Next</Link>
+            <Link href={buildHref(basePath, { ...params, q: query, page: page + 1 })}>Next</Link>
           </Button>
         ) : (
           <Button variant="secondary" size="sm" disabled className="justify-start">

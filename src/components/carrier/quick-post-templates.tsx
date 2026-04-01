@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import type { TripTemplate } from "@/types/carrier";
 
 function getTomorrowIsoDate() {
@@ -106,6 +107,13 @@ export function QuickPostTemplates({
                     <p className="mt-1 text-sm text-text-secondary">
                       {template.originSuburb} to {template.destinationSuburb} · Space {template.spaceSize}
                     </p>
+                    <div className="mt-2 flex flex-wrap gap-3 text-xs text-text-secondary">
+                      <span>Last price {formatCurrency(template.suggestedPriceCents)}</span>
+                      <span>
+                        Last posted{" "}
+                        {template.lastUsedAt ? formatDate(template.lastUsedAt) : "Not posted yet"}
+                      </span>
+                    </div>
                   </div>
                   <Button
                     type="button"

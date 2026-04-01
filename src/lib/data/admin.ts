@@ -274,3 +274,28 @@ export async function getValidationMetrics(): Promise<ValidationMetric[]> {
     },
   ];
 }
+
+export async function getAdminDashboardData() {
+  if (!hasSupabaseAdminEnv()) {
+    return {
+      metrics: [] as ValidationMetric[],
+      lastUpdatedAt: null as string | null,
+    };
+  }
+
+  const supabase = createAdminClient();
+  const [{ data: latestEvent }, metrics] = await Promise.all([
+    supabase
+      .from("booking_events")
+      .select("created_at")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    getValidationMetrics(),
+  ]);
+
+  return {
+    metrics,
+    lastUpdatedAt: latestEvent?.created_at ?? new Date().toISOString(),
+  };
+}
