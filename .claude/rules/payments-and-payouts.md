@@ -15,6 +15,7 @@ Payments are a trust surface first.
 
 - customer authorization and carrier payout are different moments
 - capture should follow completion logic, not vibes
+- proof-pack requirements gate status and payout progression
 - payout holds must be explained clearly
 - refunds and cancellations need durable audit trails
 

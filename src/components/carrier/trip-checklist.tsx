@@ -2,6 +2,10 @@ import Link from "next/link";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  MANUAL_HANDLING_POLICY_LINES,
+  PROHIBITED_ITEM_POLICY_LINES,
+} from "@/lib/constants";
 import type { CarrierProfile } from "@/types/carrier";
 
 const items = [
@@ -9,7 +13,6 @@ const items = [
   "Keep detour tolerance honest so matches stay trustworthy.",
   "Respond to booking updates within 24 hours. Pending requests still expire in 2 hours.",
   "Keep all extras and payment changes on moverrr. Do not switch to cash or bank transfer.",
-  "Unsafe loads like asbestos, contaminated waste, and regulated disposal jobs are out of scope.",
   "Use pickup and delivery photos as proof before payout release.",
 ];
 
@@ -102,6 +105,22 @@ export function TripChecklist({ carrier }: { carrier?: CarrierProfile | null } =
             <li key={item}>{item}</li>
           ))}
         </ul>
+        <div className="rounded-xl border border-border bg-black/[0.02] p-3 dark:bg-white/[0.04]">
+          <p className="text-sm font-medium text-text">Unsafe loads stay out of scope</p>
+          <div className="mt-2 space-y-2 text-sm text-text-secondary">
+            {PROHIBITED_ITEM_POLICY_LINES.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-black/[0.02] p-3 dark:bg-white/[0.04]">
+          <p className="text-sm font-medium text-text">Manual-handling reminders</p>
+          <div className="mt-2 space-y-2 text-sm text-text-secondary">
+            {MANUAL_HANDLING_POLICY_LINES.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+          </div>
+        </div>
       </div>
     </Card>
   );

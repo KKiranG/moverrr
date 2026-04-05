@@ -16,6 +16,7 @@ Carrier growth is moverrr's primary flywheel.
 - repeat proven routes with minimal typing
 - surface weak-listing fixes clearly
 - keep ops expectations legible after publish
+- make today-level operational blockers obvious without drifting into dispatch
 
 ## Product Shape
 

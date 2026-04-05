@@ -10,7 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { GoogleAutocompleteInput } from "@/components/shared/google-autocomplete-input";
-import { ITEM_SIZE_DESCRIPTIONS } from "@/lib/constants";
+import {
+  ITEM_SIZE_DESCRIPTIONS,
+  MANUAL_HANDLING_POLICY_LINES,
+  PROHIBITED_ITEM_POLICY_LINES,
+} from "@/lib/constants";
 import { getBookingTrustIssues } from "@/lib/validation/booking";
 import type { Trip } from "@/types/trip";
 
@@ -94,6 +98,13 @@ export function BookingForm({
     ],
   );
   const blockingTrustIssues = trustIssues.filter((issue) => issue.severity === "blocking");
+  const warningTrustIssues = trustIssues.filter((issue) => issue.severity === "warning");
+  const helperWarning = warningTrustIssues.find(
+    (issue) => issue.code === "manual_handling_helper_recommended",
+  );
+  const accessWarning = warningTrustIssues.find(
+    (issue) => issue.code === "manual_handling_access_notes_missing",
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -456,6 +467,22 @@ export function BookingForm({
         </div>
       </div>
 
+      <div className="space-y-3 rounded-xl border border-border bg-black/[0.02] p-3 dark:bg-white/[0.04]">
+        <div>
+          <p className="text-sm font-medium text-text">Safety policy before you book</p>
+          <p className="mt-1 text-sm text-text-secondary">
+            moverrr is for ordinary spare-capacity moves, not specialist disposal or unsafe loads.
+          </p>
+        </div>
+        <div className="grid gap-2">
+          {PROHIBITED_ITEM_POLICY_LINES.map((line) => (
+            <p key={line} className="text-sm text-text-secondary">
+              {line}
+            </p>
+          ))}
+        </div>
+      </div>
+
       {trustIssues.length > 0 ? (
         <div
           className={`rounded-xl border p-3 ${
@@ -469,6 +496,11 @@ export function BookingForm({
               ? "Resolve these before you continue"
               : "Manual-handling and trust prompts"}
           </p>
+          {blockingTrustIssues.length > 0 ? (
+            <p className="mt-1 text-sm text-text-secondary">
+              Prohibited items stay blocked because they do not belong in moverrr&apos;s spare-capacity marketplace.
+            </p>
+          ) : null}
           <div className="mt-2 grid gap-2">
             {trustIssues.map((issue) => (
               <div
@@ -484,6 +516,15 @@ export function BookingForm({
               </div>
             ))}
           </div>
+          {warningTrustIssues.length > 0 ? (
+            <div className="mt-3 rounded-xl border border-border bg-background px-3 py-2 text-sm text-text-secondary">
+              {MANUAL_HANDLING_POLICY_LINES.map((line) => (
+                <p key={line} className="mt-1 first:mt-0">
+                  {line}
+                </p>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -570,6 +611,13 @@ export function BookingForm({
           onChange={(event) => setPickupAccessNotes(event.target.value)}
           placeholder="Stairs, loading dock, gate code"
         />
+        {accessWarning ? (
+          <span className="text-xs text-warning">{accessWarning.hint}</span>
+        ) : (
+          <span className="text-xs text-text-secondary">
+            Include stairs, lifts, loading docks, gate codes, parking difficulty, or long carries.
+          </span>
+        )}
       </label>
 
       <label className="flex flex-col gap-2">
@@ -622,6 +670,13 @@ export function BookingForm({
           onChange={(event) => setDropoffAccessNotes(event.target.value)}
           placeholder="Apartment access or delivery notes"
         />
+        {accessWarning ? (
+          <span className="text-xs text-warning">{accessWarning.hint}</span>
+        ) : (
+          <span className="text-xs text-text-secondary">
+            Include stairs, lifts, loading docks, gate codes, parking difficulty, or long carries.
+          </span>
+        )}
       </label>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -648,6 +703,13 @@ export function BookingForm({
             <option value="no">No</option>
             <option value="yes">Yes</option>
           </select>
+          {helperWarning ? (
+            <span className="text-xs text-warning">{helperWarning.hint}</span>
+          ) : (
+            <span className="text-xs text-text-secondary">
+              Use this when the item is bulky, awkward, or not safe for one-person handling.
+            </span>
+          )}
         </label>
       </div>
       {stairsUnsupported ? (
@@ -670,6 +732,18 @@ export function BookingForm({
         moverrr holds payment on-platform and only supports the listed add-ons. If anyone asks to
         switch to cash, bank transfer, or side-payment extras, stop and report it inside the
         booking.
+      </div>
+      <div className="rounded-xl border border-border bg-black/[0.02] p-3 text-sm text-text-secondary dark:bg-white/[0.04]">
+        <p className="font-medium text-text">Bulky or risky item reminder</p>
+        <div className="mt-1 grid gap-2">
+          <p>
+            If the item is heavy, awkward, or likely unsafe for one person, add helper and access
+            details now rather than leaving it for pickup day.
+          </p>
+          {MANUAL_HANDLING_POLICY_LINES.map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+        </div>
       </div>
       </fieldset>
 

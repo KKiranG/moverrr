@@ -1,10 +1,52 @@
 # moverrr — Completed Work Log
 
-> Last updated: `2026-04-02`
+> Last updated: `2026-04-05`
 >
 > Purpose: keep a durable record of what is already done, where it lives, why it was changed, and when it landed, so completed work can be removed from the active backlog without losing context.
 
 ---
+
+## 2026-04-05 — Frontier Block 2: Proof Packs, Safety Policy, Carrier Ops, and Automated Nudges
+
+### `COMP-2026-04-05-39` — Proof packs, exception logging, safety policy, payout-hold clarity, carrier today ops, trip health, and automated nudges
+- Moved from active backlog:
+  - `FRONTIER-UPGRADES-and-learnings.md` items `66`, `73`, `81`, `82`, `83`, `87`, `88`, `89`, `91`, and `92`
+- When: `2026-04-05`
+- Where:
+  - `src/app/(carrier)/carrier/dashboard/page.tsx`
+  - `src/app/(carrier)/carrier/payouts/page.tsx`
+  - `src/app/(carrier)/carrier/today/page.tsx`
+  - `src/app/(customer)/bookings/[id]/page.tsx`
+  - `src/app/api/bookings/[id]/route.ts`
+  - `src/app/api/bookings/[id]/exception/route.ts`
+  - `src/components/booking/booking-checkout-panel.tsx`
+  - `src/components/booking/booking-form.tsx`
+  - `src/components/booking/status-update-actions.tsx`
+  - `src/components/carrier/carrier-post-success-card.tsx`
+  - `src/components/carrier/trip-checklist.tsx`
+  - `src/components/trip/trip-detail-summary.tsx`
+  - `src/lib/constants.ts`
+  - `src/lib/data/bookings.ts`
+  - `src/lib/validation/booking.ts`
+  - `src/types/booking.ts`
+  - `src/types/carrier.ts`
+  - `supabase/functions/carrier-next-step-nudges/*`
+  - `src/lib/__tests__/booking-validation.test.ts`
+  - `src/lib/__tests__/carrier-today.test.ts`
+  - `src/lib/__tests__/booking-proof-flow.test.ts`
+  - `src/lib/__tests__/carrier-next-step-nudges.test.ts`
+- Why:
+  - The next trust layer for moverrr needed to make unsafe jobs explicit, operational proof requirements structured, payout blockers legible, and obvious carrier follow-up work visible before it becomes founder cleanup.
+- What changed:
+  - Added visible prohibited-item and regulated-waste policy across booking, checkout, trip detail, carrier checklist, and carrier post-publish guidance, while keeping manual-handling risks as warnings instead of blockers.
+  - Added a new `/carrier/today` surface plus deterministic trip-health scoring so carriers can see pending decisions, missing proof, customer-confirmation drag, and payout blockers in one operational view.
+  - Refined payout-hold explanations so every hold shows the amount, missing step, what happens next, and a direct call to the relevant carrier action.
+  - Reworked booking status updates to require structured pickup and delivery proof packs, store proof detail in `booking_events.metadata`, and keep the canonical proof-photo pointers on the `bookings` row.
+  - Added in-the-moment exception logging through `POST /api/bookings/[id]/exception`, with audit detail stored in `booking_events.metadata` and surfaced back into the customer booking timeline.
+  - Added a scheduled `carrier-next-step-nudges` edge function for pending-expiry, proof-stall, and payout-setup reminders, with graceful skip behavior when email config is missing and booking-event audit records for each outcome.
+- Verification:
+  - `npm run check`
+  - `npm run test`
 
 ## 2026-04-02 — Frontier Operating System, Trust Surfaces, and Verification Harnesses
 

@@ -4,7 +4,13 @@ import { BadgeCheck, Package2, ShieldCheck, Truck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { TimeBar } from "@/components/ui/time-bar";
-import { ITEM_CATEGORY_LABELS, SPACE_SIZE_DESCRIPTIONS, SPACE_SIZE_LABELS } from "@/lib/constants";
+import {
+  ITEM_CATEGORY_LABELS,
+  MANUAL_HANDLING_POLICY_LINES,
+  PROHIBITED_ITEM_POLICY_LINES,
+  SPACE_SIZE_DESCRIPTIONS,
+  SPACE_SIZE_LABELS,
+} from "@/lib/constants";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Trip } from "@/types/trip";
 
@@ -22,6 +28,7 @@ export function TripDetailSummary({ trip }: TripDetailSummaryProps) {
     "Packing materials or full-service removalist labour",
     "Dismantling, assembly, or surprise day-of-move extras",
     "Exact street address disclosure before booking is confirmed",
+    "Dangerous goods, asbestos, regulated disposal, or contaminated waste",
   ];
   const addOnItems = [
     trip.rules.stairsOk
@@ -162,6 +169,25 @@ export function TripDetailSummary({ trip }: TripDetailSummaryProps) {
               Exact street addresses stay hidden until booking is confirmed. You can see suburb and
               corridor fit now so you know whether this route makes sense before you pay.
             </p>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-border p-3">
+            <p className="section-label">Prohibited items</p>
+            <div className="mt-2 space-y-2 text-sm text-text-secondary">
+              {PROHIBITED_ITEM_POLICY_LINES.map((line) => (
+                <p key={line}>{line}</p>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-xl border border-border p-3">
+            <p className="section-label">Manual-handling prompts</p>
+            <div className="mt-2 space-y-2 text-sm text-text-secondary">
+              {MANUAL_HANDLING_POLICY_LINES.map((line) => (
+                <p key={line}>{line}</p>
+              ))}
+            </div>
           </div>
         </div>
 

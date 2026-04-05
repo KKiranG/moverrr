@@ -236,6 +236,18 @@ export const DISPUTE_CATEGORY_GUIDANCE = {
   },
 } as const;
 
+export const PROHIBITED_ITEM_POLICY_LINES = [
+  "Dangerous goods, hazardous chemicals, contaminated waste, and regulated disposal jobs are out of scope.",
+  "Asbestos, asbestos sheeting, and similar regulated waste need a licensed disposal path, not a spare-capacity trip.",
+  "If the item needs specialist removal or disposal compliance, do not try to force it through moverrr.",
+] as const;
+
+export const MANUAL_HANDLING_POLICY_LINES = [
+  "Heavy, awkward, or one-person-risky items should include helper and access detail before the booking moves forward.",
+  "Use access notes for stairs, lifts, loading docks, parking difficulty, long carries, or tight entry points.",
+  "If the item looks bulky for one person, treat that as a warning to tighten expectations before pickup day.",
+] as const;
+
 export const PRIVATE_BUCKETS = {
   carrierDocuments: "carrier-documents",
   vehiclePhotos: "vehicle-photos",

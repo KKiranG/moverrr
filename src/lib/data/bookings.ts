@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import Stripe from "stripe";
+import { z } from "zod";
 
 import { canTransitionBooking } from "@/lib/status-machine";
 import { hasSupabaseEnv, hasSupabaseAdminEnv } from "@/lib/env";
@@ -14,9 +15,118 @@ import { bookingSchema, type BookingInput } from "@/lib/validation/booking";
 import type { Database } from "@/types/database";
 import type {
   BookingCancellationReasonCode,
+  Booking,
+  BookingDeliveryProof,
+  BookingExceptionCode,
+  BookingPickupProof,
   BookingPaymentStatus,
 } from "@/types/booking";
+import type {
+  CarrierPayoutHold,
+  CarrierTodayAction,
+  CarrierTodaySnapshot,
+  CarrierTripHealth,
+} from "@/types/carrier";
 import { getConfirmedBookingChecklist } from "@/lib/booking-presenters";
+import { listCarrierTrips } from "@/lib/data/trips";
+import type { Trip } from "@/types/trip";
+
+const bookingProofConditionValues = [
+  "no_visible_damage",
+  "wear_noted",
+  "damage_noted",
+] as const;
+
+const bookingExceptionCodeValues = [
+  "none",
+  "damage",
+  "no_show",
+  "late",
+  "wrong_item",
+  "overcharge",
+  "other",
+] as const;
+
+const bookingExceptionReportCodeValues = [
+  "damage",
+  "no_show",
+  "late",
+  "wrong_item",
+  "overcharge",
+  "other",
+] as const;
+
+const pickupProofSchema = z.object({
+  photoUrl: z.string().min(1),
+  itemCount: z.number().int().min(1),
+  condition: z.enum(bookingProofConditionValues),
+  handoffConfirmed: z.literal(true),
+});
+
+const deliveryProofSchema = z
+  .object({
+    photoUrl: z.string().min(1),
+    recipientConfirmed: z.literal(true),
+    exceptionCode: z.enum(bookingExceptionCodeValues).optional(),
+    exceptionNote: z.string().trim().min(1).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.exceptionCode && value.exceptionCode !== "none" && !value.exceptionNote) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["exceptionNote"],
+        message: "Delivery proof needs an exception note when an issue is flagged.",
+      });
+    }
+  });
+
+const bookingExceptionSchema = z.object({
+  code: z.enum(bookingExceptionReportCodeValues),
+  note: z.string().trim().min(1),
+  photoUrls: z.array(z.string().min(1)).default([]),
+});
+
+function parsePickupProofForStatus(
+  nextStatus: Database["public"]["Tables"]["bookings"]["Row"]["status"],
+  proof?: BookingPickupProof,
+) {
+  if (nextStatus !== "picked_up") {
+    return undefined;
+  }
+
+  const parsed = pickupProofSchema.safeParse(proof);
+
+  if (!parsed.success) {
+    throw new AppError(
+      "Pickup proof needs a photo, item count, condition note, and handoff confirmation before pickup is marked complete.",
+      400,
+      "pickup_proof_required",
+    );
+  }
+
+  return parsed.data;
+}
+
+function parseDeliveryProofForStatus(
+  nextStatus: Database["public"]["Tables"]["bookings"]["Row"]["status"],
+  proof?: BookingDeliveryProof,
+) {
+  if (nextStatus !== "delivered") {
+    return undefined;
+  }
+
+  const parsed = deliveryProofSchema.safeParse(proof);
+
+  if (!parsed.success) {
+    throw new AppError(
+      "Delivery proof needs a photo, recipient confirmation, and any matching exception note before delivery is marked complete.",
+      400,
+      "delivery_proof_required",
+    );
+  }
+
+  return parsed.data;
+}
 
 async function getBookingRowByRole(params: {
   supabase: ReturnType<typeof createServerSupabaseClient>;
@@ -587,8 +697,8 @@ export async function updateBookingStatusForActor(params: {
   bookingId: string;
   nextStatus: Database["public"]["Tables"]["bookings"]["Row"]["status"];
   actorRole: "carrier" | "customer" | "admin";
-  pickupProofPhotoUrl?: string;
-  deliveryProofPhotoUrl?: string;
+  pickupProof?: BookingPickupProof;
+  deliveryProof?: BookingDeliveryProof;
   cancellationReason?: string;
   cancellationReasonCode?: BookingCancellationReasonCode;
   skipStatusEmails?: boolean;
@@ -657,35 +767,21 @@ export async function updateBookingStatusForActor(params: {
     }
   }
 
-  if (params.nextStatus === "picked_up" && !params.pickupProofPhotoUrl) {
-    throw new AppError(
-      "Pickup proof is required before marking a booking as picked up.",
-      400,
-      "pickup_proof_required",
-    );
-  }
-
-  if (params.nextStatus === "delivered" && !params.deliveryProofPhotoUrl) {
-    throw new AppError(
-      "Delivery proof is required before marking a booking as delivered.",
-      400,
-      "delivery_proof_required",
-    );
-  }
+  const pickupProof = parsePickupProofForStatus(params.nextStatus, params.pickupProof);
+  const deliveryProof = parseDeliveryProofForStatus(params.nextStatus, params.deliveryProof);
 
   const patch: Database["public"]["Tables"]["bookings"]["Update"] = {
     status: params.nextStatus,
   };
 
-  if (params.nextStatus === "picked_up") {
+  if (pickupProof) {
     patch.pickup_at = new Date().toISOString();
-    patch.pickup_proof_photo_url = params.pickupProofPhotoUrl ?? row.pickup_proof_photo_url;
+    patch.pickup_proof_photo_url = pickupProof.photoUrl;
   }
 
-  if (params.nextStatus === "delivered") {
+  if (deliveryProof) {
     patch.delivered_at = new Date().toISOString();
-    patch.delivery_proof_photo_url =
-      params.deliveryProofPhotoUrl ?? row.delivery_proof_photo_url;
+    patch.delivery_proof_photo_url = deliveryProof.photoUrl;
   }
 
   if (params.nextStatus === "completed") {
@@ -762,6 +858,30 @@ export async function updateBookingStatusForActor(params: {
     eventType: `status_${params.nextStatus}`,
     metadata: {
       previousStatus: row.status,
+      ...(pickupProof
+        ? {
+            pickupProof: {
+              photoUrl: pickupProof.photoUrl,
+              itemCount: pickupProof.itemCount,
+              condition: pickupProof.condition,
+              handoffConfirmed: pickupProof.handoffConfirmed,
+            },
+          }
+        : {}),
+      ...(deliveryProof
+        ? {
+            deliveryProof: {
+              photoUrl: deliveryProof.photoUrl,
+              recipientConfirmed: deliveryProof.recipientConfirmed,
+              exceptionCode: deliveryProof.exceptionCode ?? "none",
+              ...(deliveryProof.exceptionNote
+                ? {
+                    exceptionNote: deliveryProof.exceptionNote,
+                  }
+                : {}),
+            },
+          }
+        : {}),
     },
   });
 
@@ -845,6 +965,81 @@ export async function updateBookingStatusForActor(params: {
   }
 
   return toBooking(data as unknown as BookingJoinedRecord);
+}
+
+export async function logBookingExceptionForActor(params: {
+  userId: string;
+  bookingId: string;
+  actorRole: "carrier" | "customer" | "admin";
+  code: Exclude<BookingExceptionCode, "none">;
+  note: string;
+  photoUrls?: string[];
+}) {
+  if (!hasSupabaseEnv()) {
+    throw new AppError("Supabase is not configured.", 503, "supabase_unavailable");
+  }
+
+  if (params.actorRole === "admin" && !hasSupabaseAdminEnv()) {
+    throw new AppError("Supabase admin is not configured.", 503, "supabase_admin_unavailable");
+  }
+
+  const parsed = bookingExceptionSchema.safeParse({
+    code: params.code,
+    note: params.note,
+    photoUrls: params.photoUrls ?? [],
+  });
+
+  if (!parsed.success) {
+    throw new AppError("Exception payload is invalid.", 400, "invalid_booking_exception");
+  }
+
+  const access =
+    params.actorRole === "admin"
+      ? {
+          row: ((
+            await createAdminClient()
+              .from("bookings")
+              .select("*, events:booking_events(*)")
+              .eq("id", params.bookingId)
+              .maybeSingle()
+          ).data as unknown as BookingJoinedRecord | null),
+          actorRole: "admin" as const,
+        }
+      : await getBookingAccessForUser(params.userId, params.bookingId);
+  const row = access?.row ?? null;
+
+  if (!row) {
+    throw new AppError("Booking not found.", 404, "booking_not_found");
+  }
+
+  if (
+    params.actorRole !== "admin" &&
+    access?.actorRole &&
+    access.actorRole !== params.actorRole
+  ) {
+    throw new AppError("You cannot log an exception for this booking as that role.", 403, "invalid_actor_role");
+  }
+
+  await recordBookingEvent({
+    bookingId: params.bookingId,
+    actorRole: params.actorRole,
+    actorUserId: params.userId,
+    eventType: "exception_reported",
+    metadata: {
+      code: parsed.data.code,
+      note: parsed.data.note,
+      photoUrls: parsed.data.photoUrls,
+      bookingStatus: row.status,
+    },
+  });
+
+  return {
+    bookingId: params.bookingId,
+    code: parsed.data.code,
+    note: parsed.data.note,
+    photoUrls: parsed.data.photoUrls,
+    bookingStatus: row.status,
+  };
 }
 
 async function getAdminBookingSearchEntityIds(searchQuery: string) {
@@ -1110,103 +1305,8 @@ export async function getCarrierPayoutDashboard(userId: string) {
   const refundedJobs = bookings.filter((booking) =>
     ["refunded", "authorization_cancelled"].includes(booking.paymentStatus ?? "pending"),
   );
-  const payoutHolds = bookings
-    .flatMap((booking) => {
-      if (
-        booking.status === "cancelled" ||
-        ["refunded", "authorization_cancelled"].includes(booking.paymentStatus ?? "pending")
-      ) {
-        return [];
-      }
-
-      if (booking.status === "confirmed") {
-        return [
-          {
-            bookingId: booking.id,
-            bookingReference: booking.bookingReference,
-            heldCents: booking.pricing.carrierPayoutCents,
-            stage: "Confirmed",
-            missingStep: "Pickup proof pack still missing",
-            explanation:
-              "Funds stay on hold while the job is still ahead of pickup. Capture pickup proof before moving the booking forward.",
-            nextAction:
-              "Open the trip on pickup day, upload pickup proof, and keep any exceptions inside moverrr.",
-            priority: 4,
-          },
-        ];
-      }
-
-      if (booking.status === "picked_up" || booking.status === "in_transit") {
-        return [
-          {
-            bookingId: booking.id,
-            bookingReference: booking.bookingReference,
-            heldCents: booking.pricing.carrierPayoutCents,
-            stage: booking.status === "picked_up" ? "Picked up" : "In transit",
-            missingStep: "Delivery proof pack still missing",
-            explanation:
-              "The run is live, but payout cannot move until delivery proof is captured and any issues are logged in-platform.",
-            nextAction:
-              "Upload delivery proof at handoff and use the issue flow immediately if access, item-fit, or damage problems appear.",
-            priority: 3,
-          },
-        ];
-      }
-
-      if (booking.status === "delivered") {
-        return [
-          {
-            bookingId: booking.id,
-            bookingReference: booking.bookingReference,
-            heldCents: booking.pricing.carrierPayoutCents,
-            stage: "Delivered",
-            missingStep: "Waiting for customer receipt confirmation",
-            explanation:
-              "The item was delivered, but funds stay held until the customer confirms receipt or a dispute is opened and resolved.",
-            nextAction:
-              "Ask the customer to confirm inside moverrr. Do not move payment or follow-up off-platform.",
-            priority: 1,
-          },
-        ];
-      }
-
-      if (booking.status === "completed" && booking.paymentStatus === "capture_failed") {
-        return [
-          {
-            bookingId: booking.id,
-            bookingReference: booking.bookingReference,
-            heldCents: booking.pricing.carrierPayoutCents,
-            stage: "Completed",
-            missingStep: "Manual capture review required",
-            explanation:
-              "Completion is recorded, but Stripe capture failed. Ops needs to review the payment state before payout can release.",
-            nextAction:
-              "Escalate this booking through admin payments so capture can be retried or manually resolved.",
-            priority: 0,
-          },
-        ];
-      }
-
-      if (booking.status === "completed" && booking.paymentStatus !== "captured") {
-        return [
-          {
-            bookingId: booking.id,
-            bookingReference: booking.bookingReference,
-            heldCents: booking.pricing.carrierPayoutCents,
-            stage: "Completed",
-            missingStep: "Capture still pending",
-            explanation:
-              "The job is complete, but payment capture has not cleared yet. That hold usually resolves after the completion flow settles.",
-            nextAction:
-              "If this lingers, check admin payments for capture issues before chasing the customer.",
-            priority: 2,
-          },
-        ];
-      }
-
-      return [];
-    })
-    .sort((left, right) => left.priority - right.priority);
+  const payoutSetupReady = carrierRow.data?.stripe_onboarding_complete ?? false;
+  const payoutHolds = buildCarrierPayoutHolds(bookings, payoutSetupReady);
   const historyByMonth = Array.from(
     bookings
       .filter((booking) => booking.paymentStatus === "captured" || booking.paymentStatus === "refunded")
@@ -1238,7 +1338,7 @@ export async function getCarrierPayoutDashboard(userId: string) {
     upcomingExpectedPayoutCents,
     completedButUnreleasedCents,
     refundedJobs,
-    payoutSetupReady: carrierRow.data?.stripe_onboarding_complete ?? false,
+    payoutSetupReady,
     payoutHolds,
     historyByMonth,
   };
@@ -1353,4 +1453,305 @@ export async function getCarrierLaneInsights(userId: string) {
   )
     .sort((a, b) => b.earningsCents - a.earningsCents)
     .slice(0, 3);
+}
+
+function getCarrierTripHealthTier(score: number): CarrierTripHealth["tier"] {
+  if (score >= 85) {
+    return "Healthy";
+  }
+
+  if (score >= 60) {
+    return "Watch";
+  }
+
+  return "Risky";
+}
+
+export function buildCarrierPayoutHolds(
+  bookings: Booking[],
+  payoutSetupReady: boolean,
+): CarrierPayoutHold[] {
+  const setupHoldPriority = payoutSetupReady ? Number.POSITIVE_INFINITY : 2;
+  const setupHolds = !payoutSetupReady
+    ? bookings
+        .filter((booking) => ["delivered", "completed"].includes(booking.status))
+        .map((booking) => ({
+          bookingId: booking.id,
+          bookingReference: booking.bookingReference,
+          heldCents: booking.pricing.carrierPayoutCents,
+          stage: booking.status === "completed" ? "Completed" : "Delivered",
+          missingStep: "Finish payout setup",
+          explanation:
+            "The job can keep moving through proof and confirmation, but moverrr cannot release funds to your bank until payout onboarding is complete.",
+          nextAction:
+            "Open payouts, finish Stripe onboarding, and then moverrr can release eligible funds after confirmation and capture clear.",
+          ctaHref: "/carrier/payouts",
+          ctaLabel: "Finish payout setup",
+          priority: setupHoldPriority,
+        }))
+    : [];
+
+  return bookings
+    .flatMap((booking) => {
+      if (
+        booking.status === "cancelled" ||
+        ["refunded", "authorization_cancelled"].includes(booking.paymentStatus ?? "pending")
+      ) {
+        return [];
+      }
+
+      if (booking.status === "confirmed") {
+        return [
+          {
+            bookingId: booking.id,
+            bookingReference: booking.bookingReference,
+            heldCents: booking.pricing.carrierPayoutCents,
+            stage: "Confirmed",
+            missingStep: "Pickup proof pack still missing",
+            explanation:
+              "Funds stay held while the run is still ahead of pickup. moverrr needs pickup proof before this booking can progress toward release.",
+            nextAction:
+              "Open the trip on pickup day, upload pickup proof, and keep any exceptions recorded inside moverrr.",
+            ctaHref: `/carrier/trips/${booking.listingId}?focus=${booking.id}#booking-${booking.id}`,
+            ctaLabel: "Open booking",
+            priority: 4,
+          },
+        ] satisfies CarrierPayoutHold[];
+      }
+
+      if (booking.status === "picked_up" || booking.status === "in_transit") {
+        return [
+          {
+            bookingId: booking.id,
+            bookingReference: booking.bookingReference,
+            heldCents: booking.pricing.carrierPayoutCents,
+            stage: booking.status === "picked_up" ? "Picked up" : "In transit",
+            missingStep: "Delivery proof pack still missing",
+            explanation:
+              "The handoff is still live, so payout remains held until delivery proof is captured and any delivery issue is logged in-platform.",
+            nextAction:
+              "Upload delivery proof at handoff and log access, fit, or damage issues immediately if anything breaks from plan.",
+            ctaHref: `/carrier/trips/${booking.listingId}?focus=${booking.id}#booking-${booking.id}`,
+            ctaLabel: "Add delivery proof",
+            priority: 3,
+          },
+        ] satisfies CarrierPayoutHold[];
+      }
+
+      if (booking.status === "delivered") {
+        return [
+          {
+            bookingId: booking.id,
+            bookingReference: booking.bookingReference,
+            heldCents: booking.pricing.carrierPayoutCents,
+            stage: "Delivered",
+            missingStep: "Waiting for customer receipt confirmation",
+            explanation:
+              "Delivery is recorded, but moverrr keeps funds held until the customer confirms receipt or a dispute is raised and resolved.",
+            nextAction:
+              "Review the booking, nudge the customer to confirm in-platform, and keep any payment follow-up inside moverrr.",
+            ctaHref: `/carrier/trips/${booking.listingId}?focus=${booking.id}#booking-${booking.id}`,
+            ctaLabel: "Review booking",
+            priority: 1,
+          },
+        ] satisfies CarrierPayoutHold[];
+      }
+
+      if (booking.status === "completed" && booking.paymentStatus === "capture_failed") {
+        return [
+          {
+            bookingId: booking.id,
+            bookingReference: booking.bookingReference,
+            heldCents: booking.pricing.carrierPayoutCents,
+            stage: "Completed",
+            missingStep: "Manual capture review required",
+            explanation:
+              "Completion is recorded, but Stripe capture failed. Ops needs to review the payment state before moverrr can release payout.",
+            nextAction:
+              "Open payouts and flag this booking for ops review so capture can be retried or resolved manually.",
+            ctaHref: "/carrier/payouts",
+            ctaLabel: "Open payouts",
+            priority: 0,
+          },
+        ] satisfies CarrierPayoutHold[];
+      }
+
+      if (booking.status === "completed" && booking.paymentStatus !== "captured") {
+        return [
+          {
+            bookingId: booking.id,
+            bookingReference: booking.bookingReference,
+            heldCents: booking.pricing.carrierPayoutCents,
+            stage: "Completed",
+            missingStep: "Capture still pending",
+            explanation:
+              "The booking is complete, but payment capture has not cleared yet. That hold usually resolves after the completion flow settles.",
+            nextAction:
+              "Keep the booking in-platform and check payouts if this stays blocked longer than expected.",
+            ctaHref: "/carrier/payouts",
+            ctaLabel: "Open payouts",
+            priority: 2,
+          },
+        ] satisfies CarrierPayoutHold[];
+      }
+
+      return [];
+    })
+    .concat(setupHolds)
+    .sort((left, right) => left.priority - right.priority);
+}
+
+export function buildCarrierTodaySnapshot(params: {
+  bookings: Booking[];
+  trips: Trip[];
+  payoutSetupReady: boolean;
+  payoutHolds: CarrierPayoutHold[];
+  now?: Date;
+}): CarrierTodaySnapshot {
+  const { bookings, trips, payoutSetupReady, payoutHolds } = params;
+  const now = params.now ?? new Date();
+  const todayIso = now.toISOString().slice(0, 10);
+  const nowMs = now.getTime();
+  const oneHourMs = 60 * 60 * 1000;
+  const oneDayMs = 24 * 60 * 60 * 1000;
+
+  const pendingDecisions = bookings.filter((booking) => booking.status === "pending");
+  const pickupProofNeeded = bookings.filter((booking) => booking.status === "confirmed");
+  const deliveryProofNeeded = bookings.filter((booking) =>
+    ["picked_up", "in_transit"].includes(booking.status),
+  );
+  const awaitingCustomerConfirmation = bookings.filter((booking) => booking.status === "delivered");
+
+  const todayActions: CarrierTodayAction[] = [
+    {
+      key: "pending-decisions",
+      title: "Pending decisions",
+      description: "Booking requests that still need a carrier answer before they expire.",
+      count: pendingDecisions.length,
+      href: "/carrier/trips?filter=pending",
+      urgency: pendingDecisions.length > 0 ? "urgent" : "watch",
+    },
+    {
+      key: "pickup-proof",
+      title: "Pickup proof needed",
+      description: "Confirmed jobs that still need pickup-day proof before the status can move forward.",
+      count: pickupProofNeeded.length,
+      href: "/carrier/trips",
+      urgency: pickupProofNeeded.length > 0 ? "urgent" : "watch",
+    },
+    {
+      key: "delivery-proof",
+      title: "Delivery proof needed",
+      description: "Live runs that still need delivery proof or an in-platform issue note.",
+      count: deliveryProofNeeded.length,
+      href: "/carrier/trips",
+      urgency: deliveryProofNeeded.length > 0 ? "urgent" : "watch",
+    },
+    {
+      key: "customer-confirmation",
+      title: "Awaiting customer confirmation",
+      description: "Delivered jobs where payout remains held until the customer confirms receipt or opens a dispute.",
+      count: awaitingCustomerConfirmation.length,
+      href: "/carrier/payouts",
+      urgency: awaitingCustomerConfirmation.length > 0 ? "urgent" : "watch",
+    },
+    {
+      key: "payout-blockers",
+      title: "Payout blockers",
+      description: "Held balances that still need proof, customer confirmation, or payout setup to clear.",
+      count: payoutHolds.length,
+      href: "/carrier/payouts",
+      urgency: payoutHolds.length > 0 ? "urgent" : "watch",
+    },
+  ];
+
+  const tripHealth: CarrierTripHealth[] = trips
+    .filter((trip) => ["active", "booked_partial"].includes(trip.status ?? "active"))
+    .map((trip) => {
+      const tripBookings = bookings.filter((booking) => booking.listingId === trip.id);
+      let score = 100;
+      const reasons: string[] = [];
+
+      if (tripBookings.some((booking) => booking.status === "disputed" || booking.paymentStatus === "capture_failed")) {
+        score -= 40;
+        reasons.push("Open dispute or capture failure is blocking clean completion.");
+      }
+
+      if (
+        tripBookings.some((booking) => {
+          if (booking.status !== "pending" || !booking.pendingExpiresAt) {
+            return false;
+          }
+
+          const expiresAt = new Date(booking.pendingExpiresAt).getTime();
+          return expiresAt > nowMs && expiresAt - nowMs <= oneHourMs;
+        })
+      ) {
+        score -= 30;
+        reasons.push("A pending booking is close to expiry and still needs a carrier decision.");
+      }
+
+      if (
+        tripBookings.some((booking) => {
+          if (booking.status !== "delivered" || !booking.deliveredAt || booking.customerConfirmedAt) {
+            return false;
+          }
+
+          return nowMs - new Date(booking.deliveredAt).getTime() > oneDayMs;
+        })
+      ) {
+        score -= 25;
+        reasons.push("A delivered booking has been waiting on customer confirmation for more than 24 hours.");
+      }
+
+      if (trip.tripDate === todayIso && tripBookings.some((booking) => booking.status === "pending")) {
+        score -= 20;
+        reasons.push("This trip runs today and still has a pending booking request attached to it.");
+      }
+
+      if (
+        !payoutSetupReady &&
+        tripBookings.some((booking) => ["delivered", "completed"].includes(booking.status))
+      ) {
+        score -= 15;
+        reasons.push("Payout setup is incomplete while money is otherwise ready to move toward release.");
+      }
+
+      const boundedScore = Math.max(0, score);
+
+      return {
+        tripId: trip.id,
+        routeLabel: trip.route.label,
+        tripDate: trip.tripDate,
+        score: boundedScore,
+        tier: getCarrierTripHealthTier(boundedScore),
+        reasons:
+          reasons.length > 0
+            ? reasons
+            : ["No immediate proof, payout, or booking-expiry risks are visible on this route."],
+        href: `/carrier/trips/${trip.id}`,
+      };
+    })
+    .sort((left, right) => left.score - right.score);
+
+  return {
+    todayActions,
+    tripHealth,
+    payoutHolds,
+  };
+}
+
+export async function getCarrierTodaySnapshot(userId: string) {
+  const [bookings, trips, payoutDashboard] = await Promise.all([
+    listCarrierBookings(userId),
+    listCarrierTrips(userId),
+    getCarrierPayoutDashboard(userId),
+  ]);
+
+  return buildCarrierTodaySnapshot({
+    bookings,
+    trips,
+    payoutSetupReady: payoutDashboard.payoutSetupReady,
+    payoutHolds: payoutDashboard.payoutHolds,
+  });
 }

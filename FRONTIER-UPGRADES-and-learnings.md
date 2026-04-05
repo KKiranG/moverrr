@@ -1,8 +1,8 @@
 # moverrr — Frontier Upgrades And Learnings
 
-Last revised: 2 April 2026 (Sydney)
+Last revised: 5 April 2026 (Sydney)
 
-> Status note (2 April 2026): this file remains the active frontier backlog. Completed work from the current frontier sweep was moved to `completed.md` under `COMP-2026-04-02-36`, `COMP-2026-04-02-37`, and `COMP-2026-04-02-38`. Treat `completed.md` as the source of truth for what shipped; keep unresolved or future frontier work here until it is actually implemented.
+> Status note (5 April 2026): this file remains the active frontier backlog. Completed work from the current frontier sweep was moved to `completed.md` under `COMP-2026-04-02-36`, `COMP-2026-04-02-37`, `COMP-2026-04-02-38`, and `COMP-2026-04-05-39`. Treat `completed.md` as the source of truth for what shipped; keep unresolved or future frontier work here until it is actually implemented.
 
 ## What This First Half Is
 
@@ -897,10 +897,7 @@ What to do: Set and surface a clear response standard for important booking mess
 Why it matters: Users trust marketplaces that define responsiveness.
 Done when: Response standards appear in the carrier experience and support copy.
 
-66. **Automated nudges for missing next steps** (`Now`)
-What to do: Trigger reminders for missing proof, unanswered requests, incomplete payout setup, and pending completion.
-Why it matters: One founder should not manually chase obvious follow-ups.
-Done when: Routine nudges are system-driven.
+> Moved to `completed.md` on 5 April 2026: `66`
 
 67. **Attachment labels in chat** (`Now`)
 What to do: Let users label images as `item photo`, `pickup area`, `delivery proof`, `damage evidence`, or `access issue`.
@@ -934,10 +931,7 @@ What to do: Keep customer funds secured until proof and completion logic are sat
 Why it matters: Payments are the marketplace's strongest trust lever.
 Done when: Early release is exceptional, not default.
 
-73. **Explain payout holds clearly** (`Now`)
-What to do: When payout is blocked, show the missing step, the current balance, and what happens after it is resolved.
-Why it matters: Hidden payout logic creates provider anxiety fast.
-Done when: Carriers understand why money is waiting.
+> Moved to `completed.md` on 5 April 2026: `73`
 
 74. **Cancellation policy matrix by stage** (`Soon`)
 What to do: Define outcomes for pre-confirmation cancel, post-confirmation cancel, carrier cancel, failed access, and mid-service interruption.
@@ -976,20 +970,7 @@ Done when: Request lifecycle is finite and explicit.
 
 ## G. Proof, Safety, And Dispute Operations
 
-81. **Pickup proof pack** (`Now`)
-What to do: Require pickup photos, item condition, item count, and pickup confirmation before status moves to in-transit.
-Why it matters: The dispute story should start before the dispute.
-Done when: Every in-transit booking has a complete pickup record.
-
-82. **Delivery proof pack** (`Now`)
-What to do: Require delivery photos, recipient confirmation, and exception notes before payout completion.
-Why it matters: Delivery should be documented, not assumed.
-Done when: Every completed booking has a minimum delivery proof set.
-
-83. **Exception logging in the moment** (`Now`)
-What to do: Add fast-report flows for access blocked, item mismatch, damage spotted, or no-show.
-Why it matters: Evidence captured live is far better than memory later.
-Done when: Users can log exceptions during the event, not after.
+> Moved to `completed.md` on 5 April 2026: `81`, `82`, `83`, `87`, `88`, and `89`
 
 84. **Dispute center with reason codes** (`Soon`)
 What to do: Centralize disputes into structured categories with evidence upload and deadline tracking.
@@ -1006,21 +987,6 @@ What to do: Guide users to document `before`, `during`, `after`, `where damage h
 Why it matters: Better evidence makes better resolutions.
 Done when: Damage claims arrive with enough structure to review quickly.
 
-87. **Prohibited item policy** (`Now`)
-What to do: Publish and enforce a clear banned-items list for dangerous goods, unlawful transport, unsafe chemicals, and other excluded cargo.
-Why it matters: Not every moving request belongs in moverrr.
-Done when: Carriers and customers can see what is out of scope.
-
-88. **Asbestos and regulated waste ban** (`Now`)
-What to do: Explicitly ban asbestos, contaminated waste, and similar regulated disposal jobs.
-Why it matters: Sydney move requests can drift into risky territory quickly.
-Done when: Support and users have a clear no-go rule.
-
-89. **Manual handling risk prompts** (`Now`)
-What to do: Trigger risk prompts for heavy, awkward, bulky, or one-person-dangerous items.
-Why it matters: Safety belongs in the product, not just in common sense.
-Done when: Risky jobs force clearer handling expectations.
-
 90. **Departure safety checklist** (`Soon`)
 What to do: Require a carrier confirmation step for load restraint, visibility, straps, and secure packing on relevant trips.
 Why it matters: Good marketplaces help providers avoid predictable failures.
@@ -1028,15 +994,7 @@ Done when: Relevant bookings include a pre-departure safety check.
 
 ## H. Carrier Operations And Repeat Supply
 
-91. **Carrier Today screen** (`Soon`)
-What to do: Build a simple "today" view showing upcoming handoffs, proof needed, messages waiting, and payout blockers.
-Why it matters: Airbnb invests heavily in host operations surfaces; moverrr needs a lightweight version for carriers.
-Done when: A carrier can open the app and know what to do next in ten seconds.
-
-92. **Trip health score** (`Soon`)
-What to do: Score active trips based on missing proof, unanswered messages, timing uncertainty, and unresolved access questions.
-Why it matters: Ops teams should see risk before a booking fails.
-Done when: Risky trips stand out before the day goes wrong.
+> Moved to `completed.md` on 5 April 2026: `91` and `92`
 
 93. **Remaining capacity auto-update** (`Now`)
 What to do: Recalculate and display remaining capacity immediately after booking changes.

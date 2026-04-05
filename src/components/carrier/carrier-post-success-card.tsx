@@ -5,6 +5,10 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  MANUAL_HANDLING_POLICY_LINES,
+  PROHIBITED_ITEM_POLICY_LINES,
+} from "@/lib/constants";
 import type { Trip } from "@/types/trip";
 import { formatCurrency } from "@/lib/utils";
 
@@ -65,6 +69,17 @@ export function CarrierPostSuccessCard({ trip }: { trip: Trip }) {
               4. Watch remaining capacity as bookings change so the live listing
               stays honest.
             </p>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-black/[0.02] p-3 text-sm text-text-secondary dark:bg-white/[0.04]">
+          <p className="font-medium text-text">Keep risky jobs in scope</p>
+          <div className="mt-2 grid gap-2">
+            {PROHIBITED_ITEM_POLICY_LINES.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+            {MANUAL_HANDLING_POLICY_LINES.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
           </div>
         </div>
         <button

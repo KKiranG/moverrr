@@ -6,6 +6,10 @@ import { BookingForm } from "@/components/booking/booking-form";
 import { PriceBreakdown } from "@/components/booking/price-breakdown";
 import { Card } from "@/components/ui/card";
 import { getConfirmedBookingChecklist } from "@/lib/booking-presenters";
+import {
+  MANUAL_HANDLING_POLICY_LINES,
+  PROHIBITED_ITEM_POLICY_LINES,
+} from "@/lib/constants";
 import { calculateBookingBreakdown } from "@/lib/pricing/breakdown";
 import { formatCurrency } from "@/lib/utils";
 import type { Trip } from "@/types/trip";
@@ -103,6 +107,16 @@ export function BookingCheckoutPanel({
       </Card>
 
       <Card className="p-4">
+        <p className="section-label">Safety boundary</p>
+        <h3 className="mt-1 text-lg text-text">Unsafe or regulated loads are not part of this booking</h3>
+        <div className="mt-3 space-y-2 text-sm text-text-secondary">
+          {PROHIBITED_ITEM_POLICY_LINES.map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="p-4">
         <p className="section-label">Prepare for pickup</p>
         <h3 className="mt-1 text-lg text-text">Get the handoff ready before the window starts</h3>
         <ul className="mt-3 space-y-2 text-sm text-text-secondary">
@@ -110,6 +124,9 @@ export function BookingCheckoutPanel({
             <li key={item}>{item}</li>
           ))}
           <li>Measure the item and flag stairs, helpers, or awkward access before paying.</li>
+          {MANUAL_HANDLING_POLICY_LINES.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
         </ul>
       </Card>
 

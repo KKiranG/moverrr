@@ -21,20 +21,35 @@ export default async function CarrierPayoutsPage() {
         title="See what is earned, pending, and refunded"
         description="Transparency around payouts is part of the trust loop for repeat carriers."
         actions={
-          <Button asChild variant="secondary">
-            <Link href="/carrier/dashboard">Back to dashboard</Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="secondary">
+              <Link href="/carrier/today">Open today screen</Link>
+            </Button>
+            <Button asChild variant="secondary">
+              <Link href="/carrier/dashboard">Back to dashboard</Link>
+            </Button>
+          </div>
         }
       />
 
       {!dashboard.payoutSetupReady ? (
         <Card className="border-warning/20 bg-warning/10 p-4">
-          <p className="section-label">Payout setup missing</p>
-          <h2 className="mt-1 text-lg text-text">Funds can be held, but release is blocked</h2>
-          <p className="mt-2 text-sm text-text-secondary">
-            Booking money stays protected inside moverrr until proof, customer confirmation, and
-            payout setup all line up. Finish payout setup before your next completed job.
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="section-label">Payout setup missing</p>
+              <h2 className="mt-1 text-lg text-text">Funds can be held, but release is blocked</h2>
+              <p className="mt-2 text-sm text-text-secondary">
+                Booking money stays protected inside moverrr until proof, customer confirmation, and
+                payout setup all line up. Finish payout setup before your next completed job.
+              </p>
+              <p className="mt-2 text-sm text-text">
+                What happens next: eligible bookings keep stacking in payout holds until onboarding is complete.
+              </p>
+            </div>
+            <Button asChild variant="secondary">
+              <Link href="/carrier/onboarding">Finish payout setup</Link>
+            </Button>
+          </div>
         </Card>
       ) : null}
 
@@ -92,6 +107,11 @@ export default async function CarrierPayoutsPage() {
                   </div>
                   <p className="mt-3 text-sm text-text-secondary">{hold.explanation}</p>
                   <p className="mt-2 text-sm text-text">{hold.nextAction}</p>
+                  {hold.ctaHref ? (
+                    <Button asChild variant="secondary" className="mt-3">
+                      <Link href={hold.ctaHref}>{hold.ctaLabel ?? "Open"}</Link>
+                    </Button>
+                  ) : null}
                 </div>
               ))}
             </div>

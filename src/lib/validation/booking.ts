@@ -47,17 +47,18 @@ const optionalPhoneNumber = () =>
 
 const PROHIBITED_ITEM_RULES = [
   {
-    pattern: /\basbestos\b/i,
+    pattern: /\basbestos(?:\s+sheeting)?\b/i,
     message: "Asbestos and asbestos sheeting are not allowed on moverrr.",
     hint: "This needs a licensed disposal path, not a spare-capacity trip.",
   },
   {
-    pattern: /\b(contaminated waste|hazardous waste|biohazard)\b/i,
+    pattern: /\b(contaminated waste|hazardous waste|biohazard|contaminated soil)\b/i,
     message: "Contaminated or hazardous waste is out of scope for moverrr.",
     hint: "Bookings must stay inside ordinary household or business moving items.",
   },
   {
-    pattern: /\b(chemical drum|solvent drum|paint disposal|regulated waste)\b/i,
+    pattern:
+      /\b(chemical drum|solvent drum|paint disposal|regulated waste|regulated disposal|chemical disposal)\b/i,
     message: "Regulated chemical or disposal jobs are not allowed on moverrr.",
     hint: "Remove the regulated item and use a compliant disposal or specialist service instead.",
   },
@@ -117,6 +118,7 @@ export function getBookingTrustIssues(input: BookingTrustInput) {
   const joinedText = [input.itemDescription, input.specialInstructions].filter(Boolean).join(" ");
   const looksHeavy = typeof input.itemWeightKg === "number" && input.itemWeightKg >= 70;
   const looksAwkward = MANUAL_HANDLING_PATTERNS.some((pattern) => pattern.test(joinedText));
+  const looksManualHandlingRisk = looksHeavy || looksAwkward;
   const accessNotesProvided = Boolean(
     input.pickupAccessNotes?.trim() || input.dropoffAccessNotes?.trim(),
   );
@@ -147,7 +149,7 @@ export function getBookingTrustIssues(input: BookingTrustInput) {
     }
   }
 
-  if ((looksHeavy || looksAwkward) && !input.needsHelper) {
+  if (looksManualHandlingRisk && !input.needsHelper) {
     issues.push({
       code: "manual_handling_helper_recommended",
       severity: "warning",
@@ -157,7 +159,7 @@ export function getBookingTrustIssues(input: BookingTrustInput) {
     });
   }
 
-  if ((looksHeavy || looksAwkward) && !accessNotesProvided) {
+  if (looksManualHandlingRisk && !accessNotesProvided) {
     issues.push({
       code: "manual_handling_access_notes_missing",
       severity: "warning",

@@ -9,7 +9,11 @@ import { TripListSkeleton } from "@/components/carrier/trip-list-skeleton";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { requirePageSessionUser } from "@/lib/auth";
 import { getCarrierByUserId } from "@/lib/data/carriers";
-import { getCarrierLaneInsights, listCarrierBookings } from "@/lib/data/bookings";
+import {
+  getCarrierLaneInsights,
+  getCarrierTodaySnapshot,
+  listCarrierBookings,
+} from "@/lib/data/bookings";
 import { listCarrierTemplates } from "@/lib/data/templates";
 import { listCarrierTrips } from "@/lib/data/trips";
 import { PageIntro } from "@/components/layout/page-intro";
@@ -31,11 +35,12 @@ function isTripActive(tripDate: string, status?: string | null) {
 }
 
 async function CarrierDashboardContent({ userId }: { userId: string }) {
-  const [carrier, carrierTrips, carrierBookings, laneInsights] = await Promise.all([
+  const [carrier, carrierTrips, carrierBookings, laneInsights, todaySnapshot] = await Promise.all([
     getCarrierByUserId(userId),
     listCarrierTrips(userId),
     listCarrierBookings(userId),
     getCarrierLaneInsights(userId),
+    getCarrierTodaySnapshot(userId),
   ]);
   const templates = carrier ? await listCarrierTemplates(carrier.id) : [];
   const liveListings = carrierTrips.filter((trip) => isTripActive(trip.tripDate, trip.status)).length;
@@ -127,6 +132,9 @@ async function CarrierDashboardContent({ userId }: { userId: string }) {
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Button asChild variant="secondary">
+          <Link href="/carrier/today">Today screen</Link>
+        </Button>
+        <Button asChild variant="secondary">
           <Link href="/carrier/payouts">View payouts</Link>
         </Button>
         <Button asChild variant="secondary">
@@ -136,6 +144,87 @@ async function CarrierDashboardContent({ userId }: { userId: string }) {
           <Link href="/carrier/templates">Manage templates</Link>
         </Button>
       </div>
+
+      <Card className="p-4">
+        <div className="space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="section-label">Today</p>
+              <h2 className="mt-1 text-lg text-text">What needs action first</h2>
+              <p className="mt-1 text-sm text-text-secondary">
+                Keep proof, pending decisions, and payout blockers visible before they become support work.
+              </p>
+            </div>
+            <Button asChild variant="secondary">
+              <Link href="/carrier/today">Open today view</Link>
+            </Button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            {todaySnapshot.todayActions.map((action) => (
+              <Link
+                key={action.key}
+                href={action.href}
+                className="block min-h-[44px] rounded-xl border border-border p-3 active:opacity-95"
+              >
+                <p className="text-sm font-medium text-text">{action.title}</p>
+                <p className="mt-1 text-2xl text-text">{action.count}</p>
+                <p className="mt-2 text-sm text-text-secondary">{action.description}</p>
+              </Link>
+            ))}
+          </div>
+          <div className="grid gap-3">
+            {todaySnapshot.tripHealth.slice(0, 3).map((trip) => (
+              <Link
+                key={trip.tripId}
+                href={trip.href}
+                className="block min-h-[44px] rounded-xl border border-border p-3 active:opacity-95"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-text">{trip.routeLabel}</p>
+                    <p className="mt-1 text-sm text-text-secondary">
+                      {trip.tripDate} · Health {trip.score}/100 · {trip.tier}
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-2 text-sm text-text-secondary">{trip.reasons[0]}</p>
+              </Link>
+            ))}
+            {todaySnapshot.tripHealth.length === 0 ? (
+              <p className="text-sm text-text-secondary">
+                Post an active trip to see today-level health and payout risk signals.
+              </p>
+            ) : null}
+          </div>
+          <div className="grid gap-3">
+            {todaySnapshot.payoutHolds.slice(0, 2).map((hold) => (
+              <div key={hold.bookingId} className="rounded-xl border border-border p-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-text">{hold.bookingReference}</p>
+                    <p className="mt-1 text-sm text-text-secondary">
+                      {hold.stage} · {hold.missingStep}
+                    </p>
+                  </div>
+                  <p className="text-sm font-medium text-text">
+                    Held {formatCurrency(hold.heldCents)}
+                  </p>
+                </div>
+                <p className="mt-3 text-sm text-text-secondary">{hold.explanation}</p>
+                <p className="mt-2 text-sm text-text">{hold.nextAction}</p>
+                <Button asChild variant="secondary" className="mt-3">
+                  <Link href={hold.ctaHref}>{hold.ctaLabel}</Link>
+                </Button>
+              </div>
+            ))}
+            {todaySnapshot.payoutHolds.length === 0 ? (
+              <p className="text-sm text-text-secondary">
+                No payout blockers are visible right now. Keep proof and customer confirmation in-platform to hold that line.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </Card>
 
       <QuickPostTemplates templates={templates} />
 

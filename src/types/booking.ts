@@ -36,6 +36,40 @@ export type BookingCancellationReasonCode =
   | "no_response"
   | "safety_concern";
 
+export type BookingProofCondition =
+  | "no_visible_damage"
+  | "wear_noted"
+  | "damage_noted";
+
+export type BookingExceptionCode =
+  | "none"
+  | "damage"
+  | "no_show"
+  | "late"
+  | "wrong_item"
+  | "overcharge"
+  | "other";
+
+export interface BookingPickupProof {
+  photoUrl: string;
+  itemCount: number;
+  condition: BookingProofCondition;
+  handoffConfirmed: boolean;
+}
+
+export interface BookingDeliveryProof {
+  photoUrl: string;
+  recipientConfirmed: boolean;
+  exceptionCode?: BookingExceptionCode;
+  exceptionNote?: string;
+}
+
+export interface BookingExceptionReport {
+  code: Exclude<BookingExceptionCode, "none">;
+  note: string;
+  photoUrls: string[];
+}
+
 export interface BookingEvent {
   id: string;
   bookingId: string;

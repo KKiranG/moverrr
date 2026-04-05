@@ -4,12 +4,56 @@ import { z } from "zod";
 import { requireAdminUser, requireSessionUser } from "@/lib/auth";
 import { getBookingActorRoleForUser, updateBookingStatusForActor } from "@/lib/data/bookings";
 import { toErrorResponse } from "@/lib/errors";
-import type { BookingCancellationReasonCode } from "@/types/booking";
+import type {
+  BookingCancellationReasonCode,
+  BookingExceptionCode,
+  BookingProofCondition,
+} from "@/types/booking";
+
+const bookingExceptionCodeValues = [
+  "none",
+  "damage",
+  "no_show",
+  "late",
+  "wrong_item",
+  "overcharge",
+  "other",
+] satisfies BookingExceptionCode[];
+
+const bookingProofConditionValues = [
+  "no_visible_damage",
+  "wear_noted",
+  "damage_noted",
+] satisfies BookingProofCondition[];
+
+const pickupProofSchema = z.object({
+  photoUrl: z.string().min(1),
+  itemCount: z.number().int().min(1),
+  condition: z.enum(bookingProofConditionValues),
+  handoffConfirmed: z.literal(true),
+});
+
+const deliveryProofSchema = z
+  .object({
+    photoUrl: z.string().min(1),
+    recipientConfirmed: z.literal(true),
+    exceptionCode: z.enum(bookingExceptionCodeValues).optional(),
+    exceptionNote: z.string().trim().min(1).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.exceptionCode && value.exceptionCode !== "none" && !value.exceptionNote) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["exceptionNote"],
+        message: "Add an exception note when delivery proof flags an issue.",
+      });
+    }
+  });
 
 const bookingStatusPatchSchema = z.object({
   nextStatus: z.enum(["confirmed", "picked_up", "in_transit", "delivered", "completed", "cancelled"]),
-  pickupProofPhotoUrl: z.string().min(1).optional(),
-  deliveryProofPhotoUrl: z.string().min(1).optional(),
+  pickupProof: pickupProofSchema.optional(),
+  deliveryProof: deliveryProofSchema.optional(),
   actorRole: z.enum(["carrier", "customer", "admin"]).optional(),
   cancellationReason: z.string().min(1).optional(),
   cancellationReasonCode: z
@@ -37,8 +81,8 @@ export async function PATCH(
         bookingId: params.id,
         nextStatus: payload.nextStatus,
         actorRole: "admin",
-        pickupProofPhotoUrl: payload.pickupProofPhotoUrl,
-        deliveryProofPhotoUrl: payload.deliveryProofPhotoUrl,
+        pickupProof: payload.pickupProof,
+        deliveryProof: payload.deliveryProof,
         cancellationReason: payload.cancellationReason,
         cancellationReasonCode: payload.cancellationReasonCode,
       });
@@ -53,8 +97,8 @@ export async function PATCH(
       bookingId: params.id,
       nextStatus: payload.nextStatus,
       actorRole,
-      pickupProofPhotoUrl: payload.pickupProofPhotoUrl,
-      deliveryProofPhotoUrl: payload.deliveryProofPhotoUrl,
+      pickupProof: payload.pickupProof,
+      deliveryProof: payload.deliveryProof,
       cancellationReason: payload.cancellationReason,
       cancellationReasonCode: payload.cancellationReasonCode,
     });

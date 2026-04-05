@@ -127,6 +127,48 @@ export interface CarrierDashboardActivityItem {
   href?: string;
 }
 
+export interface CarrierPayoutHold {
+  bookingId: string;
+  bookingReference: string;
+  heldCents: number;
+  stage: string;
+  missingStep: string;
+  explanation: string;
+  nextAction: string;
+  priority: number;
+  ctaHref: string;
+  ctaLabel: string;
+}
+
+export type CarrierTodayActionUrgency = "urgent" | "watch";
+
+export interface CarrierTodayAction {
+  key: string;
+  title: string;
+  description: string;
+  count: number;
+  href: string;
+  urgency: CarrierTodayActionUrgency;
+}
+
+export type CarrierTripHealthTier = "Healthy" | "Watch" | "Risky";
+
+export interface CarrierTripHealth {
+  tripId: string;
+  routeLabel: string;
+  tripDate: string;
+  score: number;
+  tier: CarrierTripHealthTier;
+  reasons: string[];
+  href: string;
+}
+
+export interface CarrierTodaySnapshot {
+  todayActions: CarrierTodayAction[];
+  tripHealth: CarrierTripHealth[];
+  payoutHolds: CarrierPayoutHold[];
+}
+
 export interface RecurringTemplateSuggestion {
   routeLabel: string;
   templateIds: string[];

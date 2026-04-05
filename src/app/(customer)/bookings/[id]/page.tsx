@@ -18,9 +18,65 @@ import { getBookingPaymentStateSummary, getConfirmedBookingChecklist } from "@/l
 import { getBookingByIdForUser } from "@/lib/data/bookings";
 import { getBookingFeedbackForUser } from "@/lib/data/feedback";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
+import type {
+  BookingDeliveryProof,
+  BookingExceptionReport,
+  BookingPickupProof,
+} from "@/types/booking";
 
 function getBookingEventTimestamp(booking: { events?: Array<{ eventType: string; createdAt: string }> }, eventType: string) {
   return booking.events?.find((event) => event.eventType === eventType)?.createdAt ?? null;
+}
+
+function getEventSummaryLines(event: {
+  eventType: string;
+  metadata: Record<string, unknown>;
+}) {
+  if (
+    event.eventType === "status_picked_up" &&
+    event.metadata.pickupProof &&
+    typeof event.metadata.pickupProof === "object"
+  ) {
+    const proof = event.metadata.pickupProof as BookingPickupProof;
+    return [
+      `${proof.itemCount} item${proof.itemCount === 1 ? "" : "s"} recorded at pickup.`,
+      `Condition noted as ${proof.condition.replaceAll("_", " ")}.`,
+    ];
+  }
+
+  if (
+    event.eventType === "status_delivered" &&
+    event.metadata.deliveryProof &&
+    typeof event.metadata.deliveryProof === "object"
+  ) {
+    const proof = event.metadata.deliveryProof as BookingDeliveryProof;
+    const lines = ["Recipient handoff confirmed in-app."];
+
+    if (proof.exceptionCode && proof.exceptionCode !== "none") {
+      lines.push(`Delivery exception noted as ${proof.exceptionCode.replaceAll("_", " ")}.`);
+    }
+
+    if (proof.exceptionNote) {
+      lines.push(proof.exceptionNote);
+    }
+
+    return lines;
+  }
+
+  if (event.eventType === "exception_reported") {
+    const exception = event.metadata as Partial<BookingExceptionReport>;
+
+    if (!exception.code || !exception.note) {
+      return [];
+    }
+
+    return [
+      `Exception logged: ${String(exception.code).replaceAll("_", " ")}.`,
+      String(exception.note),
+    ];
+  }
+
+  return [];
 }
 
 function getNextAction(booking: NonNullable<Awaited<ReturnType<typeof getBookingByIdForUser>>>) {
@@ -202,19 +258,30 @@ export default async function BookingDetailPage({
                 {booking.events
                   .slice()
                   .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-                  .map((event) => (
-                    <div key={event.id} className="rounded-xl border border-border px-3 py-2">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm font-medium text-text">
-                          {event.eventType.replaceAll("_", " ")}
+                  .map((event) => {
+                    const summaryLines = getEventSummaryLines(event);
+
+                    return (
+                      <div key={event.id} className="rounded-xl border border-border px-3 py-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-medium text-text">
+                            {event.eventType.replaceAll("_", " ")}
+                          </p>
+                          <p className="text-xs text-text-secondary">{formatDateTime(event.createdAt)}</p>
+                        </div>
+                        <p className="mt-1 text-xs uppercase tracking-[0.16em] text-text-secondary">
+                          {event.actorRole}
                         </p>
-                        <p className="text-xs text-text-secondary">{formatDateTime(event.createdAt)}</p>
+                        {summaryLines.length > 0 ? (
+                          <div className="mt-2 space-y-1 text-sm text-text-secondary">
+                            {summaryLines.map((line) => (
+                              <p key={`${event.id}:${line}`}>{line}</p>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
-                      <p className="mt-1 text-xs uppercase tracking-[0.16em] text-text-secondary">
-                        {event.actorRole}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             </details>
           </div>

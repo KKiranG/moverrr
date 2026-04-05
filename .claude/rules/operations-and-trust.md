@@ -44,4 +44,5 @@ Prefer explicit tables, timestamps, and actions over analytics-heavy surfaces.
 
 - Fire-and-forget is fine for critical-path speed, but error capture still matters
 - Notification copy should reinforce trust, next steps, and marketplace logic
+- Scheduled nudges must leave an audit trail and degrade gracefully when email config is missing
 - If a workflow depends on a message, confirm the app still behaves sensibly when the message is skipped
