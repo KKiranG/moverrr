@@ -153,3 +153,17 @@ export function sanitizeText(value: string) {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+export function getSafeRedirectUrl(url: string | null | undefined, fallback = "/search") {
+  if (!url || typeof url !== "string") {
+    return fallback;
+  }
+
+  // Ensure it starts with a single slash (relative path)
+  // and not two slashes (protocol-relative URL like //evil.com)
+  if (url.startsWith("/") && !url.startsWith("//")) {
+    return url;
+  }
+
+  return fallback;
+}
