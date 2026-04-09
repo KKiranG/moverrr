@@ -1,10 +1,15 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { requirePageSessionUser } from "@/lib/auth";
 import { listCarrierTrips } from "@/lib/data/trips";
 import { PageIntro } from "@/components/layout/page-intro";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+
+export const metadata: Metadata = {
+  title: "Carrier trips",
+};
 
 function TripSection({
   title,

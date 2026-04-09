@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 
 import { VerifyCarrierActions } from "@/components/admin/verify-carrier-actions";
 import { Badge } from "@/components/ui/badge";
@@ -292,6 +293,15 @@ function QueueCard({
             <div className={`rounded-xl border px-3 py-2 text-sm font-medium capitalize ${statusTone}`}>
               {carrier.verificationStatus}
             </div>
+          </div>
+
+          <div>
+            <Link
+              href={`/admin/carriers/${carrier.id}`}
+              className="inline-flex min-h-[44px] items-center text-sm font-medium text-accent active:opacity-80"
+            >
+              Open full carrier detail
+            </Link>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

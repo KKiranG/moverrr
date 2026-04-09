@@ -6,11 +6,37 @@ import { Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SEARCH_CATEGORY_OPTIONS } from "@/lib/constants";
 import { getTodayIsoDate } from "@/lib/utils";
 import type { ItemCategory } from "@/types/trip";
 
 type SearchSort = "date" | "price" | "rating";
+type SearchIntent =
+  | "single_furniture"
+  | "appliance"
+  | "marketplace_pickup"
+  | "student_move"
+  | "office_overflow"
+  | "boxes";
+
+const SEARCH_INTENT_OPTIONS: Array<{
+  value: SearchIntent;
+  label: string;
+  category: ItemCategory;
+}> = [
+  { value: "single_furniture", label: "Single furniture", category: "furniture" },
+  { value: "appliance", label: "Appliance", category: "appliance" },
+  { value: "marketplace_pickup", label: "Marketplace pickup", category: "furniture" },
+  { value: "student_move", label: "Student move", category: "boxes" },
+  { value: "office_overflow", label: "Office overflow", category: "boxes" },
+  { value: "boxes", label: "Boxes", category: "boxes" },
+];
+
+function getIntentForCategory(category: ItemCategory) {
+  return (
+    SEARCH_INTENT_OPTIONS.find((option) => option.category === category)?.value ??
+    "single_furniture"
+  );
+}
 
 export function SearchBar({
   defaults,
@@ -20,7 +46,9 @@ export function SearchBar({
     to?: string;
     when?: string;
     what?: ItemCategory;
+    intent?: SearchIntent;
     backload?: boolean;
+    flexibleDates?: boolean;
     sort?: SearchSort;
   };
 }) {
@@ -29,13 +57,22 @@ export function SearchBar({
   const searchParams = useSearchParams();
   const fromRef = useRef<HTMLInputElement>(null);
   const hasUrlDefaults = Boolean(
-    defaults?.from || defaults?.to || defaults?.when || defaults?.what || defaults?.backload,
+    defaults?.from ||
+      defaults?.to ||
+      defaults?.when ||
+      defaults?.what ||
+      defaults?.intent ||
+      defaults?.backload ||
+      defaults?.flexibleDates,
   );
   const [from, setFrom] = useState(defaults?.from ?? "");
   const [to, setTo] = useState(defaults?.to ?? "");
   const [when, setWhen] = useState(defaults?.when ?? getTodayIsoDate());
-  const [what, setWhat] = useState<ItemCategory>(defaults?.what ?? "furniture");
+  const [intent, setIntent] = useState<SearchIntent>(
+    defaults?.intent ?? getIntentForCategory(defaults?.what ?? "furniture"),
+  );
   const [backload, setBackload] = useState(defaults?.backload ?? false);
+  const [flexibleDates, setFlexibleDates] = useState(defaults?.flexibleDates ?? false);
   const [sort, setSort] = useState<SearchSort>(defaults?.sort ?? "date");
 
   const defaultDate = useMemo(() => getTodayIsoDate(), []);
@@ -56,8 +93,9 @@ export function SearchBar({
         from: string;
         to: string;
         when: string;
-        what: ItemCategory;
+        intent: SearchIntent;
         backload: boolean;
+        flexibleDates: boolean;
         sort: SearchSort;
       }>;
 
@@ -66,8 +104,9 @@ export function SearchBar({
       if (parsed.when !== undefined) {
         setWhen(parsed.when >= defaultDate ? parsed.when : defaultDate);
       }
-      if (parsed.what !== undefined) setWhat(parsed.what);
+      if (parsed.intent !== undefined) setIntent(parsed.intent);
       if (parsed.backload !== undefined) setBackload(parsed.backload);
+      if (parsed.flexibleDates !== undefined) setFlexibleDates(parsed.flexibleDates);
       if (parsed.sort !== undefined) setSort(parsed.sort);
     } catch {
       window.localStorage.removeItem("moverrr:search:draft");
@@ -81,9 +120,9 @@ export function SearchBar({
 
     window.localStorage.setItem(
       "moverrr:search:draft",
-      JSON.stringify({ from, to, when, what, backload, sort }),
+      JSON.stringify({ from, to, when, intent, backload, flexibleDates, sort }),
     );
-  }, [backload, from, sort, to, what, when]);
+  }, [backload, flexibleDates, from, intent, sort, to, when]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -131,12 +170,16 @@ export function SearchBar({
     event.preventDefault();
 
     const params = new URLSearchParams();
+    const category =
+      SEARCH_INTENT_OPTIONS.find((option) => option.value === intent)?.category ?? "furniture";
 
     if (from.trim()) params.set("from", from.trim());
     if (to.trim()) params.set("to", to.trim());
     params.set("when", when && when >= defaultDate ? when : defaultDate);
-    if (what) params.set("what", what);
+    params.set("what", category);
+    params.set("intent", intent);
     if (backload) params.set("backload", "1");
+    if (flexibleDates) params.set("flex", "1");
     if (sort !== "date") params.set("sort", sort);
 
     if (typeof window !== "undefined") {
@@ -181,18 +224,18 @@ export function SearchBar({
 
       <div className="hidden gap-2 sm:grid">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-sm font-medium text-text">Browse by item category</span>
-          <span className="text-xs text-text-secondary">Secondary intent friendly</span>
+          <span className="text-sm font-medium text-text">Browse by item type</span>
+          <span className="text-xs text-text-secondary">Use customer language first</span>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-          {SEARCH_CATEGORY_OPTIONS.map((option) => (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {SEARCH_INTENT_OPTIONS.map((option) => (
             <label key={option.value} className="block">
               <input
                 type="radio"
-                name="what-desktop"
+                name="intent-desktop"
                 value={option.value}
-                checked={what === option.value}
-                onChange={() => setWhat(option.value)}
+                checked={intent === option.value}
+                onChange={() => setIntent(option.value)}
                 className="peer sr-only"
               />
               <span className="flex min-h-[44px] cursor-pointer items-center justify-center rounded-xl border border-border px-3 py-2 text-center text-sm text-text transition-colors peer-checked:border-accent peer-checked:bg-accent/10 peer-checked:text-accent active:bg-black/[0.04] dark:active:bg-white/[0.08] peer-focus-visible:ring-2 peer-focus-visible:ring-accent peer-focus-visible:outline-none">
@@ -203,7 +246,7 @@ export function SearchBar({
         </div>
       </div>
 
-      <div className="grid gap-3 grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[1fr_1fr_auto_auto]">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 sm:grid-cols-[1fr_1fr_auto_auto_auto]">
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-text">When</span>
           <Input
@@ -213,6 +256,20 @@ export function SearchBar({
             min={defaultDate}
             onChange={(event) => setWhen(event.target.value)}
           />
+        </label>
+        <label className="hidden min-h-[44px] cursor-pointer items-center justify-between gap-3 rounded-xl border border-border px-3 py-2 active:bg-black/[0.04] dark:active:bg-white/[0.08] sm:flex focus-within:ring-2 focus-within:ring-accent focus-within:outline-none">
+          <input
+            type="checkbox"
+            name="flexible-dates-desktop"
+            checked={flexibleDates}
+            onChange={(event) => setFlexibleDates(event.target.checked)}
+            className="h-4 w-4 accent-accent focus:outline-none"
+            aria-label="Flexible dates"
+          />
+          <div className="flex-1">
+            <span className="block text-sm font-medium text-text">Flexible dates</span>
+            <span className="text-xs text-text-secondary">Search this day plus 3 days either side.</span>
+          </div>
         </label>
         <label className="hidden min-h-[44px] cursor-pointer items-center justify-between gap-3 rounded-xl border border-border px-3 py-2 active:bg-black/[0.04] dark:active:bg-white/[0.08] sm:flex focus-within:ring-2 focus-within:ring-accent focus-within:outline-none">
           <input
@@ -263,18 +320,18 @@ export function SearchBar({
         <div className="mt-3 grid gap-3">
           <div className="grid gap-2">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-medium text-text">Item category</span>
+              <span className="text-sm font-medium text-text">Item type</span>
               <span className="text-xs text-text-secondary">Optional</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {SEARCH_CATEGORY_OPTIONS.map((option) => (
+              {SEARCH_INTENT_OPTIONS.map((option) => (
                 <label key={option.value} className="block">
                   <input
                     type="radio"
-                    name="what-mobile"
+                    name="intent-mobile"
                     value={option.value}
-                    checked={what === option.value}
-                    onChange={() => setWhat(option.value)}
+                    checked={intent === option.value}
+                    onChange={() => setIntent(option.value)}
                     className="peer sr-only"
                   />
                   <span className="flex min-h-[44px] cursor-pointer items-center justify-center rounded-xl border border-border px-3 py-2 text-center text-sm text-text transition-colors peer-checked:border-accent peer-checked:bg-accent/10 peer-checked:text-accent active:bg-black/[0.04] dark:active:bg-white/[0.08] peer-focus-visible:ring-2 peer-focus-visible:ring-accent peer-focus-visible:outline-none">
@@ -284,6 +341,22 @@ export function SearchBar({
               ))}
             </div>
           </div>
+          <label className="flex min-h-[44px] cursor-pointer items-center justify-between gap-3 rounded-xl border border-border px-3 py-2 active:bg-black/[0.04] dark:active:bg-white/[0.08] focus-within:ring-2 focus-within:ring-accent focus-within:outline-none">
+            <input
+              type="checkbox"
+              name="flexible-dates-mobile"
+              checked={flexibleDates}
+              onChange={(event) => setFlexibleDates(event.target.checked)}
+              className="h-4 w-4 accent-accent focus:outline-none"
+              aria-label="Flexible dates"
+            />
+            <div className="flex-1">
+              <span className="block text-sm font-medium text-text">Flexible dates</span>
+              <span className="text-xs text-text-secondary">
+                Include nearby dates when the exact day is sparse.
+              </span>
+            </div>
+          </label>
           <label className="flex min-h-[44px] cursor-pointer items-center justify-between gap-3 rounded-xl border border-border px-3 py-2 active:bg-black/[0.04] dark:active:bg-white/[0.08] focus-within:ring-2 focus-within:ring-accent focus-within:outline-none">
             <input
               type="checkbox"

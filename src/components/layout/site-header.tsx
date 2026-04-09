@@ -24,7 +24,7 @@ export async function SiteHeader() {
         href: "/become-a-carrier",
         label: "Become a carrier",
       };
-  const postTripHref = user ? (carrier ? "/carrier/post" : "/carrier/onboarding") : "/signup";
+  const postTripHref = user ? (carrier ? "/carrier/post" : "/carrier/onboarding") : "/carrier/signup";
 
   const navItems: NavItem[] = [
     { href: "/search", label: "Browse trips" },

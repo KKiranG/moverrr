@@ -6,6 +6,81 @@
 
 ---
 
+## 2026-04-09 — Carrier activation, branded lifecycle email, search truth, admin carrier detail, and repo-side observability wiring
+
+### `COMP-2026-04-09-42` — PR 10 closed the carrier activation and search-truth architecture wave
+- Moved from active backlog:
+  - `EP12`, `EA8`, `ET3`, and `ET10`
+- Closed or materially resolved from the MVP critical blockers section:
+  - dedicated carrier signup path
+  - Stripe Connect Express onboarding start/return/webhook sync
+  - branded transactional email templates
+  - admin carrier detail page with internal notes/tags and required rejection reasons
+  - immediate booking-reference success state
+  - flexible-date search and coordinate-backed suburb fallback
+- When: `2026-04-09`
+- Where:
+  - `src/app/(auth)/carrier/signup/page.tsx`
+  - `src/components/auth/signup-form.tsx`
+  - `src/components/layout/site-header.tsx`
+  - `src/app/(marketing)/become-a-carrier/page.tsx`
+  - `src/lib/stripe/connect.ts`
+  - `src/app/api/carrier/stripe/connect-start/route.ts`
+  - `src/app/api/carrier/stripe/connect-return/route.ts`
+  - `src/app/api/payments/webhook/route.ts`
+  - `src/components/carrier/connect-payout-button.tsx`
+  - `src/app/(carrier)/carrier/dashboard/page.tsx`
+  - `src/app/(carrier)/carrier/onboarding/page.tsx`
+  - `src/app/(carrier)/carrier/payouts/page.tsx`
+  - `src/app/api/carrier/payouts/export/route.ts`
+  - `src/lib/email/index.ts`
+  - `src/lib/data/bookings.ts`
+  - `src/lib/data/admin.ts`
+  - `src/lib/data/feedback.ts`
+  - `src/app/api/admin/carriers/[id]/verify/route.ts`
+  - `src/app/(customer)/search/page.tsx`
+  - `src/components/search/search-bar.tsx`
+  - `src/components/trip/trip-card.tsx`
+  - `src/lib/maps/sydney-suburb-coords.ts`
+  - `src/lib/data/trips.ts`
+  - `src/types/trip.ts`
+  - `src/components/booking/booking-form.tsx`
+  - `src/lib/data/carriers.ts`
+  - `src/components/admin/carrier-ops-form.tsx`
+  - `src/components/admin/verification-queue.tsx`
+  - `src/app/(admin)/admin/carriers/[id]/page.tsx`
+  - `src/app/api/admin/carriers/[id]/route.ts`
+  - `src/app/api/payments/create-intent/route.ts`
+  - `src/app/api/bookings/[id]/review/route.ts`
+  - `src/app/api/bookings/[id]/confirm-receipt/route.ts`
+  - `src/app/api/saved-searches/route.ts`
+  - `src/app/api/saved-searches/[id]/route.ts`
+  - `src/app/api/trips/templates/route.ts`
+  - `src/app/api/trips/templates/[id]/route.ts`
+  - `src/app/api/trips/templates/[id]/post/route.ts`
+  - `src/app/(carrier)/carrier/post/page.tsx`
+  - `src/app/(carrier)/carrier/stats/page.tsx`
+  - `src/app/(carrier)/carrier/templates/page.tsx`
+  - `src/app/(carrier)/carrier/trips/page.tsx`
+  - `src/app/(carrier)/carrier/trips/[id]/page.tsx`
+  - `next.config.js`
+  - `sentry.server.config.ts`
+  - `sentry.client.config.ts`
+  - `todolist.md`
+  - `completed.md`
+- Why:
+  - The hardest remaining product gaps had shifted from “missing feature basics” to “truthful system architecture”: carriers needed a real payout path, emails needed a reusable trust layer, search needed route truth instead of suburb text hacks, and admin ops needed one place to make evidence-backed carrier decisions.
+- What changed:
+  - Added a dedicated carrier signup path and redirected supply-intent CTAs into it, while keeping the existing shared-user plus onboarding-upsert model intact for MVP.
+  - Landed Stripe Connect Express account creation/resume, return-path syncing, carrier-facing payout CTAs, webhook `account.updated` handling, a carrier payout ledger, and CSV export.
+  - Replaced bare inline booking/admin/dispute HTML with a branded shared template layer, then added verification-approved/rejected, review-request, and delivery-confirmed lifecycle emails on top of that system.
+  - Reworked search fallback to use curated Sydney suburb coordinates instead of raw suburb `ilike`, added flexible-date search with grouped browse results, exposed plain-language route-fit cues on cards, and shifted search filters into customer-language item intents.
+  - Added an admin carrier detail page with document access, expiry context, internal notes, internal tags, rejection-reason enforcement, and queue deep-links, plus boundary-schema hardening for a broad set of mutating API routes.
+  - Added carrier-page metadata coverage and repo-side Sentry Next.js/source-map wiring so internal tabs and observability config both match the current product state.
+- Verification:
+  - `npm run check`
+  - `npm test`
+
 ## 2026-04-09 — Agent OS hardening, shared memory, and task-system cleanup
 
 ### `COMP-2026-04-09-41` — Core agent operating system hardening, repo-portable workflows, and backlog truth sync

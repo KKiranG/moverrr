@@ -6,6 +6,7 @@ import {
   applyPaymentIntentEvent,
   createSupabaseBookingPaymentRepository,
 } from "@/lib/stripe/payment-intent-events";
+import { syncCarrierStripeOnboardingStatusByAccount } from "@/lib/stripe/connect";
 
 function logWebhookContext(
   level: "info" | "warn" | "error",
@@ -42,6 +43,13 @@ export async function POST(request: Request) {
               eventType: context.eventType,
             },
           }),
+      });
+    }
+
+    if (event.type === "account.updated") {
+      const account = event.data.object as { id: string };
+      await syncCarrierStripeOnboardingStatusByAccount({
+        accountId: account.id,
       });
     }
 

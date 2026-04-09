@@ -1,6 +1,6 @@
 # moverrr — Active Backlog
 
-> Last refreshed: `2026-04-08` — backlog reconciled against the current local codebase and latest verification pass
+> Last refreshed: `2026-04-09` — backlog reconciled against the current local codebase and PR 10 verification pass
 > Format governed by `TASK-RULES.md`. Work top-to-bottom within each priority level.
 > Move completed items to `completed.md` — never mark done in this file.
 
@@ -65,19 +65,7 @@
   - **Why:** Trip-day proof capture happens in the least reliable network conditions; queued retry is safer than manual re-upload.
   - **Done when:** Offline proof uploads show a queued state and auto-retry when connectivity returns.
 
-- [ ] **EP12** — Metadata coverage is improved but still incomplete on many internal pages
-  - **File(s):** page-level files under `src/app/(carrier)`
-  - **What:** Admin pages plus customer bookings, saved-searches, and auth verify now export page-specific metadata. The remaining gap is consistent metadata coverage across carrier internal pages that still inherit the layout default title.
-  - **Why:** Distinct titles matter for tab clarity, indexing, and ops usability when multiple moverrr tabs are open.
-  - **Done when:** Carrier internal pages export page-specific `metadata.title` or `generateMetadata()` and `npm run check` passes.
-
 ### EA — Admin and Ops Enhancements
-
-- [ ] **EA8** — Admin carrier notes and internal tags
-  - **File(s):** `src/app/(admin)/admin/carriers/[id]/page.tsx`, `src/lib/data/carriers.ts`, `supabase/migrations/`
-  - **What:** Add separate internal notes and tags such as trusted, probation, flagged, and VIP to carrier admin views.
-  - **Why:** Ops needs internal context beyond verification notes without leaking those labels into carrier-facing APIs.
-  - **Done when:** Admin carrier detail persists internal notes/tags and they remain invisible to carrier-facing responses.
 
 ### EQ — Code Quality and Test Coverage
 
@@ -89,7 +77,7 @@
 
 - [ ] **EQ6** — API route input validation coverage audit
   - **File(s):** `src/app/api/**`
-  - **What:** Finish converting every mutating API route to named Zod schemas parsed before any DB access.
+  - **What:** The high-risk mutating routes for payment-intent creation, saved searches, booking review/confirm-receipt, and trip-template mutations now use named boundary schemas. Finish the remaining mutating routes still accepting unchecked JSON, especially admin bootstrap/rate-limit, review responses, and any leftover trip/admin patch routes.
   - **Why:** Inconsistent validation is a security and data-quality risk, even after the highest-risk routes have been hardened.
   - **Done when:** All mutating API routes use named Zod schemas at the boundary and `npm run check` passes.
 
@@ -101,7 +89,7 @@
 
 - [ ] **EQ8** — Admin route error-boundary coverage
   - **File(s):** `src/app/(admin)/admin/**`, `src/components/shared/error-boundary.tsx`
-  - **What:** Wrap admin page sections so a partial loader failure degrades to a retry card instead of crashing the full admin surface.
+  - **What:** Admin carrier detail now degrades section-by-section with retryable cards. Extend the same partial-failure treatment across the remaining admin dashboard, disputes, bookings, and payments sections that still render as full-page failures.
   - **Why:** Ops needs partial visibility during incidents more than it needs a perfect all-or-nothing dashboard render.
   - **Done when:** Admin sections fail independently with retryable UI and the full admin page no longer hard-crashes on one loader error.
 
@@ -157,11 +145,11 @@
   - **Why:** Missing deployment env vars are the fastest path to "works locally, fails in production" incidents.
   - **Done when:** `.env.example` is current and Vercel production/preview env sets are confirmed against it.
 
-- [ ] **X2** — No structured Sentry source maps for production builds
-  - **File(s):** `src/lib/sentry.ts`, `next.config.js`, `package.json`
-  - **What:** Sentry is initialized but source maps may not be uploaded at build time. Without source maps, Sentry error reports show minified stack traces that are unreadable.
-  - **Why:** Production bugs captured by Sentry are uninvestigable without source maps. The error capture investment is wasted.
-  - **Done when:** `@sentry/nextjs` is configured with `sentry.server.config.ts` and `sentry.client.config.ts`, build CI uploads source maps to Sentry, and a test error shows readable stack traces in Sentry.
+- [ ] **X2** — Live Sentry source-map verification after repo wiring
+  - **File(s):** `src/lib/sentry.ts`, `next.config.js`, `sentry.server.config.ts`, `sentry.client.config.ts`
+  - **What:** The repo-side `@sentry/nextjs` wiring and source-map upload config now exist. The remaining step is a real build/deploy verification against a configured Sentry org/project so uploaded source maps and readable stack traces are proven in production or preview.
+  - **Why:** Local config is not the same as an actually readable production stack trace.
+  - **Done when:** A deployed test error resolves to readable application stack traces in Sentry with the configured release metadata.
 
 - [ ] **X3** — Resend domain verification and production sender
   - **File(s):** `.env.example`, `src/lib/notifications.ts`, Resend dashboard, DNS provider
@@ -198,12 +186,6 @@
 
 ### ET — Trust, Copy & Customer Clarity
 
-- [ ] **ET3** — Item-type search filters using customer language
-  - **File(s):** `src/components/search/search-filters.tsx`, `src/app/api/search/route.ts`
-  - **What:** Add item-type filter chips: Single furniture, Appliance, Marketplace pickup, Student move, Office overflow, Boxes. Map to existing `item_category` values or a combined filter.
-  - **Why:** Customers think in item terms, not logistics terms. Matching filters improve result quality and reduce mismatch bookings.
-  - **Done when:** Customers can filter by item type, results narrow correctly. `npm run check` passes.
-
 - [ ] **ET4** — Compact trust signals row on browse cards
   - **File(s):** `src/components/trip/trip-card.tsx`, `src/lib/data/trips.ts`
   - **What:** Search cards now carry a compact trust row for verification, payout readiness, and review signals. The remaining delta is surfacing a truthful completed-jobs count in that same row once listing queries expose a stable completed-job metric.
@@ -221,12 +203,6 @@
   - **What:** Add a structured included/not-included block from listing rules: Included — loading, blankets, transit. Not included — disassembly, stair buildings, items over 100kg. Carriers populate this during trip creation.
   - **Why:** Most move disputes come from unstated assumptions. Explicit inclusions/exclusions before booking reduce trip-day surprises.
   - **Done when:** Trip detail shows the block. Carriers can control content via listing fields. `npm run check` passes.
-
-- [ ] **ET10** — Carrier payout ledger with CSV export
-  - **File(s):** `src/app/(carrier)/carrier/payouts/page.tsx`, `src/lib/data/bookings.ts`
-  - **What:** Show carriers a line-item ledger: booking reference, route date, base earnings, 15% fee deduction, net payout, payout status. Group by month. Add CSV export button.
-  - **Why:** Carriers need to reconcile earnings for tax and accounting. Without a ledger, they contact support — friction that hurts repeat-carrier retention.
-  - **Done when:** Payouts page shows ledger with math from `breakdown.ts`. CSV export produces a valid file. `npm run check` passes.
 
 - [ ] **ET11** — Booking price breakdown consistency across all views
   - **File(s):** `src/components/booking/booking-checkout-panel.tsx`, `src/app/(customer)/bookings/[id]/page.tsx`, `src/app/(admin)/admin/bookings/[id]/page.tsx`, `src/components/trip/trip-card.tsx`
@@ -322,17 +298,17 @@
 
 ---
 
-### Stripe Connect Express onboarding is not implemented — carriers cannot receive payouts
+### Stripe Connect Express onboarding now exists, but still needs real-env verification
 
 - **Priority:** P0
 - **Stage:** Now
 - **Type:** Product / Payments
-- **Why this matters:** The carrier payouts page shows "Finish payout setup" and links to `/carrier/onboarding`. The onboarding page only captures documents and business details. There is no Stripe Connect Express account creation code, no `stripe.accounts.create()` call, no `stripe.accountLinks.create()` call, and no redirect to Stripe's hosted onboarding flow. `stripe_account_id` is null for all carriers. The field exists in the schema (`carriers.stripe_account_id`, `carriers.stripe_onboarding_complete`). Funds can be authorized, but **no payout can ever be released** because there is no connected account to pay into. This is a total blocker for carrier economics.
-- **What exactly needs to be done:** Build a Stripe Connect Express onboarding flow. Specifically: (1) Create a new API route `POST /api/carrier/stripe/connect-start` that calls `stripe.accounts.create({ type: 'express', country: 'AU', ... })`, stores the returned `account_id` in `carriers.stripe_account_id`, then generates an account link via `stripe.accountLinks.create({ account, refresh_url, return_url, type: 'account_onboarding' })` and redirects the carrier there. (2) Create a return route `GET /api/carrier/stripe/connect-return` that checks the account status via `stripe.accounts.retrieve(account_id)`, sets `stripe_onboarding_complete = true` and `onboarding_completed_at = now()` if `charges_enabled` and `payouts_enabled` are true. (3) Add a prominent CTA on the carrier payouts page and dashboard to trigger this flow when `stripe_onboarding_complete = false`. (4) Add a payout release mechanism: when a booking moves to `completed`, the admin payments page should allow triggering `stripe.transfers.create()` or `stripe.paymentIntents.capture()` to move funds to the carrier's connected account. (5) Add a Stripe Connect webhook listener for `account.updated` events to keep `stripe_onboarding_complete` in sync.
+- **Why this matters:** The repo now has Express account creation/resume, return handling, carrier CTAs, and `account.updated` syncing. The remaining risk is environment truth: Connect capability, return URLs, and webhook delivery all need a real preview/production verification pass before payouts are trusted operationally.
+- **What exactly needs to be done:** Run a real carrier through `/api/carrier/stripe/connect-start`, complete Stripe onboarding, confirm the return route updates `stripe_onboarding_complete`, confirm `account.updated` webhook delivery, and verify the already-landed admin payment capture flow still matches the connected-account payout policy for MVP.
 - **Likely areas affected:** `src/app/api/carrier/stripe/` (new files), `src/app/(carrier)/carrier/payouts/page.tsx`, `src/app/(carrier)/carrier/onboarding/page.tsx`, `src/lib/stripe/` (new connect helpers), `src/app/api/payments/webhook/route.ts` (add account.updated handler), `supabase/migrations/` (no schema change needed, columns exist)
-- **Dependencies / open questions:** STRIPE_SECRET_KEY must be configured with Connect capabilities enabled. Need to decide: manual admin-triggered payout release or automatic on `completed` status? For MVP, manual admin trigger (EA7 in existing backlog) is safer. Founder must decide payout timing — immediately on completed, or on a schedule?
-- **Edge cases / failure modes:** Carrier starts onboarding but abandons mid-flow (Stripe calls the `refresh_url` — need a "Resume payout setup" flow). Carrier account gets restricted by Stripe after approval. `stripe.transfers.create()` fails because of negative balance on platform account. Carrier hasn't set up bank account in Stripe but `charges_enabled` is true.
-- **Acceptance criteria:** A test carrier can click "Set up payouts," be redirected to Stripe Connect Express, complete onboarding, return to moverrr with `stripe_onboarding_complete = true` in the database, and the payout dashboard shows "Payout setup complete." Admin payments page shows a working "Release payout" action for completed bookings.
+- **Dependencies / open questions:** STRIPE_SECRET_KEY plus Connect capabilities must be enabled in the target env, and the webhook endpoint must actually receive Connect account events.
+- **Edge cases / failure modes:** Carrier abandons onboarding and resumes later, Stripe restricts an already-created account, or the return path succeeds but webhook delivery lags and temporarily shows stale status.
+- **Acceptance criteria:** A real carrier can complete the hosted Stripe Connect flow end-to-end and the payout dashboard reflects the completed setup without manual DB intervention.
 
 ---
 
@@ -350,17 +326,17 @@
 
 ---
 
-### Carrier signup creates no carrier profile — sign-up path is undefined
+### Carrier signup path now exists, but dual-profile creation still needs founder policy
 
 - **Priority:** P0
 - **Stage:** Now
 - **Type:** Product / Supply
-- **Why this matters:** The `handle_new_user` trigger in migration 006 creates a customer profile for any signup where `account_type != 'carrier'`. But when `account_type = 'carrier'`, the trigger does nothing — no carrier profile is created. `signup-form.tsx` does pass `account_type: accountType` in metadata, but: (1) there is no dedicated carrier signup page with different copy and expectations, (2) after carrier signup the user lands in an undefined state (no customer record, no carrier record), (3) the `/carrier/onboarding` page calls `getCarrierByUserId` which returns null and shows the onboarding form — fine, but only if the user finds that page. The site header redirects unauthenticated users to `/signup` for "Become a carrier" — there is no explicit `/signup?type=carrier` or `/carrier/signup` path.
-- **What exactly needs to be done:** (1) Create a dedicated carrier signup page at `/carrier/signup` (or modify the existing signup form to have a clear carrier vs customer split). The page should explain what it means to be a carrier on moverrr, set expectations about verification, and pass `account_type: 'carrier'` to the signup form. (2) After carrier signup, redirect to `/carrier/onboarding` automatically. (3) Update the site header "Become a carrier" link to point to `/carrier/signup` instead of `/signup`. (4) Update the `handle_new_user` trigger to either also create a minimal carrier row on carrier signup, OR ensure the onboarding page gracefully handles the "no carrier profile yet" state and creates one on first form submission (check if this is already the behavior).
+- **Why this matters:** `/carrier/signup`, carrier-specific copy, redirect to onboarding, and supply-intent CTAs now exist. The remaining product question is whether moverrr wants one user to seamlessly hold both customer and carrier profiles, or whether signup/onboarding should proactively create both sides.
+- **What exactly needs to be done:** Decide and document the dual-profile policy, then update the signup/onboarding data flow only if the current “carrier row created on first onboarding submit” model is no longer the desired MVP behavior.
 - **Likely areas affected:** New page `src/app/(auth)/carrier/signup/page.tsx` or modified `src/components/auth/signup-form.tsx`, `src/components/layout/site-header.tsx`, `supabase/migrations/` (optional trigger update), `src/app/(carrier)/carrier/onboarding/actions.ts`
 - **Dependencies / open questions:** Founder decision: should carrier and customer be the same Supabase user (just different profiles)? Or truly separate accounts? Currently a user CAN have both a carrier and customer record. Is this intentional for MVP or a gap?
 - **Edge cases / failure modes:** A carrier tries to also book a trip — do they have a customer profile? They don't after carrier signup. The redirect after signup may lose context if not handled carefully.
-- **Acceptance criteria:** A new user can visit a clear "Become a carrier" page, sign up, and land directly at the carrier onboarding form without confusion. The carrier profile is created (or creatable) through the onboarding form. The `/carrier/onboarding` page is not orphaned from the signup path.
+- **Acceptance criteria:** Founder signs off on the current shared-user / onboarding-upsert model or a replacement migration-backed profile strategy is implemented.
 
 ---
 
@@ -378,45 +354,45 @@
 
 ---
 
-### Email templates are bare inline HTML strings — not usable for a real product launch
+### Email templates are upgraded, but live inbox QA still remains
 
 - **Priority:** P1
 - **Stage:** Now
 - **Type:** Product / Trust
-- **Why this matters:** The current email sending in `bookings.ts` uses ad hoc inline HTML string literals. The booking_created_customer email is 4 lines of unstyled HTML. The booking_status_update email sends a `statusMessageHtml` variable with minimal formatting. The pending_booking_expired email is a single sentence. These emails land in customer and carrier inboxes as the trust signal from moverrr. Bare HTML with no branding, no clear CTA, and no mobile layout will look like spam or an amateur product. Email is the primary async communication channel before native push is built.
-- **What exactly needs to be done:** Create a reusable email layout function or template in `src/lib/email/` (new directory). The template must: (1) use responsive HTML email best practices (table-based layout or a proven approach like MJML or simple inline-CSS columns); (2) include the moverrr brand name and color accent consistently; (3) include a primary CTA button linking to the relevant booking URL; (4) include the booking reference prominently; (5) include clear "what happens next" instructions. Build this as a TypeScript function `buildEmailHtml({ type, booking, ... })` that returns the HTML string. Then update each existing `sendBookingTransactionalEmail` call to use the template function. At minimum, implement proper templates for: `booking_created_customer`, `booking_created_carrier`, `booking_status_update` (per status), `pending_booking_expired`, `dispute_resolution_update`.
+- **Why this matters:** The shared branded template layer is now in place and the booking/admin/dispute flows no longer rely on bare inline HTML. The remaining risk is client rendering quality and live deliverability, not repo-side template structure.
+- **What exactly needs to be done:** Send the new branded templates through real Gmail/Apple Mail inboxes, verify previews and CTA rendering, and tighten any client-specific spacing or clipping defects that only show up in real inboxes.
 - **Likely areas affected:** New dir `src/lib/email/`, `src/lib/data/bookings.ts` (update calls), `src/lib/data/admin.ts` (update calls), `src/lib/data/feedback.ts` (update calls)
 - **Dependencies / open questions:** No external dependency needed — pure function returning HTML string is enough for MVP. Resend domain must be verified first (X3 in existing backlog). Decide: should each status transition have a different subject line and body? Current code has a `subjectByStatus` map — what's in it? Verify which statuses get emails.
 - **Edge cases / failure modes:** HTML renders differently across email clients (Gmail, Apple Mail, Outlook). Avoid complex CSS. Test with a tool like Litmus or by sending real test emails. The `to` address may be null if env is not configured — already handled by graceful degradation.
-- **Acceptance criteria:** Each email type renders with moverrr branding, a clear subject, the booking reference, the relevant action or status update, a CTA link, and "what happens next" copy. No raw HTML tag strings visible in inbox previews. Emails are readable on mobile (Gmail, Apple Mail at minimum).
+- **Acceptance criteria:** Real inbox checks confirm the branded templates render cleanly on mobile clients without clipping, broken CTA buttons, or unreadable copy.
 
 ---
 
-### No notifications sent for: trip-day reminder, verification approved/rejected, review request
+### Lifecycle email gaps are narrower, but scheduled reminders still need wiring
 
 - **Priority:** P1
 - **Stage:** Now
 - **Type:** Product / Trust
-- **Why this matters:** The only emails sent today are: booking_created (customer + carrier), booking_status_update (generic for all transitions), pending_booking_expired, and dispute_resolution_update. Missing critical lifecycle emails that drive trust and conversion: (1) **Carrier verification approved** — the carrier has no idea when admin verified them, so they may not know to start posting. (2) **Carrier verification rejected** — carrier submits documents and hears nothing. (3) **Trip day reminder** — carriers need a reminder on the morning of the trip day with the booking details and pickup address. (4) **Review request** — after a booking is `completed`, neither party gets a nudge to leave a review. Reviews drive trust for future customers. (5) **Delivery confirmed notification** — customer clicks "I received my item" (confirm receipt); carrier should know.
-- **What exactly needs to be done:** Implement the following email triggers: (1) When `carriers.verification_status` changes to `verified` or `rejected` — send a specific email to the carrier with next steps or feedback. Add this to the admin verify endpoint (`/api/admin/carriers/[id]/verify/route.ts`). (2) Trip-day reminder: via the cron job system (also needed for AG-CI), create a daily cron that finds all `confirmed` bookings with `trip_date = today` and sends a reminder to the carrier with pickup address, customer contact, booking reference. (3) Review request: when a booking transitions to `completed`, send a `review_request` email to the customer with a link to `/bookings/[id]#review`. (4) Delivery confirmed: when the carrier marks delivery, send a notification to the customer that their item has been marked as delivered and what to do next (confirm receipt or raise a dispute).
+- **Why this matters:** Verification approved/rejected emails, review-request emails, and customer delivery-confirmed emails now exist. The remaining gap is scheduled reminder infrastructure rather than zero lifecycle coverage.
+- **What exactly needs to be done:** Wire trip-day and delivery reminder scheduling to the chosen cron/runtime path, dedupe reminder sends, and verify the reminder copy against real booking timelines.
 - **Likely areas affected:** `src/app/api/admin/carriers/[id]/verify/route.ts`, `src/lib/data/bookings.ts` (status update handler), new file `src/app/api/cron/trip-day-reminders/route.ts`, `src/lib/email/` (new templates for each type), `vercel.json` (add cron entry for daily reminders)
 - **Dependencies / open questions:** Trip-day reminders require the cron infrastructure (depends on the expired-bookings cron item above). Email domain must be verified (X3). Do we send review requests to both customer and carrier or just customer?
 - **Edge cases / failure modes:** Booking confirmed → delivered → carrier doesn't trigger completed → no review request fires. Cover this by also sending the review request when `completed_at` is set (not just on the status transition). A carrier with multiple bookings on trip day gets one reminder per booking — is that too many emails? For MVP, one per booking is fine. Rate limit the daily reminder cron to not resend if already sent within 12 hours.
-- **Acceptance criteria:** A carrier sees their verification status change via email. After a completed booking, the customer receives a review request email with a working link. Carriers receive a morning reminder for each confirmed trip-day booking. All new emails use the branded template from the previous item.
+- **Acceptance criteria:** Daily reminders send automatically for eligible bookings without duplicate reminder spam, while the already-landed verification/review/delivery emails continue to dedupe correctly.
 
 ---
 
-### Admin has no individual carrier detail page — verification is a blind approve/reject
+### Admin carrier detail is now live, but verification-history depth can still improve
 
 - **Priority:** P1
 - **Stage:** Now
 - **Type:** Ops / Trust
-- **Why this matters:** The admin carriers page (`/admin/carriers`) shows a verification queue via `VerificationQueue` component. Admins can approve or reject. But the schema shows carriers have: `licence_photo_url`, `insurance_photo_url`, `vehicle_photo_url`, `licence_expiry_date`, `insurance_expiry_date`, `bio`, `phone`, `email`, `abn`, `business_name`, `verification_notes`. There is no page to view all of this in context. Admins cannot see the document photos before clicking approve. They cannot add `verification_notes` explaining a rejection. The `internal_notes` and `internal_tags` columns exist (from migration 013) but have no UI. A carrier gets rejected with no explanation.
-- **What exactly needs to be done:** Create an admin individual carrier page at `/admin/carriers/[id]/page.tsx` that shows: (1) full carrier profile (business name, ABN, contact, bio, service suburbs); (2) vehicle details and photo; (3) licence photo + expiry date with a badge if expired or expiring within 30 days; (4) insurance photo + expiry date with same badge; (5) verification history from `booking_events` or `verification_submitted_at` / `verified_at` timestamps; (6) `internal_notes` textarea (editable by admin, saved via PATCH); (7) `internal_tags` selector (trusted / probation / flagged / VIP — EA8 in existing backlog); (8) Approve / Reject buttons with required reason text (sets `verification_notes` on reject); (9) completed bookings and reviews for context; (10) Stripe Connect status. The `VerificationQueue` component's carrier rows should link to this page.
+- **Why this matters:** The admin detail page, document links, internal notes/tags, required rejection reason, and queue deep-links now exist. The remaining gap is richer historical context rather than blind verification.
+- **What exactly needs to be done:** Extend the detail page with deeper verification-history records and any document-renewal warnings that ops decides are still missing after live usage.
 - **Likely areas affected:** New page `src/app/(admin)/admin/carriers/[id]/page.tsx`, new API route `src/app/api/admin/carriers/[id]/route.ts` (likely needs to be created as a page route, not API), `src/components/admin/` (new carrier detail components), `src/lib/data/carriers.ts` (add `getAdminCarrierById` function), update `src/components/admin/verification-queue.tsx` to link to detail page
 - **Dependencies / open questions:** Private storage bucket access — the admin must be able to see the carrier's document photos. The existing storage RLS policy allows admin to read any object. Verify the signed URL generation works for admin views.
 - **Edge cases / failure modes:** Admin approves a carrier whose insurance has expired (licence_expiry_date < today). Should the approve button warn about expired documents? Yes — add a visual warning on the approve button when documents are near-expiry or expired.
-- **Acceptance criteria:** Admin can navigate to `/admin/carriers/[carrier-id]`, see all documents with photos rendered via signed URLs, see expiry status, add internal notes, set internal tags, and approve or reject with a stored reason. The verification queue links to this page.
+- **Acceptance criteria:** Ops can audit the full verification timeline, not just the current document/state snapshot.
 
 ---
 
@@ -646,15 +622,15 @@
 
 ---
 
-### Customer cannot see their booking reference before leaving the booking confirmation page
+### Booking reference now appears immediately, but cross-surface consistency still needs a QA sweep
 
 - **Priority:** P2
 - **Stage:** Pre-MVP
 - **Type:** Product / Trust
-- **Why this matters:** After booking, the customer should immediately see their booking reference (MVR-YYYY-NNNN format). This reference is: (1) what they use if contacting support; (2) what appears in the email; (3) what they search for in disputes. If the confirmation page doesn't prominently display the reference, customers don't have it handy when the carrier calls or when something goes wrong.
-- **What exactly needs to be done:** Verify the booking confirmation state on the trip detail page or booking checkout panel. Confirm the `booking_reference` is displayed immediately after a booking is created. It should appear: (1) prominently on the success state of the booking checkout panel; (2) in the booking confirmation email (this already appears — check the email template); (3) as the heading on the `/bookings/[id]` detail page.
+- **Why this matters:** The booking form now exposes the reference before redirecting. The remaining work is QA consistency across success state, detail page, and delivered emails in real user journeys.
+- **What exactly needs to be done:** Verify the same reference format stays visible and identical across checkout success, booking detail, and the branded email templates in a live booking run.
 - **Likely areas affected:** `src/components/booking/booking-checkout-panel.tsx`, `src/app/(customer)/bookings/[id]/page.tsx`
-- **Acceptance criteria:** After completing a booking, the customer sees "Your booking reference: MVR-2026-XXXX" without having to navigate away. The reference is on the booking detail page. The reference appears in the booking email.
+- **Acceptance criteria:** The same booking reference is immediately visible at checkout success and matches the detail page plus email record for the same booking.
 
 ---
 
@@ -719,16 +695,16 @@
 
 ---
 
-### Search has no date range option — a customer who is flexible gets no benefit
+### Flexible-date search is now live, but browse grouping quality still needs user feedback
 
 - **Priority:** P2
 - **Stage:** Pre-MVP
 - **Type:** Product / Demand
-- **Why this matters:** The search accepts a single `when` date. A customer who is flexible ("anytime this week") must submit separate searches for each day. The `queryTripsByDateWindow` function accepts a `dates: string[]` array but the search API only passes one date from the URL param. Flexible date search is a simple improvement that increases the chance of match when supply is sparse.
-- **What exactly needs to be done:** Add a "Flexible dates" option to the search bar alongside the specific date picker. When "Flexible" is selected, search ±3 days from today (or let the user select a week range). Pass the array of dates to `searchTrips()`. The results page should group by date when flexible dates are used. This is primarily a UI change since the backend `queryTripsByDateWindow` already accepts an array.
+- **Why this matters:** Flexible date search, grouped results, and coordinate-backed fallback now exist. The remaining risk is user comprehension and whether grouped browse still feels clear on mobile when supply gets denser.
+- **What exactly needs to be done:** Run mobile browse QA on the grouped flexible-date results, then tighten headings, ordering, or show-more behavior if customers struggle to scan the grouped output.
 - **Likely areas affected:** `src/components/search/search-bar.tsx`, `src/app/api/search/route.ts`, `src/lib/data/trips.ts` (`searchTrips` input type)
 - **Dependencies / open questions:** When flexible dates are used with spatial search (PostGIS RPC), does the RPC also support date arrays? Inspect `find_matching_listings` — it accepts `p_date date` (single). Would need to modify the RPC or call it multiple times. For MVP, text-fallback mode with date arrays is simpler.
-- **Acceptance criteria:** Customer can select "Flexible (±3 days)" from the date picker and see results across multiple dates. Results are grouped by date. The search URL reflects the flexible selection.
+- **Acceptance criteria:** Real mobile browse testing confirms grouped flexible-date results remain easy to scan and compare when multiple dates have live supply.
 
 ---
 

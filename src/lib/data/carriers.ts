@@ -1,8 +1,10 @@
+import { PRIVATE_BUCKETS } from "@/lib/constants";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 import { hasSupabaseAdminEnv, hasSupabaseEnv } from "@/lib/env";
 import { AppError } from "@/lib/errors";
 import { toCarrierProfile, toVehicle } from "@/lib/data/mappers";
+import { getPrivateFileDisplay } from "@/lib/storage";
 import { sanitizeText } from "@/lib/utils";
 import { carrierOnboardingSchema, type CarrierOnboardingInput } from "@/lib/validation/carrier";
 import type { Database } from "@/types/database";
@@ -259,6 +261,104 @@ export async function listAdminCarriers(params?: {
   return (data ?? []).map(toCarrierProfile);
 }
 
+export async function getAdminCarrierDetail(carrierId: string) {
+  if (!hasSupabaseAdminEnv()) {
+    return null;
+  }
+
+  const supabase = createAdminClient();
+  const [{ data: carrier, error: carrierError }, { data: vehicle }, { data: bookings }, { data: reviews }] =
+    await Promise.all([
+      supabase.from("carriers").select("*").eq("id", carrierId).maybeSingle(),
+      supabase
+        .from("vehicles")
+        .select("*")
+        .eq("carrier_id", carrierId)
+        .eq("is_active", true)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("bookings")
+        .select(
+          "id, booking_reference, status, total_price_cents, payment_status, created_at, completed_at, pickup_proof_photo_url, delivery_proof_photo_url",
+        )
+        .eq("carrier_id", carrierId)
+        .order("created_at", { ascending: false })
+        .limit(25),
+      supabase
+        .from("reviews")
+        .select("id, rating, comment, created_at")
+        .eq("reviewee_id", carrierId)
+        .order("created_at", { ascending: false })
+        .limit(20),
+    ]);
+
+  if (carrierError) {
+    throw new AppError(carrierError.message, 500, "admin_carrier_lookup_failed");
+  }
+
+  if (!carrier) {
+    return null;
+  }
+
+  const [licenceDocument, insuranceDocument, vehicleDocument] = await Promise.all([
+    getPrivateFileDisplay({
+      bucket: PRIVATE_BUCKETS.carrierDocuments,
+      path: carrier.licence_photo_url,
+    }),
+    getPrivateFileDisplay({
+      bucket: PRIVATE_BUCKETS.carrierDocuments,
+      path: carrier.insurance_photo_url,
+    }),
+    getPrivateFileDisplay({
+      bucket: PRIVATE_BUCKETS.vehiclePhotos,
+      path: carrier.vehicle_photo_url,
+    }),
+  ]);
+
+  const completedBookings =
+    bookings?.filter((booking) => booking.status === "completed").length ?? 0;
+  const proofBackedJobs =
+    bookings?.filter(
+      (booking) =>
+        booking.status === "completed" &&
+        Boolean(booking.pickup_proof_photo_url) &&
+        Boolean(booking.delivery_proof_photo_url),
+    ).length ?? 0;
+
+  return {
+    carrier: toCarrierProfile(carrier),
+    vehicle: vehicle ? toVehicle(vehicle) : null,
+    documents: {
+      licence: licenceDocument,
+      insurance: insuranceDocument,
+      vehicle: vehicleDocument,
+    },
+    completedBookings,
+    proofBackedJobs,
+    bookings:
+      bookings?.map((booking) => ({
+        id: booking.id,
+        bookingReference: booking.booking_reference,
+        status: booking.status,
+        totalPriceCents: booking.total_price_cents,
+        paymentStatus: booking.payment_status,
+        createdAt: booking.created_at,
+        completedAt: booking.completed_at,
+        proofComplete:
+          Boolean(booking.pickup_proof_photo_url) && Boolean(booking.delivery_proof_photo_url),
+      })) ?? [],
+    reviews:
+      reviews?.map((review) => ({
+        id: review.id,
+        rating: review.rating,
+        comment: review.comment,
+        createdAt: review.created_at,
+      })) ?? [],
+  };
+}
+
 export async function verifyCarrier(params: {
   carrierId: string;
   isApproved: boolean;
@@ -312,6 +412,50 @@ export async function updateCarrierVerificationNotes(params: {
 
   if (error) {
     throw new AppError(error.message, 500, "carrier_note_update_failed");
+  }
+
+  return toCarrierProfile(data);
+}
+
+export async function updateAdminCarrierOpsFields(params: {
+  carrierId: string;
+  verificationNotes?: string | null;
+  internalNotes?: string | null;
+  internalTags?: string[] | null;
+}) {
+  if (!hasSupabaseAdminEnv()) {
+    throw new AppError("Supabase admin is not configured.", 503, "supabase_admin_unavailable");
+  }
+
+  const supabase = createAdminClient();
+  const patch: Database["public"]["Tables"]["carriers"]["Update"] = {};
+
+  if (params.verificationNotes !== undefined) {
+    patch.verification_notes = params.verificationNotes?.trim()
+      ? sanitizeText(params.verificationNotes)
+      : null;
+  }
+
+  if (params.internalNotes !== undefined) {
+    patch.internal_notes = params.internalNotes?.trim()
+      ? sanitizeText(params.internalNotes)
+      : null;
+  }
+
+  if (params.internalTags !== undefined) {
+    patch.internal_tags =
+      params.internalTags?.map((tag) => sanitizeText(tag).toLowerCase()).filter(Boolean) ?? [];
+  }
+
+  const { data, error } = await supabase
+    .from("carriers")
+    .update(patch)
+    .eq("id", params.carrierId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new AppError(error.message, 500, "carrier_ops_update_failed");
   }
 
   return toCarrierProfile(data);

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 
 import { DisputeForm } from "@/components/booking/dispute-form";
 import { CarrierReviewResponseForm } from "@/components/booking/carrier-review-response-form";
@@ -17,6 +18,10 @@ import { getCarrierByUserId } from "@/lib/data/carriers";
 import { getBookingFeedbackForUser } from "@/lib/data/feedback";
 import { getTripById } from "@/lib/data/trips";
 import { formatCurrency } from "@/lib/utils";
+
+export const metadata: Metadata = {
+  title: "Carrier trip detail",
+};
 
 type CarrierBooking = Awaited<ReturnType<typeof listCarrierBookings>>[number];
 type BookingFeedback = Awaited<ReturnType<typeof getBookingFeedbackForUser>>;

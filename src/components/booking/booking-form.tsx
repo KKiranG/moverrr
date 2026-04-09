@@ -36,6 +36,11 @@ interface BookingFormProps {
   }) => void;
 }
 
+interface BookingSuccessState {
+  bookingId: string;
+  bookingReference: string;
+}
+
 export function BookingForm({
   trip,
   isAuthenticated,
@@ -64,6 +69,7 @@ export function BookingForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionStage, setSubmissionStage] = useState<"idle" | "uploading_photo" | "creating_booking" | "creating_payment">("idle");
   const [retryBookingId, setRetryBookingId] = useState<string | null>(null);
+  const [successState, setSuccessState] = useState<BookingSuccessState | null>(null);
   const bookingIdempotencyKeyRef = useRef<string | null>(null);
   const draftKey = useMemo(() => `moverrr:booking-draft:${trip.id}`, [trip.id]);
   const stairsUnsupported = needsStairs && !trip.rules.stairsOk;
@@ -216,6 +222,19 @@ export function BookingForm({
       URL.revokeObjectURL(objectUrl);
     };
   }, [photoFile]);
+
+  useEffect(() => {
+    if (!successState) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      router.push(`/bookings/${successState.bookingId}`);
+      router.refresh();
+    }, 2200);
+
+    return () => window.clearTimeout(timeout);
+  }, [router, successState]);
 
   async function uploadPhotoIfNeeded() {
     if (!photoFile) {
@@ -371,19 +390,43 @@ export function BookingForm({
         setSubmissionStage("creating_payment");
         await createPaymentIntent(bookingPayload.booking.id);
         window.sessionStorage.removeItem(draftKey);
+        setSuccessState({
+          bookingId: bookingPayload.booking.id,
+          bookingReference: bookingPayload.booking.bookingReference,
+        });
       } catch (paymentError) {
         setRetryBookingId(bookingPayload.booking.id);
         throw paymentError;
       }
-
-      router.push(`/bookings/${bookingPayload.booking.id}`);
-      router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to create booking.");
     } finally {
       setIsSubmitting(false);
       setSubmissionStage("idle");
     }
+  }
+
+  if (successState) {
+    return (
+      <div className="grid gap-4 rounded-2xl border border-success/20 bg-success/5 p-4">
+        <div>
+          <p className="section-label">Booking created</p>
+          <h2 className="mt-1 text-lg text-text">Your booking reference is ready</h2>
+          <p className="mt-2 text-sm text-text-secondary">
+            moverrr is setting up the payment step and taking you to the full booking detail now.
+          </p>
+        </div>
+        <div className="rounded-xl border border-success/20 bg-background px-4 py-3">
+          <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">
+            Booking reference
+          </p>
+          <p className="mt-2 text-2xl font-medium text-text">{successState.bookingReference}</p>
+        </div>
+        <p className="text-sm text-text-secondary">
+          Keep this reference handy if you need support or want to double-check the booking email.
+        </p>
+      </div>
+    );
   }
 
   return (

@@ -1,5 +1,6 @@
 import { hasSupabaseAdminEnv, hasSupabaseEnv } from "@/lib/env";
 import { updateBookingStatusForActor } from "@/lib/data/bookings";
+import { buildBookingEmail } from "@/lib/email";
 import { AppError } from "@/lib/errors";
 import { sendBookingTransactionalEmail } from "@/lib/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -166,7 +167,7 @@ async function notifyCounterparty(params: {
   recipientRole: "customer" | "carrier";
   emailType: "review_created" | "dispute_raised";
   subject: string;
-  html: string;
+  bodyLines: string[];
 }) {
   if (!hasSupabaseAdminEnv()) {
     return;
@@ -198,7 +199,20 @@ async function notifyCounterparty(params: {
     emailType: params.emailType,
     to: recipientEmail,
     subject: `${params.subject}: ${(booking as { booking_reference?: string } | null)?.booking_reference ?? params.bookingId}`,
-    html: `<p>Booking <strong>${(booking as { booking_reference?: string } | null)?.booking_reference ?? params.bookingId}</strong></p>${params.html}`,
+    html: buildBookingEmail({
+      eyebrow: params.emailType === "review_created" ? "Review update" : "Dispute update",
+      title: params.subject,
+      intro:
+        params.emailType === "review_created"
+          ? "A new review was submitted on this completed moverrr booking."
+          : "A dispute was opened on this moverrr booking and needs attention in-platform.",
+      bookingReference:
+        (booking as { booking_reference?: string } | null)?.booking_reference ?? params.bookingId,
+      routeLabel: "Open the booking detail for the latest proof, status, and timeline.",
+      ctaPath: `/bookings/${params.bookingId}`,
+      ctaLabel: "Open booking detail",
+      bodyLines: params.bodyLines,
+    }),
   });
 }
 
@@ -358,7 +372,7 @@ export async function createReviewForBooking(userId: string, bookingId: string, 
     recipientRole: context.actorRole === "customer" ? "carrier" : "customer",
     emailType: "review_created",
     subject: "New booking review submitted",
-    html: "<p>A review has been submitted for your completed moverrr booking.</p>",
+    bodyLines: ["A review has been submitted for your completed moverrr booking."],
   });
 
   return toReview(data as ReviewRow);
@@ -436,7 +450,10 @@ export async function createDisputeForBooking(
     recipientRole: context.actorRole === "customer" ? "carrier" : "customer",
     emailType: "dispute_raised",
     subject: "A booking dispute has been raised",
-    html: "<p>A dispute has been opened on one of your moverrr bookings. Please check the booking timeline and proof details.</p>",
+    bodyLines: [
+      "A dispute has been opened on one of your moverrr bookings.",
+      "Check the booking timeline and proof details before replying.",
+    ],
   });
 
   return toDispute(data as DisputeRow);

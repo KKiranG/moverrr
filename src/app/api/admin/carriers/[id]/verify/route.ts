@@ -2,12 +2,22 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { requireAdminUser } from "@/lib/auth";
+import { buildCarrierVerificationEmail } from "@/lib/email";
 import { verifyCarrier } from "@/lib/data/carriers";
 import { toErrorResponse } from "@/lib/errors";
+import { sendTransactionalEmail } from "@/lib/notifications";
 
 const verifyCarrierSchema = z.object({
   isApproved: z.boolean(),
   notes: z.string().max(280).optional(),
+}).superRefine((value, ctx) => {
+  if (!value.isApproved && !value.notes?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["notes"],
+      message: "A rejection reason is required.",
+    });
+  }
 });
 
 export async function PATCH(
@@ -22,6 +32,20 @@ export async function PATCH(
       isApproved: payload.isApproved,
       notes: payload.notes,
     });
+
+    if (carrier.email) {
+      await sendTransactionalEmail({
+        to: carrier.email,
+        subject: payload.isApproved
+          ? `Carrier approved: ${carrier.businessName}`
+          : `Carrier verification update: ${carrier.businessName}`,
+        html: buildCarrierVerificationEmail({
+          approved: payload.isApproved,
+          businessName: carrier.businessName,
+          notes: payload.notes,
+        }),
+      });
+    }
 
     return NextResponse.json({ carrier });
   } catch (error) {

@@ -1,10 +1,12 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { LiveBookingsList } from "@/components/carrier/live-bookings-list";
 import { PendingBookingsAlert } from "@/components/carrier/pending-bookings-alert";
 import { QuickPostTemplates } from "@/components/carrier/quick-post-templates";
 import { CarrierTrustPanel } from "@/components/carrier/carrier-trust-panel";
+import { ConnectPayoutButton } from "@/components/carrier/connect-payout-button";
 import { TripListSkeleton } from "@/components/carrier/trip-list-skeleton";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { requirePageSessionUser } from "@/lib/auth";
@@ -21,6 +23,10 @@ import { TripChecklist } from "@/components/carrier/trip-checklist";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
+
+export const metadata: Metadata = {
+  title: "Carrier dashboard",
+};
 
 function isTripActive(tripDate: string, status?: string | null) {
   const cutoff = new Date();
@@ -121,6 +127,20 @@ async function CarrierDashboardContent({ userId }: { userId: string }) {
             {carrier.verificationNotes ??
               "Check your onboarding details, expiry dates, and uploaded documents so admin can approve you quickly."}
           </p>
+        </Card>
+      ) : null}
+
+      {carrier && !carrier.stripeOnboardingComplete ? (
+        <Card className="border-warning/20 bg-warning/10 p-4">
+          <p className="section-label">Payout setup</p>
+          <h2 className="mt-1 text-lg text-text">Completed jobs cannot be released yet</h2>
+          <p className="mt-2 text-sm text-text-secondary">
+            Keep onboarding and verification moving, then finish Stripe payout setup so completed
+            bookings do not stack in hold state.
+          </p>
+          <div className="mt-3">
+            <ConnectPayoutButton variant="secondary" label="Resume payout setup" />
+          </div>
         </Card>
       ) : null}
 

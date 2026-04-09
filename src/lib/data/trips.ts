@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { SEARCH_PAGE_SIZE, SEARCH_REVALIDATE_SECONDS } from "@/lib/constants";
 import { hasMapsEnv, hasSupabaseEnv } from "@/lib/env";
 import { AppError } from "@/lib/errors";
+import { getSydneySuburbCoords } from "@/lib/maps/sydney-suburb-coords";
 import { geocodeAddress } from "@/lib/maps/geocode";
 import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 import { toGeographyPoint, toTrip, toTripSearchResult, type ListingJoinedRecord } from "@/lib/data/mappers";
@@ -17,6 +18,59 @@ type SearchRpcRow = {
   dropoff_distance_km: number;
   total_count?: number;
 };
+
+function toRadians(value: number) {
+  return (value * Math.PI) / 180;
+}
+
+function getDistanceKm(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+) {
+  const earthRadiusKm = 6371;
+  const latDelta = toRadians(to.lat - from.lat);
+  const lngDelta = toRadians(to.lng - from.lng);
+  const a =
+    Math.sin(latDelta / 2) ** 2 +
+    Math.cos(toRadians(from.lat)) *
+      Math.cos(toRadians(to.lat)) *
+      Math.sin(lngDelta / 2) ** 2;
+
+  return earthRadiusKm * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+function buildSearchBreakdown(params: {
+  trip: Trip;
+  pickupDistanceKm: number;
+  dropoffDistanceKm: number;
+  score: number;
+}) {
+  const routeFit = Math.max(0, 35 - params.pickupDistanceKm * 2);
+  const destinationFit = Math.max(0, 35 - params.dropoffDistanceKm * 2);
+  const reliability = Math.max(0, (params.trip.carrier.averageRating / 5) * 20);
+  const priceFit = Math.max(0, 10 - params.trip.priceCents / 4000);
+
+  return {
+    routeFit,
+    destinationFit,
+    reliability,
+    priceFit,
+    pickupDistanceKm: Number(params.pickupDistanceKm.toFixed(1)),
+    dropoffDistanceKm: Number(params.dropoffDistanceKm.toFixed(1)),
+  };
+}
+
+function getDateWindow(input: TripSearchInput) {
+  if (input.dates && input.dates.length > 0) {
+    return Array.from(new Set(input.dates)).sort();
+  }
+
+  if (input.when) {
+    return [input.when];
+  }
+
+  return [];
+}
 
 async function getCarrierAndActiveVehicles(userId: string) {
   const supabase = createServerSupabaseClient();
@@ -119,17 +173,16 @@ async function queryTripsByDateWindow(params: {
           return null;
         }
 
-        const routeFit = Math.max(0, 35 - match.pickup_distance_km * 2);
-        const destinationFit = Math.max(0, 35 - match.dropoff_distance_km * 2);
-        const reliability = Math.max(0, (trip.carrier.averageRating / 5) * 20);
-        const priceFit = Math.max(0, 10 - trip.priceCents / 4000);
-
-        return toTripSearchResult(trip, match.match_score, {
-          routeFit,
-          destinationFit,
-          reliability,
-          priceFit,
-        });
+        return toTripSearchResult(
+          trip,
+          match.match_score,
+          buildSearchBreakdown({
+            trip,
+            pickupDistanceKm: match.pickup_distance_km,
+            dropoffDistanceKm: match.dropoff_distance_km,
+            score: match.match_score,
+          }),
+        );
       })
       .filter((trip): trip is TripSearchResult => Boolean(trip)),
     totalCount: Number(matches[0]?.total_count ?? 0),
@@ -197,76 +250,147 @@ async function geocodeSearchInput(input: TripSearchInput) {
   };
 }
 
-async function cachedTextSearch(
+async function cachedSuburbCoordinateSearch(
   from: string,
   to: string,
-  when?: string,
+  dates: string[],
   what?: string,
   isReturnTrip?: boolean,
   page = 1,
 ) {
   return unstable_cache(
     async () => {
-    if (!hasSupabaseEnv()) {
+      if (!hasSupabaseEnv()) {
+        return {
+          results: [] as TripSearchResult[],
+          totalCount: 0,
+        };
+      }
+
+      const pickupCoords = getSydneySuburbCoords(from);
+      const dropoffCoords = getSydneySuburbCoords(to);
+
+      if (!pickupCoords || !dropoffCoords) {
+        return {
+          results: [] as TripSearchResult[],
+          totalCount: 0,
+        };
+      }
+
+      const supabase = createServerSupabaseClient();
+      const query = supabase
+        .from("capacity_listings")
+        .select("*, carrier:carriers(*), vehicle:vehicles(*)")
+        .in("status", ["active", "booked_partial"])
+        .lte("publish_at", new Date().toISOString())
+        .gte("trip_date", getTodayIsoDate())
+        .order("trip_date", { ascending: true });
+
+      if (dates.length > 0) {
+        query.in("trip_date", dates);
+      }
+
+      if (what === "furniture") {
+        query.eq("accepts_furniture", true);
+      }
+
+      if (what === "boxes") {
+        query.eq("accepts_boxes", true);
+      }
+
+      if (what === "appliance") {
+        query.eq("accepts_appliances", true);
+      }
+
+      if (what === "fragile") {
+        query.eq("accepts_fragile", true);
+      }
+
+      if (isReturnTrip) {
+        query.eq("is_return_trip", true);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        throw new AppError(error.message, 500, "trip_search_failed");
+      }
+
+      const matches = ((data ?? []) as unknown as ListingJoinedRecord[])
+        .map((record) => toTrip(record))
+        .map((trip) => {
+          if (
+            trip.route.originLatitude === undefined ||
+            trip.route.originLongitude === undefined ||
+            trip.route.destinationLatitude === undefined ||
+            trip.route.destinationLongitude === undefined
+          ) {
+            return null;
+          }
+
+          const pickupDistanceKm = getDistanceKm(pickupCoords, {
+            lat: trip.route.originLatitude,
+            lng: trip.route.originLongitude,
+          });
+          const dropoffDistanceKm = getDistanceKm(dropoffCoords, {
+            lat: trip.route.destinationLatitude,
+            lng: trip.route.destinationLongitude,
+          });
+          const withinPickupRadius = pickupDistanceKm <= trip.detourRadiusKm;
+          const withinDropoffRadius = dropoffDistanceKm <= trip.detourRadiusKm;
+
+          if (!withinPickupRadius || !withinDropoffRadius) {
+            return null;
+          }
+
+          const score = Math.max(
+            0,
+            Math.round(
+              100 -
+                pickupDistanceKm * 3 -
+                dropoffDistanceKm * 3 +
+                (trip.carrier.averageRating / 5) * 8,
+            ),
+          );
+
+          return toTripSearchResult(
+            trip,
+            score,
+            buildSearchBreakdown({
+              trip,
+              pickupDistanceKm,
+              dropoffDistanceKm,
+              score,
+            }),
+          );
+        })
+        .filter((trip): trip is TripSearchResult => Boolean(trip))
+        .sort((left, right) => {
+          const leftDistance =
+            (left.breakdown.pickupDistanceKm ?? Number.POSITIVE_INFINITY) +
+            (left.breakdown.dropoffDistanceKm ?? Number.POSITIVE_INFINITY);
+          const rightDistance =
+            (right.breakdown.pickupDistanceKm ?? Number.POSITIVE_INFINITY) +
+            (right.breakdown.dropoffDistanceKm ?? Number.POSITIVE_INFINITY);
+
+          return (
+            left.tripDate.localeCompare(right.tripDate) ||
+            right.matchScore - left.matchScore ||
+            leftDistance - rightDistance ||
+            left.id.localeCompare(right.id)
+          );
+        });
+
       return {
-        results: [] as TripSearchResult[],
-        totalCount: 0,
+        results: matches.slice(0, page * SEARCH_PAGE_SIZE),
+        totalCount: matches.length,
       };
-    }
-
-    const supabase = createServerSupabaseClient();
-    const query = supabase
-      .from("capacity_listings")
-      .select("*, carrier:carriers(*), vehicle:vehicles(*)", { count: "exact" })
-      .in("status", ["active", "booked_partial"])
-      .lte("publish_at", new Date().toISOString())
-      .gte("trip_date", getTodayIsoDate())
-      .ilike("origin_suburb", `%${from}%`)
-      .ilike("destination_suburb", `%${to}%`)
-      .order("trip_date", { ascending: true })
-      .range(0, page * SEARCH_PAGE_SIZE - 1);
-
-    if (when) {
-      query.eq("trip_date", when);
-    }
-
-    if (what === "furniture") {
-      query.eq("accepts_furniture", true);
-    }
-
-    if (what === "boxes") {
-      query.eq("accepts_boxes", true);
-    }
-
-    if (what === "appliance") {
-      query.eq("accepts_appliances", true);
-    }
-
-    if (what === "fragile") {
-      query.eq("accepts_fragile", true);
-    }
-
-    if (isReturnTrip) {
-      query.eq("is_return_trip", true);
-    }
-
-    const { data, error, count } = await query;
-
-    if (error) {
-      throw new AppError(error.message, 500, "trip_search_failed");
-    }
-
-    return {
-      results: ((data ?? []) as unknown as ListingJoinedRecord[])
-        .map((record) => toTripSearchResult(toTrip(record), 0)),
-      totalCount: count ?? 0,
-    };
-  },
+    },
     [
-      "trip-text-search",
+      "trip-suburb-coordinate-search",
       from,
       to,
-      when ?? "any",
+      dates.join(",") || "any",
       what ?? "any",
       isReturnTrip ? "return" : "standard",
       String(page),
@@ -277,6 +401,7 @@ async function cachedTextSearch(
 
 export async function searchTrips(input: TripSearchInput) {
   const page = Math.max(1, input.page ?? 1);
+  const activeDates = getDateWindow(input);
 
   if (!hasSupabaseEnv()) {
     return {
@@ -299,17 +424,22 @@ export async function searchTrips(input: TripSearchInput) {
         .filter((date) => date >= getTodayIsoDate())
     : [];
 
+  const isFlexibleSearch = activeDates.length > 1;
+
   if (!geocoded) {
-    const exact = await cachedTextSearch(
+    const exact = await cachedSuburbCoordinateSearch(
       input.from,
       input.to,
-      input.when,
+      activeDates,
       input.what,
       input.isReturnTrip,
       page,
     );
     const fallbackResults =
-      exact.results.length === 0 && input.when && input.includeNearbyDates !== false
+      exact.results.length === 0 &&
+      input.when &&
+      input.includeNearbyDates !== false &&
+      !isFlexibleSearch
         ? { results: [] as TripSearchResult[], totalCount: 0 }
         : { results: [] as TripSearchResult[], totalCount: 0 };
     const activeResults = exact.results.length > 0 ? exact : fallbackResults;
@@ -325,11 +455,36 @@ export async function searchTrips(input: TripSearchInput) {
       fallbackReason:
         exact.results.length === 0 && fallbackResults.results.length > 0
           ? "nearby_dates"
-          : "geocoding_unavailable",
+          : "suburb_coordinate_fallback",
       nearbyDateOptions:
         exact.results.length === 0 && fallbackResults.results.length > 0
           ? Array.from(new Set(fallbackResults.results.map((trip) => trip.tripDate)))
           : [],
+    } satisfies TripSearchResponse;
+  }
+
+  if (isFlexibleSearch) {
+    const flexibleResults = await queryTripsByDateWindow({
+      pickupLat: geocoded.pickupLat,
+      pickupLng: geocoded.pickupLng,
+      dropoffLat: geocoded.dropoffLat,
+      dropoffLng: geocoded.dropoffLng,
+      what: input.what,
+      isReturnTrip: input.isReturnTrip,
+      dates: activeDates,
+      page,
+    });
+
+    return {
+      results: flexibleResults.results,
+      totalCount: flexibleResults.totalCount,
+      visibleCount: flexibleResults.results.length,
+      page,
+      hasMore: page * SEARCH_PAGE_SIZE < flexibleResults.totalCount,
+      geocodingAvailable: true,
+      fallbackUsed: false,
+      fallbackReason: null,
+      nearbyDateOptions: Array.from(new Set(flexibleResults.results.map((trip) => trip.tripDate))),
     } satisfies TripSearchResponse;
   }
 
@@ -360,17 +515,16 @@ export async function searchTrips(input: TripSearchInput) {
         return null;
       }
 
-      const routeFit = Math.max(0, 35 - match.pickup_distance_km * 2);
-      const destinationFit = Math.max(0, 35 - match.dropoff_distance_km * 2);
-      const reliability = Math.max(0, (trip.carrier.averageRating / 5) * 20);
-      const priceFit = Math.max(0, 10 - trip.priceCents / 4000);
-
-      return toTripSearchResult(trip, match.match_score, {
-        routeFit,
-        destinationFit,
-        reliability,
-        priceFit,
-      });
+      return toTripSearchResult(
+        trip,
+        match.match_score,
+        buildSearchBreakdown({
+          trip,
+          pickupDistanceKm: match.pickup_distance_km,
+          dropoffDistanceKm: match.dropoff_distance_km,
+          score: match.match_score,
+        }),
+      );
     })
     .filter((trip): trip is TripSearchResult => Boolean(trip));
 

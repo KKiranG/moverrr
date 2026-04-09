@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasSupabaseAdminEnv } from "@/lib/env";
+import { buildBookingEmail } from "@/lib/email";
 import { AppError } from "@/lib/errors";
 import { sendBookingTransactionalEmail } from "@/lib/notifications";
 import { captureAppError } from "@/lib/sentry";
@@ -178,9 +179,16 @@ export async function resolveDispute(params: {
           emailType: "dispute_resolution_update",
           to: email,
           subject: `Booking dispute updated: ${bookingParties?.booking_reference ?? data.booking_id}`,
-          html: `<p>Your moverrr dispute for booking <strong>${bookingParties?.booking_reference ?? data.booking_id}</strong> is now marked as ${params.status}. ${
-            sanitizedResolutionNotes
-          }</p>`,
+          html: buildBookingEmail({
+            eyebrow: "Dispute update",
+            title: `Dispute status: ${params.status}`,
+            intro: "The dispute status changed in moverrr and the latest ops note is below.",
+            bookingReference: bookingParties?.booking_reference ?? data.booking_id,
+            routeLabel: "Open the booking detail for the current proof and status record.",
+            ctaPath: `/bookings/${data.booking_id}`,
+            ctaLabel: "Open booking detail",
+            bodyLines: [sanitizedResolutionNotes],
+          }),
         }),
       ),
   );

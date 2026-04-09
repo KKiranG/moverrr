@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { TemplateManagementList } from "@/components/carrier/template-management-list";
 import { PageIntro } from "@/components/layout/page-intro";
@@ -7,6 +8,10 @@ import { Card } from "@/components/ui/card";
 import { requirePageSessionUser } from "@/lib/auth";
 import { getCarrierByUserId } from "@/lib/data/carriers";
 import { listCarrierTemplatesIncludingArchived } from "@/lib/data/templates";
+
+export const metadata: Metadata = {
+  title: "Carrier templates",
+};
 
 export default async function CarrierTemplatesPage() {
   const user = await requirePageSessionUser();

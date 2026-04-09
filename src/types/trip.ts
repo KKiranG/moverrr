@@ -67,9 +67,11 @@ export interface TripSearchInput {
   from: string;
   to: string;
   when?: string;
+  dates?: string[];
   what?: ItemCategory;
   isReturnTrip?: boolean;
   includeNearbyDates?: boolean;
+  flexibleDates?: boolean;
   page?: number;
 }
 
@@ -78,6 +80,8 @@ export interface MatchBreakdown {
   destinationFit: number;
   reliability: number;
   priceFit: number;
+  pickupDistanceKm?: number;
+  dropoffDistanceKm?: number;
 }
 
 export interface TripSearchResult extends Trip {

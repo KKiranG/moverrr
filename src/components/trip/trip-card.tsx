@@ -18,11 +18,33 @@ import {
   getTripTrustStack,
 } from "@/lib/trip-presenters";
 import { formatCurrency, formatDate, formatSavings } from "@/lib/utils";
-import type { Trip } from "@/types/trip";
+import type { Trip, TripSearchResult } from "@/types/trip";
 
 interface TripCardProps {
-  trip: Trip;
+  trip: Trip | TripSearchResult;
   href?: string;
+}
+
+function isTripSearchResult(trip: Trip | TripSearchResult): trip is TripSearchResult {
+  return (
+    "matchScore" in trip &&
+    typeof trip.matchScore === "number" &&
+    "breakdown" in trip &&
+    typeof trip.breakdown === "object" &&
+    trip.breakdown !== null
+  );
+}
+
+function getFitLabel(matchScore: number) {
+  if (matchScore >= 70) {
+    return "Strong route fit";
+  }
+
+  if (matchScore >= 50) {
+    return "Decent route fit";
+  }
+
+  return "Loose route fit";
 }
 
 const VEHICLE_TYPE_LABELS: Record<Trip["vehicle"]["type"], string> = {
@@ -55,6 +77,12 @@ export function TripCard({ trip, href }: TripCardProps) {
     to: trip.route.destinationSuburb,
   }).toString()}`;
   const cardHref = isFullyBooked ? searchHref : href;
+  const pickupDistanceKm = isTripSearchResult(trip) ? trip.breakdown.pickupDistanceKm ?? null : null;
+  const dropoffDistanceKm = isTripSearchResult(trip) ? trip.breakdown.dropoffDistanceKm ?? null : null;
+  const fitLabel =
+    isTripSearchResult(trip) && pickupDistanceKm !== null && dropoffDistanceKm !== null
+      ? getFitLabel(trip.matchScore)
+      : null;
 
   const content = (
     <Card className="p-4">
@@ -97,6 +125,12 @@ export function TripCard({ trip, href }: TripCardProps) {
             <p className="rounded-xl border border-accent/10 bg-accent/5 px-3 py-2 text-sm text-text">
               {getTripFitSummary(trip)}
             </p>
+            {fitLabel ? (
+              <p className="text-sm text-text-secondary">
+                {fitLabel} · {pickupDistanceKm?.toFixed(1)}km from pickup ·{" "}
+                {dropoffDistanceKm?.toFixed(1)}km from dropoff
+              </p>
+            ) : null}
             <div className="flex flex-wrap items-center gap-2 text-sm text-text-secondary">
               <span>{formatDate(trip.tripDate)}</span>
               <span>{getHumanCapacityLabel(trip)}</span>

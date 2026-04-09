@@ -56,6 +56,17 @@ function getValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
 }
 
+function groupTripsByDate(results: TripSearchResult[]) {
+  return Array.from(
+    results.reduce((map, trip) => {
+      const current = map.get(trip.tripDate) ?? [];
+      current.push(trip);
+      map.set(trip.tripDate, current);
+      return map;
+    }, new Map<string, TripSearchResult[]>()),
+  );
+}
+
 function buildTripDetailHref(params: {
   tripId: string;
   from: string;
@@ -65,6 +76,7 @@ function buildTripDetailHref(params: {
   backload: boolean;
   sort: SearchSort;
   page?: number;
+  flexibleDates?: boolean;
 }) {
   const query = new URLSearchParams({
     from: params.from,
@@ -74,6 +86,7 @@ function buildTripDetailHref(params: {
     ...(params.backload ? { backload: "1" } : {}),
     ...(params.sort !== "date" ? { sort: params.sort } : {}),
     ...(params.page && params.page > 1 ? { page: String(params.page) } : {}),
+    ...(params.flexibleDates ? { flex: "1" } : {}),
   }).toString();
 
   return `/trip/${params.tripId}${query ? `?${query}` : ""}`;
@@ -120,6 +133,7 @@ async function SearchResultsSection({
   backload,
   sort,
   page,
+  flexibleDates,
   userEmail,
   redirectSearch,
 }: {
@@ -130,6 +144,7 @@ async function SearchResultsSection({
   backload: boolean;
   sort: SearchSort;
   page: number;
+  flexibleDates: boolean;
   userEmail?: string;
   redirectSearch: string;
 }) {
@@ -161,15 +176,25 @@ async function SearchResultsSection({
     );
   }
 
+  const flexibleDatesWindow =
+    flexibleDates && when
+      ? [-3, -2, -1, 0, 1, 2, 3]
+          .map((offset) => getDateOffsetIso(when, offset))
+          .filter((date) => date >= getTodayIsoDate())
+      : undefined;
+
   const searchResponse = await searchTrips({
     from,
     to,
     when,
+    dates: flexibleDatesWindow,
     what,
     isReturnTrip: backload,
+    flexibleDates,
     page,
   });
   const sortedResults = sortResults(searchResponse.results, sort);
+  const groupedResults = flexibleDates ? groupTripsByDate(sortedResults) : [];
   const nearbyDates =
     searchResponse.nearbyDateOptions.length > 0
       ? searchResponse.nearbyDateOptions
@@ -179,7 +204,7 @@ async function SearchResultsSection({
             .filter((date) => date >= getTodayIsoDate())
         : [];
   const resultSummary = `${searchResponse.visibleCount} of ${searchResponse.totalCount} trips for ${from} to ${to}${
-    when ? ` on ${formatLongDate(when)}` : ""
+    when ? ` ${flexibleDates ? `around ${formatLongDate(when)}` : `on ${formatLongDate(when)}`}` : ""
   }.`;
   const showMoreHref = `/search?${new URLSearchParams({
     from,
@@ -188,6 +213,7 @@ async function SearchResultsSection({
     what,
     ...(backload ? { backload: "1" } : {}),
     ...(sort !== "date" ? { sort } : {}),
+    ...(flexibleDates ? { flex: "1" } : {}),
     page: String(page + 1),
   }).toString()}`;
 
@@ -196,8 +222,8 @@ async function SearchResultsSection({
       <p className="text-sm text-text-secondary">{resultSummary}</p>
       {!searchResponse.geocodingAvailable ? (
         <div className="rounded-xl border border-warning/20 bg-warning/10 p-3 text-sm text-text">
-          Showing results near these suburbs. They may include nearby areas when route-distance
-          lookup is unavailable.
+          Showing results from moverrr&apos;s suburb coordinate fallback. These matches use known
+          Sydney suburb positions instead of plain suburb-name text matching.
         </div>
       ) : null}
       {searchResponse.fallbackUsed || sortedResults.length === 0 ? (
@@ -229,22 +255,50 @@ async function SearchResultsSection({
       ) : null}
       {sortedResults.length > 0 ? (
         <div className="grid gap-4">
-          {sortedResults.map((trip) => (
-            <TripCard
-              key={trip.id}
-              trip={trip}
-              href={buildTripDetailHref({
-                tripId: trip.id,
-                from,
-                to,
-                when,
-                what,
-                backload,
-                sort,
-                page,
-              })}
-            />
-          ))}
+          {flexibleDates
+            ? groupedResults.map(([date, trips]) => (
+                <div key={date} className="grid gap-3">
+                  <div>
+                    <p className="section-label">Date group</p>
+                    <h2 className="mt-1 text-lg text-text">{formatLongDate(date)}</h2>
+                  </div>
+                  <div className="grid gap-4">
+                    {trips.map((trip) => (
+                      <TripCard
+                        key={trip.id}
+                        trip={trip}
+                        href={buildTripDetailHref({
+                          tripId: trip.id,
+                          from,
+                          to,
+                          when,
+                          what,
+                          backload,
+                          sort,
+                          page,
+                          flexibleDates,
+                        })}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))
+            : sortedResults.map((trip) => (
+                <TripCard
+                  key={trip.id}
+                  trip={trip}
+                  href={buildTripDetailHref({
+                    tripId: trip.id,
+                    from,
+                    to,
+                    when,
+                    what,
+                    backload,
+                    sort,
+                    page,
+                  })}
+                />
+              ))}
           {searchResponse.hasMore ? (
             <Card className="p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -252,7 +306,7 @@ async function SearchResultsSection({
                   <p className="section-label">Keep browsing</p>
                   <p className="mt-1 text-sm text-text-secondary">
                     Showing {searchResponse.visibleCount} of {searchResponse.totalCount} matching
-                    trips so far.
+                    trips so far{flexibleDates ? " across nearby dates." : "."}
                   </p>
                 </div>
                 <Button asChild className="min-h-[44px] active:opacity-80">
@@ -271,8 +325,8 @@ async function SearchResultsSection({
                 <h2 className="mt-1 text-lg text-text">Save the corridor and keep searching</h2>
               </div>
               <p className="subtle-text">
-                You can widen the date window, browse the same corridor without a fixed day, or
-                save this route so moverrr can alert you when supply appears.
+                Try a flexible date window first, then widen the corridor, and save this route so
+                moverrr can alert you when supply appears.
               </p>
             </div>
           </Card>
@@ -285,12 +339,13 @@ async function SearchResultsSection({
                     from,
                     to,
                     what,
+                    flex: "1",
                     sort,
                     ...(backload ? { backload: "1" } : {}),
                   }).toString()}`}
                   className="inline-flex min-h-[44px] items-center justify-between rounded-xl border border-border px-4 py-3 text-left text-sm text-text active:bg-black/[0.04] dark:active:bg-white/[0.08]"
                 >
-                  <span>See the same corridor without fixing the date first</span>
+                  <span>See the same corridor across nearby dates</span>
                 </Link>
               ) : null}
               {nearbyDates.slice(0, 3).map((date) => (
@@ -373,7 +428,9 @@ export default async function SearchPage({
   const to = getValue(params.to);
   const when = getValue(params.when) || undefined;
   const what = (getValue(params.what) || "furniture") as ItemCategory;
+  const intent = getValue(params.intent) || "single_furniture";
   const backload = getValue(params.backload) === "1";
+  const flexibleDates = getValue(params.flex) === "1";
   const sort = (getValue(params.sort) || "date") as SearchSort;
   const page = Math.max(1, Number(getValue(params.page) || "1") || 1);
   const user = await getOptionalSessionUser();
@@ -382,7 +439,9 @@ export default async function SearchPage({
     to,
     ...(when ? { when } : {}),
     what,
+    ...(intent ? { intent } : {}),
     ...(backload ? { backload: "1" } : {}),
+    ...(flexibleDates ? { flex: "1" } : {}),
     ...(sort !== "date" ? { sort } : {}),
     ...(page > 1 ? { page: String(page) } : {}),
   }).toString();
@@ -401,7 +460,15 @@ export default async function SearchPage({
           to,
           when: when ?? getTodayIsoDate(),
           what,
+          intent: intent as
+            | "single_furniture"
+            | "appliance"
+            | "marketplace_pickup"
+            | "student_move"
+            | "office_overflow"
+            | "boxes",
           backload,
+          flexibleDates,
           sort,
         }}
       />
@@ -416,6 +483,7 @@ export default async function SearchPage({
             backload={backload}
             sort={sort}
             page={page}
+            flexibleDates={flexibleDates}
             userEmail={user?.email ?? undefined}
             redirectSearch={redirectSearch}
           />

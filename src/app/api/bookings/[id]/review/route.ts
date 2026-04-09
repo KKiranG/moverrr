@@ -1,8 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { z } from "zod";
 
 import { requireSessionUser } from "@/lib/auth";
 import { createReviewForBooking } from "@/lib/data/feedback";
 import { toErrorResponse } from "@/lib/errors";
+
+const createBookingReviewSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().trim().max(500).optional(),
+});
 
 export async function POST(
   request: NextRequest,
@@ -10,10 +16,7 @@ export async function POST(
 ) {
   try {
     const user = await requireSessionUser();
-    const payload = (await request.json()) as {
-      rating: number;
-      comment?: string;
-    };
+    const payload = createBookingReviewSchema.parse(await request.json());
     const review = await createReviewForBooking(user.id, params.id, payload);
 
     return NextResponse.json({ review });

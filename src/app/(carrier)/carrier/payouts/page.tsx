@@ -1,11 +1,17 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { PageIntro } from "@/components/layout/page-intro";
+import { ConnectPayoutButton } from "@/components/carrier/connect-payout-button";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { requirePageSessionUser } from "@/lib/auth";
 import { getCarrierPayoutDashboard } from "@/lib/data/bookings";
 import { formatCurrency } from "@/lib/utils";
+
+export const metadata: Metadata = {
+  title: "Carrier payouts",
+};
 
 export default async function CarrierPayoutsPage() {
   const user = await requirePageSessionUser();
@@ -22,6 +28,9 @@ export default async function CarrierPayoutsPage() {
         description="Transparency around payouts is part of the trust loop for repeat carriers."
         actions={
           <div className="flex flex-wrap gap-2">
+            <Button asChild variant="secondary">
+              <Link href="/api/carrier/payouts/export">Export CSV</Link>
+            </Button>
             <Button asChild variant="secondary">
               <Link href="/carrier/today">Open today screen</Link>
             </Button>
@@ -46,9 +55,7 @@ export default async function CarrierPayoutsPage() {
                 What happens next: eligible bookings keep stacking in payout holds until onboarding is complete.
               </p>
             </div>
-            <Button asChild variant="secondary">
-              <Link href="/carrier/onboarding">Finish payout setup</Link>
-            </Button>
+            <ConnectPayoutButton variant="secondary" label="Finish payout setup" />
           </div>
         </Card>
       ) : null}
@@ -143,6 +150,39 @@ export default async function CarrierPayoutsPage() {
               </p>
             </div>
           ))}
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <p className="section-label">Ledger</p>
+        <h2 className="mt-1 text-lg text-text">Line-by-line payout math</h2>
+        <div className="mt-4 grid gap-3">
+          {dashboard.ledgerEntries.map((entry) => (
+            <div key={entry.bookingId} className="rounded-xl border border-border p-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-text">{entry.bookingReference}</p>
+                  <p className="mt-1 text-sm text-text-secondary">
+                    {entry.tripDate ?? "No trip date"} · {entry.routeLabel}
+                  </p>
+                </div>
+                <p className="text-sm text-text-secondary capitalize">
+                  {entry.payoutStatus.replaceAll("_", " ")}
+                </p>
+              </div>
+              <div className="mt-3 grid gap-1 text-sm text-text-secondary sm:grid-cols-2">
+                <p>Base earnings: {formatCurrency(entry.basePriceCents)}</p>
+                <p>Booking fee: {formatCurrency(entry.bookingFeeCents)}</p>
+                <p>15% commission: -{formatCurrency(entry.platformCommissionCents)}</p>
+                <p className="font-medium text-text">Net payout: {formatCurrency(entry.carrierPayoutCents)}</p>
+              </div>
+            </div>
+          ))}
+          {dashboard.ledgerEntries.length === 0 ? (
+            <p className="text-sm text-text-secondary">
+              No payout ledger lines yet. Completed or in-flight bookings will appear here.
+            </p>
+          ) : null}
         </div>
       </Card>
     </main>

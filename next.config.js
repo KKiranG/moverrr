@@ -1,4 +1,5 @@
 const requiredProductionEnv = require("./config/required-production-env.json");
+const { withSentryConfig } = require("@sentry/nextjs");
 
 function assertRequiredEnvForBuild() {
   const isLintCommand = process.argv.some((arg) => arg.includes("lint"));
@@ -66,4 +67,15 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  widenClientFileUpload: true,
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+});

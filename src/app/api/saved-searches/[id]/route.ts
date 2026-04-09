@@ -1,8 +1,21 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { requireSessionUser } from "@/lib/auth";
 import { deleteSavedSearch, updateSavedSearch } from "@/lib/data/saved-searches";
 import { toErrorResponse } from "@/lib/errors";
+
+const savedSearchPatchSchema = z.object({
+  fromSuburb: z.string().trim().min(2).max(120).optional(),
+  fromPostcode: z.string().trim().min(3).max(8).optional(),
+  toSuburb: z.string().trim().min(2).max(120).optional(),
+  toPostcode: z.string().trim().min(3).max(8).optional(),
+  itemCategory: z.string().trim().min(1).max(40).optional(),
+  dateFrom: z.string().trim().min(1).optional(),
+  dateTo: z.string().trim().min(1).optional(),
+  notifyEmail: z.string().email().optional(),
+  isActive: z.boolean().optional(),
+});
 
 export async function DELETE(
   _request: Request,
@@ -25,17 +38,7 @@ export async function PATCH(
 ) {
   try {
     const user = await requireSessionUser();
-    const payload = (await request.json()) as {
-      fromSuburb?: string;
-      fromPostcode?: string;
-      toSuburb?: string;
-      toPostcode?: string;
-      itemCategory?: string;
-      dateFrom?: string;
-      dateTo?: string;
-      notifyEmail?: string;
-      isActive?: boolean;
-    };
+    const payload = savedSearchPatchSchema.parse(await request.json());
 
     const savedSearch = await updateSavedSearch(params.id, user.id, payload);
     return NextResponse.json({ savedSearch });

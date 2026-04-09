@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { z } from "zod";
 
 import { requireSessionUser } from "@/lib/auth";
 import {
@@ -6,6 +7,17 @@ import {
   listUserSavedSearchesWithOptions,
 } from "@/lib/data/saved-searches";
 import { toErrorResponse } from "@/lib/errors";
+
+const savedSearchCreateSchema = z.object({
+  fromSuburb: z.string().trim().min(2).max(120),
+  fromPostcode: z.string().trim().min(3).max(8).optional(),
+  toSuburb: z.string().trim().min(2).max(120),
+  toPostcode: z.string().trim().min(3).max(8).optional(),
+  itemCategory: z.string().trim().min(1).max(40).optional(),
+  dateFrom: z.string().trim().min(1).optional(),
+  dateTo: z.string().trim().min(1).optional(),
+  notifyEmail: z.string().email().optional(),
+});
 
 export async function GET() {
   try {
@@ -24,16 +36,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const user = await requireSessionUser();
-    const body = (await request.json()) as {
-      fromSuburb: string;
-      fromPostcode?: string;
-      toSuburb: string;
-      toPostcode?: string;
-      itemCategory?: string;
-      dateFrom?: string;
-      dateTo?: string;
-      notifyEmail?: string;
-    };
+    const body = savedSearchCreateSchema.parse(await request.json());
     const savedSearch = await createSavedSearch(user.id, {
       ...body,
       notifyEmail: body.notifyEmail ?? user.email ?? "",

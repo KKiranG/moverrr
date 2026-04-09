@@ -1,8 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { z } from "zod";
 
 import { requireSessionUser } from "@/lib/auth";
 import { updateBookingStatusForActor } from "@/lib/data/bookings";
 import { toErrorResponse } from "@/lib/errors";
+
+const confirmReceiptSchema = z.object({
+  confirmation: z.literal("received").optional(),
+});
 
 export async function POST(
   _request: NextRequest,
@@ -10,6 +15,7 @@ export async function POST(
 ) {
   try {
     const user = await requireSessionUser();
+    confirmReceiptSchema.parse(await _request.json().catch(() => ({})));
     const booking = await updateBookingStatusForActor({
       userId: user.id,
       bookingId: params.id,

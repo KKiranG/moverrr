@@ -20,6 +20,12 @@ export function VerifyCarrierActions({
 
   async function submit(isApproved: boolean, notes?: string) {
     setError(null);
+
+    if (!isApproved && !notes?.trim()) {
+      setError("Add a rejection reason before rejecting this carrier.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {

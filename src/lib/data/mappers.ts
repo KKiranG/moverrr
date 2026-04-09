@@ -181,6 +181,8 @@ export function toTripSearchResult(
         destinationFit: 0,
         reliability: 0,
         priceFit: 0,
+        pickupDistanceKm: undefined,
+        dropoffDistanceKm: undefined,
       },
   };
 }

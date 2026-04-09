@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { PageIntro } from "@/components/layout/page-intro";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,10 @@ import { Card } from "@/components/ui/card";
 import { requirePageSessionUser } from "@/lib/auth";
 import { getCarrierPerformanceStats } from "@/lib/data/bookings";
 import { formatCurrency } from "@/lib/utils";
+
+export const metadata: Metadata = {
+  title: "Carrier performance",
+};
 
 function formatMonthLabel(month: string) {
   const [year, numericMonth] = month.split("-");

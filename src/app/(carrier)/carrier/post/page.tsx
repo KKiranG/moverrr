@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { CarrierPostSuccessCard } from "@/components/carrier/carrier-post-success-card";
 import { CarrierPostPrefill } from "@/components/carrier/carrier-post-prefill";
@@ -10,6 +11,10 @@ import { getCarrierByUserId, listCarrierVehicles } from "@/lib/data/carriers";
 import { listCarrierTemplates } from "@/lib/data/templates";
 import { getTripById } from "@/lib/data/trips";
 import type { TripDraftVehicleOption } from "@/types/trip";
+
+export const metadata: Metadata = {
+  title: "Post capacity",
+};
 
 function getVehicleOptions(
   vehicles: Awaited<ReturnType<typeof listCarrierVehicles>>,

@@ -1,10 +1,17 @@
 import { requirePageSessionUser } from "@/lib/auth";
 import { CarrierOnboardingForm } from "@/components/carrier/carrier-onboarding-form";
+import type { Metadata } from "next";
+
+import { ConnectPayoutButton } from "@/components/carrier/connect-payout-button";
 import { PageIntro } from "@/components/layout/page-intro";
 import { TripChecklist } from "@/components/carrier/trip-checklist";
 import { Card } from "@/components/ui/card";
 import { getCarrierByUserId } from "@/lib/data/carriers";
 import { saveCarrierOnboarding } from "./actions";
+
+export const metadata: Metadata = {
+  title: "Carrier onboarding",
+};
 
 const steps = [
   {
@@ -68,6 +75,19 @@ export default async function CarrierOnboardingPage() {
       </Card>
 
       <Card className="p-4">
+        {existingCarrier && !existingCarrier.stripeOnboardingComplete ? (
+          <div className="mb-4 rounded-xl border border-warning/20 bg-warning/10 p-4">
+            <p className="section-label">Payout setup</p>
+            <h2 className="mt-1 text-lg text-text">Stripe Connect still needs to be completed</h2>
+            <p className="mt-2 text-sm text-text-secondary">
+              Manual verification helps supply quality, but completed jobs still cannot be released
+              until payout onboarding is finished in Stripe.
+            </p>
+            <div className="mt-3">
+              <ConnectPayoutButton variant="secondary" label="Start payout setup" />
+            </div>
+          </div>
+        ) : null}
         <CarrierOnboardingForm
           action={saveCarrierOnboarding}
           defaultEmail={user.email ?? ""}

@@ -9,9 +9,15 @@ import { createClient } from "@/lib/supabase/client";
 
 type AccountType = "customer" | "carrier";
 
-export function SignupForm() {
+export function SignupForm({
+  defaultAccountType = "customer",
+  lockAccountType = false,
+}: {
+  defaultAccountType?: AccountType;
+  lockAccountType?: boolean;
+}) {
   const router = useRouter();
-  const [accountType, setAccountType] = useState<AccountType>("customer");
+  const [accountType, setAccountType] = useState<AccountType>(defaultAccountType);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -59,11 +65,17 @@ export function SignupForm() {
         <select
           value={accountType}
           onChange={(event) => setAccountType(event.target.value as AccountType)}
-          className="h-11 rounded-xl border border-border bg-surface px-3 text-sm text-text"
+          disabled={lockAccountType}
+          className="h-11 rounded-xl border border-border bg-surface px-3 text-sm text-text disabled:cursor-not-allowed disabled:opacity-70"
         >
           <option value="customer">Customer</option>
           <option value="carrier">Carrier</option>
         </select>
+        {lockAccountType ? (
+          <span className="text-xs text-text-secondary">
+            This carrier signup path is preconfigured so you land straight in onboarding.
+          </span>
+        ) : null}
       </label>
       <label className="flex flex-col gap-2">
         <span className="text-sm font-medium text-text">Full name</span>

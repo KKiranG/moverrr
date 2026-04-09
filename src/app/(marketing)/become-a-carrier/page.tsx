@@ -50,7 +50,7 @@ export default function BecomeCarrierPage() {
         </p>
         <div className="flex flex-wrap gap-3">
           <Link
-            href="/signup"
+            href="/carrier/signup"
             className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-medium text-white active:bg-[#0047b3]"
           >
             Post your first trip

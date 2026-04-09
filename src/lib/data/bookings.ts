@@ -5,12 +5,14 @@ import { z } from "zod";
 import { canTransitionBooking } from "@/lib/status-machine";
 import { hasSupabaseEnv, hasSupabaseAdminEnv } from "@/lib/env";
 import { AppError } from "@/lib/errors";
+import { buildBookingEmail, buildReviewRequestEmail } from "@/lib/email";
 import { sendBookingTransactionalEmail } from "@/lib/notifications";
 import { captureAppError } from "@/lib/sentry";
 import { getStripeServerClient } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 import { toBooking, type BookingJoinedRecord } from "@/lib/data/mappers";
+import { listCarrierTrips } from "@/lib/data/trips";
 import { bookingSchema, type BookingInput } from "@/lib/validation/booking";
 import type { Database } from "@/types/database";
 import type {
@@ -27,9 +29,16 @@ import type {
   CarrierTodaySnapshot,
   CarrierTripHealth,
 } from "@/types/carrier";
-import { getConfirmedBookingChecklist } from "@/lib/booking-presenters";
-import { listCarrierTrips } from "@/lib/data/trips";
 import type { Trip } from "@/types/trip";
+import { getConfirmedBookingChecklist } from "@/lib/booking-presenters";
+
+function formatCurrencyLabel(valueCents: number) {
+  return new Intl.NumberFormat("en-AU", {
+    style: "currency",
+    currency: "AUD",
+    maximumFractionDigits: 0,
+  }).format(valueCents / 100);
+}
 
 const bookingProofConditionValues = [
   "no_visible_damage",
@@ -513,12 +522,6 @@ export async function createBookingForCustomer(
     throw new AppError("Trip/carrier mismatch.", 400, "carrier_mismatch");
   }
 
-  const { data: carrierProfile } = await supabase
-    .from("carriers")
-    .select("business_name")
-    .eq("id", parsed.data.carrierId)
-    .maybeSingle();
-
   const { data: bookingId, error } = await supabase.rpc("create_booking_atomic", {
     p_actor_user_id: userId,
     p_carrier_id: parsed.data.carrierId,
@@ -593,26 +596,23 @@ export async function createBookingForCustomer(
     emailType: "booking_created_customer",
     to: customer.email,
     subject: `Booking received: ${booking.bookingReference}`,
-    html: `
-      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a1a;line-height:1.5">
-        <h1 style="font-size:20px;margin-bottom:16px">Booking confirmed in moverrr</h1>
-        <p>Your booking <strong>${booking.bookingReference}</strong> is now waiting on carrier confirmation.</p>
-        <div style="border:1px solid #e5e5e5;border-radius:12px;padding:16px;margin:16px 0">
-          <p style="margin:0 0 8px"><strong>Route:</strong> ${listing.origin_suburb} to ${listing.destination_suburb}</p>
-          <p style="margin:0 0 8px"><strong>Pickup window:</strong> ${listing.trip_date} · ${listing.time_window}</p>
-          <p style="margin:0 0 8px"><strong>Carrier:</strong> ${carrierProfile?.business_name ?? "Verified moverrr carrier"}</p>
-          <p style="margin:0"><strong>Total paid:</strong> ${new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(booking.pricing.totalPriceCents / 100)}</p>
-        </div>
-        <p style="margin-bottom:8px"><strong>Preparation checklist</strong></p>
-        <ul style="padding-left:20px;margin-top:0">
-          <li>Keep access notes and contact numbers handy.</li>
-          <li>Make sure the item is ready inside the agreed pickup window.</li>
-          <li>Your payment stays in moverrr until proof and completion logic are satisfied.</li>
-          <li>If anyone asks for cash, bank transfer, or extra charges outside the listed add-ons, stop and report it in-platform.</li>
-          <li>Keep this reference for support: ${booking.bookingReference}</li>
-        </ul>
-      </div>
-    `,
+    html: buildBookingEmail({
+      eyebrow: "Booking received",
+      title: "Your booking is waiting on carrier confirmation",
+      intro: "The route is reserved in moverrr while the carrier confirms it inside the pending response window.",
+      bookingReference: booking.bookingReference,
+      routeLabel: `${listing.origin_suburb} to ${listing.destination_suburb}`,
+      tripLabel: `${listing.trip_date} · ${listing.time_window}`,
+      priceLabel: formatCurrencyLabel(booking.pricing.totalPriceCents),
+      ctaPath: `/bookings/${booking.id}`,
+      ctaLabel: "Open booking detail",
+      bulletItems: [
+        "Keep access notes and contact numbers handy.",
+        "Make sure the item is ready inside the agreed pickup window.",
+        "Payment stays in moverrr until proof and completion logic are satisfied.",
+        "If anyone asks for cash, bank transfer, or off-platform extras, stop and report it in moverrr.",
+      ],
+    }),
   });
 
   const recipients = await getBookingNotificationRecipients({
@@ -627,23 +627,22 @@ export async function createBookingForCustomer(
       emailType: "booking_created_carrier",
       to: recipients.carrierEmail,
       subject: `New booking request: ${booking.bookingReference}`,
-      html: `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a1a;line-height:1.5">
-          <h1 style="font-size:20px;margin-bottom:16px">New booking request</h1>
-          <p>Booking <strong>${booking.bookingReference}</strong> has been created on one of your moverrr trips.</p>
-          <div style="border:1px solid #e5e5e5;border-radius:12px;padding:16px;margin:16px 0">
-            <p style="margin:0 0 8px"><strong>Route:</strong> ${listing.origin_suburb} to ${listing.destination_suburb}</p>
-            <p style="margin:0 0 8px"><strong>Trip window:</strong> ${listing.trip_date} · ${listing.time_window}</p>
-            <p style="margin:0"><strong>Customer total:</strong> ${new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(booking.pricing.totalPriceCents / 100)}</p>
-          </div>
-          <p>Please review the booking in your dashboard and confirm it before the pending hold expires.</p>
-          <ul style="padding-left:20px;margin-top:12px">
-            <li>Keep payment and extra charges inside moverrr.</li>
-            <li>Pickup and delivery proof will be required before payout release.</li>
-            <li>Important booking replies should still land within 24 hours.</li>
-          </ul>
-        </div>
-      `,
+      html: buildBookingEmail({
+        eyebrow: "New booking request",
+        title: "A customer requested space on your trip",
+        intro: "Review the booking in moverrr and confirm or decline it before the pending hold expires.",
+        bookingReference: booking.bookingReference,
+        routeLabel: `${listing.origin_suburb} to ${listing.destination_suburb}`,
+        tripLabel: `${listing.trip_date} · ${listing.time_window}`,
+        priceLabel: formatCurrencyLabel(booking.pricing.totalPriceCents),
+        ctaPath: `/carrier/trips/${booking.listingId}?focus=${booking.id}#booking-${booking.id}`,
+        ctaLabel: "Review booking",
+        bulletItems: [
+          "Keep payment and extra charges inside moverrr.",
+          "Pickup and delivery proof will be required before payout release.",
+          "Important booking replies should still land quickly while the request is pending.",
+        ],
+      }),
     });
   }
 
@@ -976,41 +975,89 @@ export async function updateBookingStatusForActor(params: {
 
   const emailTargets =
     params.actorRole === "carrier"
-      ? [recipients.customerEmail]
-      : [recipients.customerEmail, recipients.carrierEmail];
+      ? [{ email: recipients.customerEmail, audience: "customer" as const }]
+      : [
+          { email: recipients.customerEmail, audience: "customer" as const },
+          { email: recipients.carrierEmail, audience: "carrier" as const },
+        ];
 
   if (!params.skipStatusEmails) {
-    const checklistHtml =
-      params.nextStatus === "confirmed"
-        ? `<ul>${getConfirmedBookingChecklist()
-            .map((item) => `<li>${item}</li>`)
-            .join("")}</ul>`
-        : "";
-    const statusMessageHtml =
-      params.nextStatus === "confirmed"
-        ? `<p>Your moverrr booking <strong>${data.booking_reference}</strong> is confirmed.</p><p>Preparation checklist:</p>${checklistHtml}<p>Keep payment and any extras inside moverrr while the booking runs.</p>`
-        : params.nextStatus === "delivered"
-          ? `<p>Your moverrr booking <strong>${data.booking_reference}</strong> is now marked as delivered.</p><p>Please confirm receipt in moverrr once the handoff is complete, or raise a dispute if anything is wrong.</p>`
-          : params.nextStatus === "completed"
-            ? `<p>Your moverrr booking <strong>${data.booking_reference}</strong> is complete.</p><p>Proof, completion, and payout release logic have all been advanced in-platform.</p>`
-            : params.nextStatus === "cancelled"
-              ? `<p>Your moverrr booking <strong>${data.booking_reference}</strong> was cancelled.</p><p>No extra payment should move outside moverrr for this booking.</p>`
-              : `<p>Your moverrr booking <strong>${data.booking_reference}</strong> is now marked as ${params.nextStatus.replace("_", " ")}.</p>`;
-
     await Promise.all(
       emailTargets
-        .filter((email): email is string => Boolean(email))
-        .map((email) =>
+        .filter((target): target is { email: string; audience: "customer" | "carrier" } => Boolean(target.email))
+        .map((target) =>
           sendBookingTransactionalEmail({
             bookingId: data.id,
             bookingStatus: params.nextStatus,
-            emailType: "booking_status_update",
-            to: email,
-            subject: `${subjectByStatus[params.nextStatus] ?? "Booking updated"}: ${data.booking_reference}`,
-            html: statusMessageHtml,
+            emailType:
+              params.nextStatus === "delivered" && target.audience === "customer"
+                ? "delivery_confirmed_customer"
+                : "booking_status_update",
+            to: target.email,
+            subject:
+              params.nextStatus === "delivered" && target.audience === "customer"
+                ? `Delivery confirmed: ${data.booking_reference}`
+                : `${subjectByStatus[params.nextStatus] ?? "Booking updated"}: ${data.booking_reference}`,
+            html: buildBookingEmail({
+              eyebrow: "Booking update",
+              title:
+                params.nextStatus === "confirmed"
+                  ? "Your booking is confirmed"
+                  : params.nextStatus === "delivered" && target.audience === "customer"
+                    ? "The carrier marked your item as delivered"
+                    : params.nextStatus === "completed"
+                      ? "This booking is complete"
+                      : params.nextStatus === "cancelled"
+                        ? "This booking was cancelled"
+                        : `Booking status: ${params.nextStatus.replaceAll("_", " ")}`,
+              intro:
+                params.nextStatus === "confirmed"
+                  ? "The booking is confirmed and the route is locked in moverrr."
+                  : params.nextStatus === "delivered" && target.audience === "customer"
+                    ? "Review the handoff, then confirm receipt or raise a dispute if anything is wrong."
+                    : params.nextStatus === "completed"
+                      ? "Proof, completion, and payout logic have advanced in-platform."
+                      : params.nextStatus === "cancelled"
+                        ? "The booking is no longer proceeding and any off-platform payment requests should be ignored."
+                        : `This booking is now marked as ${params.nextStatus.replaceAll("_", " ")}.`,
+              bookingReference: data.booking_reference,
+              routeLabel: `${data.pickup_suburb ?? "Pickup"} to ${data.dropoff_suburb ?? "Dropoff"}`,
+              priceLabel: formatCurrencyLabel(data.total_price_cents),
+              ctaPath:
+                target.audience === "customer"
+                  ? `/bookings/${data.id}`
+                  : `/carrier/trips/${data.listing_id}?focus=${data.id}#booking-${data.id}`,
+              ctaLabel: target.audience === "customer" ? "Open booking" : "Open carrier view",
+              bulletItems:
+                params.nextStatus === "confirmed"
+                  ? getConfirmedBookingChecklist()
+                  : params.nextStatus === "delivered" && target.audience === "customer"
+                    ? [
+                        "Confirm receipt in moverrr once the handoff is complete.",
+                        "Raise a dispute in-platform if the item, condition, or handoff was not correct.",
+                      ]
+                    : params.nextStatus === "cancelled"
+                      ? ["No extra payment should move outside moverrr for this booking."]
+                      : [],
+            }),
           }),
         ),
     );
+  }
+
+  if (params.nextStatus === "completed" && recipients.customerEmail) {
+    await sendBookingTransactionalEmail({
+      bookingId: data.id,
+      bookingStatus: params.nextStatus,
+      emailType: "review_request",
+      to: recipients.customerEmail,
+      subject: `Leave a review: ${data.booking_reference}`,
+      html: buildReviewRequestEmail({
+        bookingReference: data.booking_reference,
+        routeLabel: `${data.pickup_suburb ?? "Pickup"} to ${data.dropoff_suburb ?? "Dropoff"}`,
+        ctaPath: `/bookings/${data.id}#review`,
+      }),
+    });
   }
 
   return toBooking(data as unknown as BookingJoinedRecord);
@@ -1420,7 +1467,21 @@ export async function expirePendingBookings(params?: {
               emailType: "pending_booking_expired",
               to: email,
               subject: `Pending booking expired: ${booking.bookingReference}`,
-              html: `<p>Booking <strong>${booking.bookingReference}</strong> expired after the 2-hour carrier response window and has been cancelled. Capacity has been released back to the trip.</p>`,
+              html: buildBookingEmail({
+                eyebrow: "Pending booking expired",
+                title: "The pending response window has closed",
+                intro:
+                  "This booking expired before it was confirmed, so moverrr released the capacity back to the trip.",
+                bookingReference: booking.bookingReference,
+                routeLabel: `${booking.pickupSuburb ?? "Pickup"} to ${booking.dropoffSuburb ?? "Dropoff"}`,
+                priceLabel: formatCurrencyLabel(booking.pricing.totalPriceCents),
+                ctaPath: `/bookings/${booking.id}`,
+                ctaLabel: "Open booking detail",
+                bodyLines: [
+                  "The authorization hold should no longer progress as an active booking.",
+                  "If you still need a route, search again and save the corridor so moverrr can alert you when supply appears.",
+                ],
+              }),
             }),
           ),
       );
@@ -1433,14 +1494,16 @@ export async function expirePendingBookings(params?: {
 }
 
 export async function getCarrierPayoutDashboard(userId: string) {
-  const [bookings, carrierRow] = await Promise.all([
+  const [bookings, carrierRow, trips] = await Promise.all([
     listCarrierBookings(userId),
     createServerSupabaseClient()
       .from("carriers")
       .select("stripe_onboarding_complete")
       .eq("user_id", userId)
       .maybeSingle(),
+    listCarrierTrips(userId),
   ]);
+  const tripMap = new Map(trips.map((trip) => [trip.id, trip]));
 
   const upcomingExpectedPayoutCents = bookings
     .filter((booking) => ["confirmed", "picked_up", "in_transit", "delivered"].includes(booking.status))
@@ -1479,6 +1542,31 @@ export async function getCarrierPayoutDashboard(userId: string) {
       }, new Map<string, { month: string; releasedCents: number; refundedCents: number; jobCount: number }>())
       .values(),
   ).filter((entry) => Boolean(entry.month));
+  const ledgerEntries = bookings
+    .map((booking) => {
+      const trip = tripMap.get(booking.listingId);
+      const month = (booking.completedAt ?? booking.updatedAt ?? booking.createdAt ?? "").slice(0, 7);
+
+      return {
+        bookingId: booking.id,
+        bookingReference: booking.bookingReference,
+        month,
+        tripDate: trip?.tripDate ?? null,
+        routeLabel: trip?.route.label ?? `${booking.pickupSuburb ?? "Pickup"} → ${booking.dropoffSuburb ?? "Dropoff"}`,
+        basePriceCents: booking.pricing.basePriceCents,
+        platformCommissionCents: booking.pricing.platformCommissionCents,
+        bookingFeeCents: booking.pricing.bookingFeeCents,
+        carrierPayoutCents: booking.pricing.carrierPayoutCents,
+        payoutStatus: booking.paymentStatus ?? "pending",
+      };
+    })
+    .sort((left, right) => {
+      return (
+        right.month.localeCompare(left.month) ||
+        (right.tripDate ?? "").localeCompare(left.tripDate ?? "") ||
+        right.bookingReference.localeCompare(left.bookingReference)
+      );
+    });
 
   return {
     upcomingExpectedPayoutCents,
@@ -1487,7 +1575,40 @@ export async function getCarrierPayoutDashboard(userId: string) {
     payoutSetupReady,
     payoutHolds,
     historyByMonth,
+    ledgerEntries,
   };
+}
+
+export async function getCarrierPayoutLedgerCsv(userId: string) {
+  const dashboard = await getCarrierPayoutDashboard(userId);
+  const lines = [
+    [
+      "month",
+      "booking_reference",
+      "trip_date",
+      "route",
+      "base_price_cents",
+      "booking_fee_cents",
+      "platform_commission_cents",
+      "carrier_payout_cents",
+      "payout_status",
+    ].join(","),
+    ...dashboard.ledgerEntries.map((entry) =>
+      [
+        entry.month,
+        entry.bookingReference,
+        entry.tripDate ?? "",
+        `"${entry.routeLabel.replaceAll('"', '""')}"`,
+        entry.basePriceCents,
+        entry.bookingFeeCents,
+        entry.platformCommissionCents,
+        entry.carrierPayoutCents,
+        entry.payoutStatus,
+      ].join(","),
+    ),
+  ];
+
+  return lines.join("\n");
 }
 
 export async function getCarrierPerformanceStats(userId: string) {
