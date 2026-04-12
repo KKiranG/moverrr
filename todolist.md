@@ -34,65 +34,11 @@
 
 ### Product / Scope Corrections
 
-- [ ] **B01** — Replace the browse-first homepage with a need-first wizard entry
-  - **File(s):** `src/app/page.tsx`, `src/components/search/search-bar.tsx`, `src/app/layout.tsx`
-  - **What:** Rebuild the homepage so its primary action is the need-declaration wizard instead of featured trip inventory and browse-led copy.
-  - **Why:** The blueprint closes browse-first as the primary customer entry and makes need capture the core product motion.
-  - **Done when:** The homepage opens with a need-first promise, wizard entry, example jobs, and trust scaffolding without public featured listings above the fold.
-
-- [ ] **B02** — Remove featured live inventory from the public homepage
-  - **File(s):** `src/app/page.tsx`, `src/components/trip/trip-card.tsx`, `src/lib/data/trips.ts`
-  - **What:** Delete or demote the featured-trips shelf so public inventory is no longer presented as the homepage’s core value.
-  - **Why:** Public inventory-first framing pushes the product back toward the rejected browse archive model.
-  - **Done when:** The homepage no longer renders a featured live inventory section as a primary conversion surface.
-
-- [ ] **B03** — Replace global navigation with blueprint IA
-  - **File(s):** `src/components/layout/site-header.tsx`, `src/components/layout/mobile-nav.tsx`, `src/app/layout.tsx`
-  - **What:** Restructure customer and carrier navigation to match `Home / Bookings / Alerts / Account` and `Home / Requests / Trips / Payouts / Account`.
-  - **Why:** The current nav preserves browse-first and dashboard-first concepts that the blueprint explicitly rejects.
-  - **Done when:** Primary nav labels and destinations match the governing IA for signed-out, customer, and carrier states.
-
-- [ ] **B04** — Rewrite root metadata and marketing copy away from browse-first framing
-  - **File(s):** `src/app/layout.tsx`, `README.md`, `src/app/(marketing)/become-a-carrier/page.tsx`
-  - **What:** Replace metadata, descriptions, and marketing lines that still describe moverrr as public trip browsing or posted inventory.
-  - **Why:** Product-shape drift in always-visible copy will keep sending engineering and users toward the wrong model.
-  - **Done when:** Root metadata and key marketing pages describe need-first matching, request-to-book, and structured trust instead of browsing inventory.
-
-- [ ] **B05** — Remove user-facing sort controls from the search experience
-  - **File(s):** `src/app/(customer)/search/page.tsx`, `src/components/search/search-bar.tsx`, `src/lib/data/trips.ts`
-  - **What:** Remove date, price, and rating sort controls and make "Best fit" the fixed default ordering.
-  - **Why:** The blueprint defines search results as a ranked answer set, not a user-sorted archive.
-  - **Done when:** Search results always load in deterministic best-fit order and no customer-facing sort selector remains.
-
-- [ ] **B06** — Replace saved-search terminology with Alerts terminology
-  - **File(s):** `src/app/(customer)/saved-searches/page.tsx`, `src/components/layout/site-header.tsx`, `src/components/search/saved-searches-manager.tsx`
-  - **What:** Rename saved-search surfaces, labels, and flows to Alerts so demand capture reflects Alert the Network rather than passive saved browsing.
-  - **Why:** Saved-search language understates the active, operational no-match mechanic defined by the blueprint.
-  - **Done when:** Customer-facing naming, route labels, and entry points consistently use alert-based language.
-
 - [ ] **B07** — Demote public carrier storefront discovery as a primary customer path
   - **File(s):** `src/app/(customer)/carrier/[id]/page.tsx`, `src/app/page.tsx`, `src/components/trip/trip-card.tsx`
   - **What:** Remove or demote public carrier-profile loops that encourage browsing carriers outside a declared move need.
   - **Why:** The blueprint allows trust context, but not profile storefronts as the primary discovery model.
   - **Done when:** Carrier profile pages no longer act as a top-level discovery surface and are reached only from contextual trust flows.
-
-- [ ] **B08** — Remove customer-facing raw capacity and dimension language from core surfaces
-  - **File(s):** `src/components/trip/trip-card.tsx`, `src/components/trip/trip-detail-summary.tsx`, `src/components/booking/booking-form.tsx`
-  - **What:** Strip raw `m3`, weight, and percentage-heavy capacity copy from customer-facing cards, details, and request flows.
-  - **Why:** The blueprint requires human-readable fit labels and category-based trust, not freight-style capacity math.
-  - **Done when:** Customer surfaces describe fit in plain language without raw cubic-metre or percent-capacity framing.
-
-- [ ] **B09** — Remove public phone-sharing from customer booking detail
-  - **File(s):** `src/app/(customer)/bookings/[id]/page.tsx`, `src/lib/data/bookings.ts`, `src/types/booking.ts`
-  - **What:** Eliminate customer-visible carrier phone exposure from the MVP booking detail flow.
-  - **Why:** The governing blueprint keeps communication on-platform at MVP and rejects direct phone sharing as default behavior.
-  - **Done when:** Customer booking detail no longer renders carrier phone numbers or tap-to-call actions.
-
-- [ ] **B10** — Rename the carrier dashboard concept to carrier home across the product
-  - **File(s):** `src/app/(carrier)/carrier/dashboard/page.tsx`, `src/components/layout/site-header.tsx`, `src/app/(carrier)/carrier/today/page.tsx`
-  - **What:** Replace "dashboard" labeling with "home", "requests", "trips", and other action-led language that matches the blueprint.
-  - **Why:** Analytics-led dashboard language reinforces the wrong carrier mental model.
-  - **Done when:** Carrier navigation, page titles, and empty states stop calling the primary operational surface a dashboard.
 
 ### Data Model and Backend Logic
 
@@ -578,24 +524,6 @@
   - **Why:** Carrier IA is a core product decision, not a secondary polish issue.
   - **Done when:** Carrier nav renders the five blueprint destinations with correct active state and badge behavior.
 
-- [ ] **B53** — Remove dashboard language from shared page intros and metadata
-  - **File(s):** `src/components/layout/page-intro.tsx`, `src/app/(carrier)/carrier/dashboard/page.tsx`, `src/app/(admin)/admin/dashboard/page.tsx`
-  - **What:** Rewrite shared intro and metadata copy so customer and carrier flows stop inheriting dashboard-centric framing.
-  - **Why:** Shared page language amplifies product-shape drift across multiple surfaces.
-  - **Done when:** Intro copy across primary marketplace routes no longer describes core flows as dashboards.
-
-- [ ] **B54** — Replace saved-search route names and component names with alert-based equivalents
-  - **File(s):** `src/app/(customer)/saved-searches/page.tsx`, `src/components/search/saved-searches-manager.tsx`, `src/components/search/save-search-form.tsx`
-  - **What:** Rename routes, page headers, and components so the codebase stops presenting alerts as saved-search utilities.
-  - **Why:** Terminology in route names and component names influences future implementation choices and product drift.
-  - **Done when:** Customer alert surfaces are named for alerts and unmatched demand rather than saved searches.
-
-- [ ] **B55** — Remove browse-first root CTA copy from auth and marketing screens
-  - **File(s):** `src/app/(auth)/signup/page.tsx`, `src/app/(auth)/carrier/signup/page.tsx`, `src/app/(marketing)/become-a-carrier/page.tsx`
-  - **What:** Rewrite auth and marketing CTA language that still tells customers to browse or carriers to expose inventory first.
-  - **Why:** Auth and growth surfaces should reinforce the same mental model as the product core.
-  - **Done when:** Signup and marketing screens describe need declaration, spare-capacity matching, and structured requests without browse-first framing.
-
 - [ ] **B56** — Stop linking homepage and search results into public carrier storefront loops
   - **File(s):** `src/app/page.tsx`, `src/app/(customer)/search/page.tsx`, `src/app/(customer)/carrier/[id]/page.tsx`
   - **What:** Remove or demote carrier-profile deep links that take customers out of the need-first selection flow too early.
@@ -672,47 +600,11 @@
 
 ### Simplification / Removals
 
-- [ ] **B57** — Remove homepage dependencies on public trip-card browsing
-  - **File(s):** `src/app/page.tsx`, `src/components/trip/trip-card.tsx`, `src/lib/data/trips.ts`
-  - **What:** Remove the homepage’s reliance on public trip-card rendering and listing fetches as a first-load feature.
-  - **Why:** Keeping trip-card dependencies on the homepage makes browse-first behavior harder to remove cleanly.
-  - **Done when:** Home no longer needs live public trip-card data to render its primary experience.
-
 - [ ] **B58** — Remove Waitlist form usage from customer zero-match flows
   - **File(s):** `src/components/customer/waitlist-form.tsx`, `src/app/(customer)/search/page.tsx`, `src/app/api/search/route.ts`
   - **What:** Retire the waitlist form from customer recovery surfaces so it cannot be mistaken for the active marketplace demand flow.
   - **Why:** Waitlist semantics conflict with Alert the Network and founder concierge language.
   - **Done when:** No customer-facing no-match path renders or posts the waitlist form.
-
-- [ ] **B59** — Remove the carrier stats page from MVP navigation and growth language
-  - **File(s):** `src/app/(carrier)/carrier/stats/page.tsx`, `src/components/layout/site-header.tsx`, `src/app/(marketing)/become-a-carrier/page.tsx`
-  - **What:** Demote or hide the stats page so it no longer competes with Home, Requests, Trips, and Payouts in MVP.
-  - **Why:** Stats-first behavior is explicitly deferred and distorts the action-led carrier workflow.
-  - **Done when:** Stats is not presented as a primary carrier surface in nav, marketing, or empty-state guidance.
-
-- [ ] **B60** — Remove customer-facing references to the flat booking-fee model
-  - **File(s):** `src/components/trip/trip-detail-summary.tsx`, `src/components/trip/trip-card.tsx`, `src/app/(customer)/trip/[id]/page.tsx`
-  - **What:** Delete old booking-fee copy and any UI explanations that describe totals through the superseded fee model.
-  - **Why:** Conflicting pricing language will make realignment harder and confuse every later implementation pass.
-  - **Done when:** Customer-facing copy no longer describes totals through a flat booking-fee lens.
-
-- [ ] **B61** — Rework trip-card hierarchy around the five blueprint questions
-  - **File(s):** `src/components/trip/trip-card.tsx`, `src/lib/trip-presenters.ts`, `src/app/(customer)/search/page.tsx`
-  - **What:** Redesign cards so they immediately answer fit, route quality, timing, trust, and total price.
-  - **Why:** Current cards still feel like listing summaries instead of ranked answers to a declared need.
-  - **Done when:** Trip cards foreground the five blueprint decision questions in the correct order.
-
-- [ ] **B62** — Replace current route-fit copy with blueprint route-fit labels only
-  - **File(s):** `src/components/trip/trip-card.tsx`, `src/lib/matching/score.ts`, `src/lib/trip-presenters.ts`
-  - **What:** Constrain route-fit copy to direct, near pickup, near drop-off, nearby date, partial route, and needs approval semantics.
-  - **Why:** Loose route-fit prose reintroduces opaque ranking logic and inconsistent customer meaning.
-  - **Done when:** Offer cards and detail surfaces use only blueprint-aligned route-fit label patterns.
-
-- [ ] **B63** — Remove inconsistent privacy promises around address and contact visibility
-  - **File(s):** `src/components/trip/trip-detail-summary.tsx`, `src/app/(customer)/bookings/[id]/page.tsx`, `src/app/(customer)/trip/[id]/page.tsx`
-  - **What:** Align privacy messaging so customer and carrier visibility rules are described consistently across pending, confirmed, and fulfilled states.
-  - **Why:** Inconsistent privacy promises create support risk and product drift around direct contact.
-  - **Done when:** Address and contact visibility rules are described once and consistently across request, booking, and trust surfaces.
 
 - [ ] **B64** — Add Alerts page sections for Active, Matched, and Expired demand
   - **File(s):** `new file: src/app/(customer)/alerts/page.tsx`, `new file: src/components/search/alerts-manager.tsx`, `new file: src/lib/data/unmatched-requests.ts`
@@ -731,18 +623,6 @@
   - **What:** Separate pending requests from accepted fulfilment work instead of calling both "incoming jobs" or bookings.
   - **Why:** The blueprint draws a clean line between booking requests and accepted bookings.
   - **Done when:** Carrier surfaces label pending decisions and active fulfilment work separately and correctly.
-
-- [ ] **B67** — Remove draft-restore copy that teaches browse-first behavior
-  - **File(s):** `src/app/(customer)/search/page.tsx`, `src/components/search/search-bar.tsx`, `src/app/page.tsx`
-  - **What:** Rewrite search and draft-restoration helper copy so it supports move-request continuity rather than browsing behavior.
-  - **Why:** Low-level helper copy still shapes product understanding for users and future contributors.
-  - **Done when:** Draft and helper copy talks about resuming a move request, not browsing search inventory.
-
-- [ ] **B68** — Rework booking success state into request-submitted state
-  - **File(s):** `src/components/booking/booking-form.tsx`, `src/app/(customer)/trip/[id]/page.tsx`, `src/app/(customer)/bookings/[id]/page.tsx`
-  - **What:** Replace the direct-booking success state with a request-submitted state that explains what the carrier does next.
-  - **Why:** The current success state still implies instant or direct booking completion.
-  - **Done when:** Customers see a request-submitted confirmation with the correct response-window expectations and next actions.
 
 ---
 
