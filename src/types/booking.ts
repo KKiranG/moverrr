@@ -43,6 +43,26 @@ export type BookingCancellationReasonCode =
   | "no_response"
   | "safety_concern";
 
+export type BookingFlowSource = "legacy_booking" | "booking_request";
+
+export type BookingFlowCompatibility =
+  | {
+      source: "legacy_booking";
+      listingId: string;
+      moveRequestId?: null;
+      offerId?: null;
+      bookingRequestId?: null;
+      requestGroupId?: null;
+    }
+  | {
+      source: "booking_request";
+      listingId: string;
+      moveRequestId?: string | null;
+      offerId?: string | null;
+      bookingRequestId?: string | null;
+      requestGroupId?: string | null;
+    };
+
 export type BookingProofCondition =
   | "no_visible_damage"
   | "wear_noted"
@@ -91,6 +111,7 @@ export interface Booking {
   id: string;
   bookingReference: string;
   listingId: string;
+  flow: BookingFlowCompatibility;
   carrierId: string;
   customerId: string;
   carrierBusinessName?: string;

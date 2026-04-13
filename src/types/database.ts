@@ -298,6 +298,114 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["saved_searches"]["Insert"]>;
       };
+      move_requests: {
+        Row: {
+          id: string;
+          customer_id: string;
+          status: "draft" | "submitted" | "matched" | "booking_requested" | "booked" | "expired" | "cancelled";
+          item_description: string;
+          item_category: "furniture" | "boxes" | "appliance" | "fragile" | "other";
+          item_size_class: "S" | "M" | "L" | "XL" | null;
+          item_weight_band: "under_20kg" | "20_to_50kg" | "50_to_100kg" | "over_100kg" | null;
+          item_dimensions: string | null;
+          item_weight_kg: number | null;
+          item_photo_urls: string[] | null;
+          pickup_address: string;
+          pickup_suburb: string;
+          pickup_postcode: string;
+          pickup_point: unknown;
+          pickup_access_notes: string | null;
+          dropoff_address: string;
+          dropoff_suburb: string;
+          dropoff_postcode: string;
+          dropoff_point: unknown;
+          dropoff_access_notes: string | null;
+          preferred_date: string | null;
+          preferred_time_window: "morning" | "afternoon" | "evening" | "flexible" | null;
+          needs_stairs: boolean;
+          needs_helper: boolean;
+          special_instructions: string | null;
+          expires_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          customer_id: string;
+          status?: "draft" | "submitted" | "matched" | "booking_requested" | "booked" | "expired" | "cancelled";
+          item_description: string;
+          item_category: "furniture" | "boxes" | "appliance" | "fragile" | "other";
+          item_size_class?: "S" | "M" | "L" | "XL" | null;
+          item_weight_band?: "under_20kg" | "20_to_50kg" | "50_to_100kg" | "over_100kg" | null;
+          item_dimensions?: string | null;
+          item_weight_kg?: number | null;
+          item_photo_urls?: string[] | null;
+          pickup_address: string;
+          pickup_suburb: string;
+          pickup_postcode: string;
+          pickup_point: unknown;
+          pickup_access_notes?: string | null;
+          dropoff_address: string;
+          dropoff_suburb: string;
+          dropoff_postcode: string;
+          dropoff_point: unknown;
+          dropoff_access_notes?: string | null;
+          preferred_date?: string | null;
+          preferred_time_window?: "morning" | "afternoon" | "evening" | "flexible" | null;
+          needs_stairs?: boolean;
+          needs_helper?: boolean;
+          special_instructions?: string | null;
+          expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["move_requests"]["Insert"]>;
+      };
+      offers: {
+        Row: {
+          id: string;
+          move_request_id: string;
+          listing_id: string;
+          carrier_id: string;
+          status: "active" | "selected" | "expired" | "rejected";
+          match_class: "direct" | "near_pickup" | "near_dropoff" | "nearby_date" | "partial_route" | "needs_approval";
+          fit_confidence: "likely_fits" | "review_photos" | "needs_approval";
+          match_explanation: string;
+          ranking_score: number;
+          pickup_distance_km: number | null;
+          dropoff_distance_km: number | null;
+          detour_distance_km: number | null;
+          base_price_cents: number;
+          stairs_fee_cents: number;
+          helper_fee_cents: number;
+          booking_fee_cents: number;
+          total_price_cents: number;
+          expires_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          move_request_id: string;
+          listing_id: string;
+          carrier_id: string;
+          status?: "active" | "selected" | "expired" | "rejected";
+          match_class: "direct" | "near_pickup" | "near_dropoff" | "nearby_date" | "partial_route" | "needs_approval";
+          fit_confidence: "likely_fits" | "review_photos" | "needs_approval";
+          match_explanation: string;
+          ranking_score?: number;
+          pickup_distance_km?: number | null;
+          dropoff_distance_km?: number | null;
+          detour_distance_km?: number | null;
+          base_price_cents: number;
+          stairs_fee_cents?: number;
+          helper_fee_cents?: number;
+          booking_fee_cents?: number;
+          total_price_cents: number;
+          expires_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["offers"]["Insert"]>;
+      };
       customers: {
         Row: {
           id: string;
@@ -433,6 +541,49 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["bookings"]["Insert"]>;
+      };
+      booking_requests: {
+        Row: {
+          id: string;
+          move_request_id: string;
+          offer_id: string;
+          listing_id: string;
+          customer_id: string;
+          carrier_id: string;
+          booking_id: string | null;
+          request_group_id: string | null;
+          status: "pending" | "clarification_requested" | "accepted" | "declined" | "expired" | "revoked" | "cancelled";
+          requested_total_price_cents: number;
+          response_deadline_at: string;
+          clarification_reason: "item_details" | "access_details" | "timing" | "photos" | "other" | null;
+          clarification_message: string | null;
+          customer_response: string | null;
+          responded_at: string | null;
+          expires_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          move_request_id: string;
+          offer_id: string;
+          listing_id: string;
+          customer_id: string;
+          carrier_id: string;
+          booking_id?: string | null;
+          request_group_id?: string | null;
+          status?: "pending" | "clarification_requested" | "accepted" | "declined" | "expired" | "revoked" | "cancelled";
+          requested_total_price_cents: number;
+          response_deadline_at: string;
+          clarification_reason?: "item_details" | "access_details" | "timing" | "photos" | "other" | null;
+          clarification_message?: string | null;
+          customer_response?: string | null;
+          responded_at?: string | null;
+          expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["booking_requests"]["Insert"]>;
       };
       booking_events: {
         Row: {
@@ -677,6 +828,53 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["waitlist_entries"]["Insert"]>;
+      };
+      unmatched_requests: {
+        Row: {
+          id: string;
+          customer_id: string | null;
+          move_request_id: string | null;
+          status: "active" | "notified" | "matched" | "expired" | "cancelled";
+          pickup_suburb: string;
+          pickup_postcode: string | null;
+          pickup_point: unknown;
+          dropoff_suburb: string;
+          dropoff_postcode: string | null;
+          dropoff_point: unknown;
+          item_category: "furniture" | "boxes" | "appliance" | "fragile" | "other" | null;
+          item_description: string;
+          preferred_date: string | null;
+          notify_email: string | null;
+          last_notified_at: string | null;
+          notification_count: number;
+          matched_at: string | null;
+          expires_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          customer_id?: string | null;
+          move_request_id?: string | null;
+          status?: "active" | "notified" | "matched" | "expired" | "cancelled";
+          pickup_suburb: string;
+          pickup_postcode?: string | null;
+          pickup_point: unknown;
+          dropoff_suburb: string;
+          dropoff_postcode?: string | null;
+          dropoff_point: unknown;
+          item_category?: "furniture" | "boxes" | "appliance" | "fragile" | "other" | null;
+          item_description: string;
+          preferred_date?: string | null;
+          notify_email?: string | null;
+          last_notified_at?: string | null;
+          notification_count?: number;
+          matched_at?: string | null;
+          expires_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["unmatched_requests"]["Insert"]>;
       };
       admin_users: {
         Row: {

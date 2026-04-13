@@ -11,6 +11,15 @@ export type ItemCategory =
 
 export type ItemSizeCategory = "S" | "M" | "L" | "XL";
 
+export type TripFlowSource = "legacy_listing" | "offer";
+
+export interface TripFlowCompatibility {
+  source: TripFlowSource;
+  listingId: string;
+  moveRequestId?: string | null;
+  offerId?: string | null;
+}
+
 export interface TripRoute {
   originSuburb: string;
   originPostcode?: string;
@@ -43,6 +52,7 @@ export interface TripDraftVehicleOption {
 
 export interface Trip {
   id: string;
+  flow: TripFlowCompatibility;
   carrier: CarrierProfile;
   vehicle: Vehicle;
   route: TripRoute;

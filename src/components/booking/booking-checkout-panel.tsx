@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 
-import { BookingForm } from "@/components/booking/booking-form";
+import { BookingForm, type RequestMode } from "@/components/booking/booking-form";
 import { PriceBreakdown } from "@/components/booking/price-breakdown";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getConfirmedBookingChecklist } from "@/lib/booking-presenters";
 import {
@@ -23,6 +24,7 @@ export function BookingCheckoutPanel({
 }) {
   const [needsStairs, setNeedsStairs] = useState(false);
   const [needsHelper, setNeedsHelper] = useState(false);
+  const [requestMode, setRequestMode] = useState<RequestMode>("single");
 
   const pricing = calculateBookingBreakdown({
     basePriceCents: trip.priceCents,
@@ -38,8 +40,48 @@ export function BookingCheckoutPanel({
     <div className="space-y-4">
       <div>
         <p className="section-label">Request details</p>
-        <h2 className="mt-1 text-lg text-text">Item, access, and address details</h2>
+        <h2 className="mt-1 text-lg text-text">Choose the path, then confirm fit and access</h2>
       </div>
+      <Card id="request-options" className="p-4">
+        <p className="section-label">Choose request path</p>
+        <h3 className="mt-1 text-lg text-text">Request to Book or Fast Match</h3>
+        <p className="mt-2 text-sm text-text-secondary">
+          Pick one simple path. A single request goes only to this carrier. Fast Match asks up to three fitting carriers at once and closes the others after one accepts.
+        </p>
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setRequestMode("single")}
+            className={`rounded-2xl border p-4 text-left active:opacity-80 ${
+              requestMode === "single" ? "border-accent bg-accent/5" : "border-border"
+            }`}
+          >
+            <p className="text-sm font-medium text-text">Request to Book</p>
+            <p className="mt-2 text-sm text-text-secondary">
+              Ask {trip.carrier.businessName} to review this exact trip. Best when this route already looks like the right fit.
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setRequestMode("fast_match")}
+            className={`rounded-2xl border p-4 text-left active:opacity-80 ${
+              requestMode === "fast_match" ? "border-accent bg-accent/5" : "border-border"
+            }`}
+          >
+            <p className="text-sm font-medium text-text">Fast Match</p>
+            <p className="mt-2 text-sm text-text-secondary">
+              Ask moverrr to reach the next-best carriers too. Best when timing matters more than waiting on one carrier response.
+            </p>
+          </button>
+        </div>
+        <div className="mt-4">
+          <Button asChild variant="secondary">
+            <a href="#booking-form">
+              {requestMode === "single" ? "Continue with Request to Book" : "Continue with Fast Match"}
+            </a>
+          </Button>
+        </div>
+      </Card>
       <Card className="border-success/20 bg-success/5 p-4">
         <p className="section-label">Savings context</p>
         {savingsCents > 0 ? (
@@ -65,13 +107,12 @@ export function BookingCheckoutPanel({
       </Card>
 
       <Card className="p-4">
-        <p className="section-label">Payment reassurance</p>
-        <h3 className="mt-1 text-lg text-text">Your payment stays protected while the carrier reviews</h3>
+        <p className="section-label">Request boundary</p>
+        <h3 className="mt-1 text-lg text-text">Keep the decision flow inside moverrr</h3>
         <div className="mt-3 space-y-2 text-sm text-text-secondary">
-          <p>Your card is authorized when you submit the request so the spare-capacity spot can be held.</p>
-          <p>moverrr only captures the payment after the carrier accepts and the fulfilment rules are satisfied.</p>
+          <p>Your route, item, and access details stay in one structured request so the carrier can accept, decline, or ask for clarification without side-channel chats.</p>
           <p>If the carrier never responds or declines, the response window expires instead of turning into a free-form off-platform negotiation.</p>
-          <p>If the route cannot proceed cleanly, ops can review the in-platform proof trail instead of chat screenshots.</p>
+          <p>Once a carrier accepts, moverrr can turn the request into a live booking with proof, support, and payout records attached to the same trail.</p>
         </div>
       </Card>
 
@@ -90,9 +131,9 @@ export function BookingCheckoutPanel({
             </span>
           </summary>
           <div className="mt-3 space-y-2 text-sm text-text-secondary">
-            <p>1. You submit the request and moverrr opens the carrier response window.</p>
-            <p>2. If the carrier accepts, the trip becomes active and the handoff stays coordinated in-app.</p>
-            <p>3. Pickup and delivery proof are captured, then you confirm receipt so payout can be released.</p>
+            <p>1. You choose a single request or Fast Match, then submit the move details.</p>
+            <p>2. moverrr opens the response window and the carrier reviews fit, route, and access details.</p>
+            <p>3. If accepted, the request becomes active and the handoff stays coordinated in-app.</p>
             <p>4. Any extra charges must stay inside the listed add-ons or an admin-reviewed exception.</p>
           </div>
         </details>
@@ -144,6 +185,8 @@ export function BookingCheckoutPanel({
         trip={trip}
         isAuthenticated={isAuthenticated}
         id="booking-form"
+        requestMode={requestMode}
+        onRequestModeChange={setRequestMode}
         onOptionsChange={({ needsStairs: nextNeedsStairs, needsHelper: nextNeedsHelper }) => {
           setNeedsStairs(nextNeedsStairs);
           setNeedsHelper(nextNeedsHelper);

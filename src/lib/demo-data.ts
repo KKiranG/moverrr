@@ -107,6 +107,12 @@ const vehicles: Vehicle[] = [
 export const demoTrips: Trip[] = [
   {
     id: "708d7443-d9d0-46d5-a19b-e7cf6e6723c9",
+    flow: {
+      source: "legacy_listing",
+      listingId: "708d7443-d9d0-46d5-a19b-e7cf6e6723c9",
+      moveRequestId: null,
+      offerId: null,
+    },
     carrier: carriers[0],
     vehicle: vehicles[0],
     route: {
@@ -137,6 +143,12 @@ export const demoTrips: Trip[] = [
   },
   {
     id: "4bbf7bf4-f84b-41dc-b967-6cd64ddf133f",
+    flow: {
+      source: "legacy_listing",
+      listingId: "4bbf7bf4-f84b-41dc-b967-6cd64ddf133f",
+      moveRequestId: null,
+      offerId: null,
+    },
     carrier: carriers[1],
     vehicle: vehicles[1],
     route: {
@@ -167,6 +179,12 @@ export const demoTrips: Trip[] = [
   },
   {
     id: "f2d30152-6232-4b7a-a7ca-6930c51ba8cb",
+    flow: {
+      source: "legacy_listing",
+      listingId: "f2d30152-6232-4b7a-a7ca-6930c51ba8cb",
+      moveRequestId: null,
+      offerId: null,
+    },
     carrier: carriers[2],
     vehicle: vehicles[2],
     route: {
@@ -202,6 +220,14 @@ export const demoBookings: Booking[] = [
     id: "8d0ad4b8-20b9-4e35-86c8-f82c9099c67b",
     bookingReference: "MVR-2026-0421",
     listingId: demoTrips[0].id,
+    flow: {
+      source: "legacy_booking",
+      listingId: demoTrips[0].id,
+      moveRequestId: null,
+      offerId: null,
+      bookingRequestId: null,
+      requestGroupId: null,
+    },
     carrierId: demoTrips[0].carrier.id,
     customerId: "7fa95af6-8d7f-4b9f-830a-4066c5d75e87",
     itemDescription: "Three-seat sofa",

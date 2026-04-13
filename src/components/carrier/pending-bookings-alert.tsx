@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { RequestClarificationSheet } from "@/components/carrier/request-clarification-sheet";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
-import type { Booking } from "@/types/booking";
-import { formatDateTime } from "@/lib/utils";
+import type { CarrierRequestCard } from "@/types/carrier";
+import { formatCurrency, formatDateTime } from "@/lib/utils";
 
 function formatRemainingTime(value: string | null | undefined, now: number) {
   if (!value) {
@@ -35,13 +36,20 @@ function formatRemainingTime(value: string | null | undefined, now: number) {
   return `${minutes}m left`;
 }
 
-export function PendingBookingsAlert({ bookings }: { bookings: Booking[] }) {
+export function PendingBookingsAlert({
+  requests,
+  compact = false,
+}: {
+  requests: CarrierRequestCard[];
+  compact?: boolean;
+}) {
   const router = useRouter();
   const [now, setNow] = useState(() => Date.now());
   const [busyId, setBusyId] = useState<string | null>(null);
-  const pendingBookings = useMemo(
-    () => bookings.filter((booking) => booking.status === "pending"),
-    [bookings],
+  const [clarifyingRequestId, setClarifyingRequestId] = useState<string | null>(null);
+  const openRequests = useMemo(
+    () => requests.filter((request) => ["pending", "clarification_requested"].includes(request.status)),
+    [requests],
   );
 
   useEffect(() => {
@@ -49,39 +57,38 @@ export function PendingBookingsAlert({ bookings }: { bookings: Booking[] }) {
     return () => window.clearInterval(interval);
   }, []);
 
-  async function updateBooking(booking: Booking, nextStatus: "confirmed" | "cancelled") {
-    setBusyId(`${booking.id}:${nextStatus}`);
+  async function updateRequest(
+    request: CarrierRequestCard,
+    action: "accept" | "decline" | "clarify",
+    clarification?: { clarificationReason: string; clarificationMessage: string },
+  ) {
+    setBusyId(`${request.id}:${action}`);
 
     try {
-      const response = await fetch(`/api/bookings/${booking.id}`, {
+      const response = await fetch(`/api/booking-requests/${request.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nextStatus,
-          cancellationReason:
-            nextStatus === "cancelled"
-              ? "Declined from carrier home before confirmation."
-              : undefined,
-          cancellationReasonCode:
-            nextStatus === "cancelled" ? "carrier_unavailable" : undefined,
+          action,
+          clarificationReason: clarification?.clarificationReason,
+          clarificationMessage: clarification?.clarificationMessage,
         }),
       });
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(payload.error ?? "Unable to update booking.");
+        throw new Error(payload.error ?? "Unable to update request.");
       }
 
       router.refresh();
     } catch (error) {
-      // Keep this lightweight: the carrier-home refresh will re-sync after retry.
-      console.error(error);
+      throw error;
     } finally {
       setBusyId(null);
     }
   }
 
-  if (pendingBookings.length === 0) {
+  if (openRequests.length === 0) {
     return null;
   }
 
@@ -90,10 +97,10 @@ export function PendingBookingsAlert({ bookings }: { bookings: Booking[] }) {
       <div className="space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="section-label">Pending bookings</p>
-            <h2 className="mt-1 text-lg text-text">Respond before the 2-hour window closes</h2>
+            <p className="section-label">Requests</p>
+            <h2 className="mt-1 text-lg text-text">Answer requests before the response window closes</h2>
             <p className="mt-1 text-sm text-text-secondary">
-              {pendingBookings.length} booking{pendingBookings.length === 1 ? "" : "s"} need a decision now.
+              {openRequests.length} request{openRequests.length === 1 ? "" : "s"} need a carrier decision now.
             </p>
           </div>
           <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">
@@ -102,43 +109,102 @@ export function PendingBookingsAlert({ bookings }: { bookings: Booking[] }) {
         </div>
 
         <div className="grid gap-3">
-          {pendingBookings.map((booking) => (
-            <div key={booking.id} className="rounded-xl border border-warning/20 bg-background p-3">
+          {openRequests.map((request) => (
+            <div key={request.id} className="rounded-xl border border-warning/20 bg-background p-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge status={booking.status} />
-                    <p className="text-sm font-medium text-text">{booking.bookingReference}</p>
+                    <StatusBadge status={request.status === "clarification_requested" ? "pending" : request.status} />
+                    <p className="text-sm font-medium text-text">{request.typeLabel}</p>
+                    <p className="text-xs uppercase tracking-[0.16em] text-text-secondary">{request.fitLabel}</p>
                   </div>
-                  <p className="text-sm text-text">{booking.itemDescription}</p>
+                  <p className="text-sm text-text">{request.itemDescription}</p>
                   <p className="text-sm text-text-secondary">
-                    {booking.pickupAddress} to {booking.dropoffAddress}
+                    {request.pickupAddress} to {request.dropoffAddress}
                   </p>
                   <p className="text-xs text-text-secondary">
-                    Expires {formatRemainingTime(booking.pendingExpiresAt, now)} · Created{" "}
-                    {formatDateTime(booking.createdAt ?? new Date().toISOString())}
+                    Respond in {formatRemainingTime(request.responseDeadlineAt, now)} · Deadline{" "}
+                    {formatDateTime(request.responseDeadlineAt)}
                   </p>
+                  <p className="text-xs text-text-secondary">{request.fitExplanation}</p>
+                  <p className="text-xs text-text-secondary">
+                    {request.accessSummary} · {request.photoCount} photo{request.photoCount === 1 ? "" : "s"}
+                  </p>
+                  {request.photoUrls.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {request.photoUrls.slice(0, 3).map((photoUrl, index) => (
+                        <a
+                          key={`${request.id}:${photoUrl}:${index}`}
+                          href={photoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block min-h-[44px] active:opacity-80"
+                        >
+                          {/* External proof and item-photo URLs are not guaranteed to be whitelisted for next/image. */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={photoUrl}
+                            alt={`Request item photo ${index + 1}`}
+                            className="h-16 w-16 rounded-xl object-cover"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  ) : null}
+                  {request.clarificationMessage ? (
+                    <p className="text-xs text-accent">
+                      Clarification sent: {request.clarificationMessage}
+                    </p>
+                  ) : null}
                 </div>
 
-                <div className="flex flex-col gap-2 sm:min-w-[180px]">
+                <div className="flex flex-col gap-2 sm:min-w-[220px]">
+                  <div className="rounded-xl border border-border bg-black/[0.02] p-3 dark:bg-white/[0.04]">
+                    <p className="text-xs uppercase tracking-[0.16em] text-text-secondary">
+                      Carrier payout
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-text">
+                      {formatCurrency(request.carrierPayoutCents)}
+                    </p>
+                    <p className="mt-1 text-xs text-text-secondary">
+                      Customer total {formatCurrency(request.requestedTotalPriceCents)}
+                    </p>
+                  </div>
                   <Button
                     type="button"
                     className="min-h-[44px]"
-                    disabled={busyId === `${booking.id}:confirmed`}
-                    onClick={() => void updateBooking(booking, "confirmed")}
+                    disabled={busyId === `${request.id}:accept`}
+                    onClick={() => void updateRequest(request, "accept")}
                   >
-                    Confirm
+                    Accept
                   </Button>
                   <Button
                     type="button"
                     variant="secondary"
                     className="min-h-[44px]"
-                    disabled={busyId === `${booking.id}:cancelled`}
-                    onClick={() => void updateBooking(booking, "cancelled")}
+                    disabled={busyId === `${request.id}:clarify`}
+                    onClick={() => setClarifyingRequestId(request.id)}
+                  >
+                    Request clarification
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="min-h-[44px]"
+                    disabled={busyId === `${request.id}:decline`}
+                    onClick={() => void updateRequest(request, "decline")}
                   >
                     Decline
                   </Button>
                 </div>
+              </div>
+              <div className={compact ? "mt-3" : "mt-4"}>
+                <RequestClarificationSheet
+                  isOpen={clarifyingRequestId === request.id}
+                  busy={busyId === `${request.id}:clarify`}
+                  onClose={() => setClarifyingRequestId(null)}
+                  onSubmit={(payload) => updateRequest(request, "clarify", payload)}
+                />
               </div>
             </div>
           ))}

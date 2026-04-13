@@ -1,4 +1,5 @@
 import type { BookingStatus } from "@/types/booking";
+import type { BookingRequestStatus } from "@/types/booking-request";
 
 export const ALLOWED_BOOKING_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
   pending: ["confirmed", "cancelled"],
@@ -16,4 +17,24 @@ export function canTransitionBooking(
   nextStatus: BookingStatus,
 ) {
   return ALLOWED_BOOKING_TRANSITIONS[currentStatus].includes(nextStatus);
+}
+
+export const ALLOWED_BOOKING_REQUEST_TRANSITIONS: Record<
+  BookingRequestStatus,
+  BookingRequestStatus[]
+> = {
+  pending: ["clarification_requested", "accepted", "declined", "expired", "cancelled", "revoked"],
+  clarification_requested: ["accepted", "declined", "cancelled", "expired", "revoked"],
+  accepted: [],
+  declined: [],
+  expired: [],
+  revoked: [],
+  cancelled: [],
+};
+
+export function canTransitionBookingRequest(
+  currentStatus: BookingRequestStatus,
+  nextStatus: BookingRequestStatus,
+) {
+  return ALLOWED_BOOKING_REQUEST_TRANSITIONS[currentStatus].includes(nextStatus);
 }

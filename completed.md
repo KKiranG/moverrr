@@ -8,6 +8,143 @@
 
 ## 2026-04-13 — Vocabulary-layer alignment for alerts, fit labels, privacy, and customer-facing copy
 
+### `COMP-2026-04-13-08` — Customer trip detail now submits staged Request-to-Book and Fast Match flows
+- Moved from active backlog:
+  - `B28`, `B29`, `B30`, and `B76`
+- When: `2026-04-13`
+- Where:
+  - `src/app/(customer)/trip/[id]/page.tsx`
+  - `src/components/booking/sticky-booking-cta.tsx`
+  - `src/components/booking/booking-checkout-panel.tsx`
+  - `src/components/booking/booking-form.tsx`
+  - `todolist.md`
+  - `completed.md`
+- Why:
+  - The customer trip detail flow was still the biggest remaining legacy direct-booking leak: it framed the page like a listing detail, pushed one-path booking CTAs, and submitted directly to `/api/bookings` with payment-intent setup instead of using the new move-request and booking-request model.
+- What changed:
+  - Reframed the trip detail page and mobile CTA around trust, route fit, restrictions, price context, and request-choice language so the page answers whether the trip is sensible before the customer commits.
+  - Added a lightweight Request-to-Book versus Fast Match explainer and choice card in checkout, then pointed the sticky CTA at that decision point instead of dropping customers straight into the old one-path form.
+  - Replaced the old booking form with a three-stage confirmation flow for item details, route/access details, and final review, while keeping draft persistence, trust validation, photo upload, and iOS-safe camera capture behavior.
+  - Switched final submission from legacy booking creation plus payment-intent setup to `POST /api/move-requests` followed by either `POST /api/booking-requests` or `POST /api/booking-requests/fast-match`, with honest success messaging that stays pre-acceptance until a carrier actually books the job.
+- Verification:
+  - `npm run check`
+  - `node --import tsx --input-type=module -e "import { bookingRequestCreateSchema } from './src/lib/validation/booking-request.ts'; const result = bookingRequestCreateSchema.safeParse({ moveRequestId: '123e4567-e89b-42d3-a456-426614174000', listingId: '123e4567-e89b-42d3-a456-426614174001' }); console.log(JSON.stringify(result.success ? { success: true } : result.error.flatten(), null, 2));"`
+  - `rg -n "Go to bookings|booking area|card is authorized|create-intent|/api/bookings" src/components/booking/booking-form.tsx src/components/booking/booking-checkout-panel.tsx src/app/(customer)/trip/[id]/page.tsx`
+  - Note: this batch verifies the request-submission code path, schema acceptance, and copy cleanup in-repo; live authenticated writes still need a configured Supabase environment to exercise the full persisted request flow end to end.
+
+### `COMP-2026-04-13-04` — Move-request, offers, and unmatched-demand APIs with waitlist removal
+- Moved from active backlog:
+  - `A20`, `A21`, `A25`, and `A29`
+- When: `2026-04-13`
+- Where:
+  - `src/app/api/move-requests/route.ts`
+  - `src/app/api/offers/route.ts`
+  - `src/app/api/unmatched-requests/route.ts`
+  - `src/app/api/search/route.ts`
+  - `src/lib/data/profiles.ts`
+  - `src/lib/data/offers.ts`
+  - `src/lib/data/unmatched-requests.ts`
+  - `src/lib/data/move-requests.ts`
+  - `src/lib/validation/unmatched-request.ts`
+  - `src/types/alert.ts`
+  - `src/types/database.ts`
+  - `supabase/migrations/018_unmatched_requests_guest_capture.sql`
+  - `src/components/customer/waitlist-form.tsx`
+  - `todolist.md`
+  - `completed.md`
+- Why:
+  - The new request-offer foundation needed real API entrypoints before the customer flow could move off legacy search-plus-booking behavior, and the old zero-match POST path was still persisting waitlist entries under the wrong product model.
+- What changed:
+  - Added `POST /api/move-requests` as the authenticated need-submission endpoint with rate limiting, blueprint validation, submitted-status defaulting, and analytics tracking.
+  - Added `GET /api/offers` keyed by `moveRequestId`, including proper `customers.id` ownership checks and a compatibility fallback that derives ranked offers from existing trip search results when persisted offer rows do not exist yet.
+  - Added authenticated `POST /api/unmatched-requests` for signed-in zero-match recovery, then updated the shared unmatched-request schema, table types, and follow-up migration so guest search recovery can also persist nullable-customer unmatched demand cleanly.
+  - Replaced `POST /api/search` waitlist writes with unmatched-demand creation, added route-coordinate resolution from Maps or curated suburb fallbacks, and rewrote the zero-match customer form messaging around route requests, alerts, and concierge follow-up instead of a launch waitlist.
+  - Corrected the request-flow routes to resolve `customers.id` from the signed-in auth user before writing or reading move requests and unmatched demand, instead of incorrectly using the raw auth user id as a foreign key.
+- Verification:
+  - `npm run check`
+  - `node --import tsx --input-type=module -e "import { POST } from './src/app/api/search/route.ts'; const req = new Request('http://localhost/api/search',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({from:'Newtown',to:'Bondi',itemCategory:'furniture'})}); const res = await POST(req); console.log('status',res.status); console.log(await res.text());"`
+  - `rg -n "waitlist_entries|join the waitlist|launch waitlist|Unable to join the waitlist" src/app src/components src/lib`
+  - Note: direct authenticated route execution was limited in this worktree because Supabase and Maps env vars are not configured, so the live route invocation here verified the intended graceful-degradation path (`503`) rather than a full persisted write.
+
+### `COMP-2026-04-13-05` — Request-to-Book, Fast Match, and carrier decision APIs on the booking-request model
+- Moved from active backlog:
+  - `A22`, `A23`, and `A24`
+- When: `2026-04-13`
+- Where:
+  - `src/app/api/booking-requests/route.ts`
+  - `src/app/api/booking-requests/fast-match/route.ts`
+  - `src/app/api/booking-requests/[id]/route.ts`
+  - `src/lib/data/booking-requests.ts`
+  - `src/lib/data/offers.ts`
+  - `src/lib/data/move-requests.ts`
+  - `src/lib/data/profiles.ts`
+  - `src/lib/validation/booking-request.ts`
+  - `src/lib/status-machine.ts`
+  - `todolist.md`
+  - `completed.md`
+- Why:
+  - The request-offer model needed a real write path for single-carrier requests, Fast Match groups, and carrier decisions before the app could move off legacy direct-booking behavior.
+- What changed:
+  - Added `POST /api/booking-requests` for single-carrier Request-to-Book, including customer profile resolution, move-request ownership checks, offer persistence from derived search results when needed, duplicate-open-request prevention, and default response deadlines.
+  - Added `POST /api/booking-requests/fast-match` so a customer can create one capped request group across up to three distinct carriers, with shared deadlines and request-group identifiers.
+  - Added `PATCH /api/booking-requests/[id]` for carrier accept, decline, and clarification actions, backed by explicit booking-request transition rules instead of mutating legacy bookings directly first.
+  - Bridged acceptance into the current live system by creating a legacy booking only when a carrier accepts, then marking the winning request accepted, revoking sibling Fast Match requests, updating offer status, and moving the move request into the booked state.
+- Verification:
+  - `npm run check`
+  - `node --import tsx --input-type=module -e "import { POST as createRequest } from './src/app/api/booking-requests/route.ts'; const req = new Request('http://localhost/api/booking-requests',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({moveRequestId:'00000000-0000-0000-0000-000000000000',listingId:'00000000-0000-0000-0000-000000000001'})}); const res = await createRequest(req); console.log('status',res.status); console.log(await res.text());"`
+  - `node --import tsx --input-type=module -e "import { bookingRequestCreateSchema } from './src/lib/validation/booking-request.ts'; const parsed = bookingRequestCreateSchema.safeParse({moveRequestId:'00000000-0000-0000-0000-000000000000'}); console.log(JSON.stringify(parsed, null, 2));"`
+  - Note: full accepted-request execution against persisted Supabase data was not possible in this worktree because Supabase env vars are not configured here, so the live route verification covered the intended unauthenticated guard path and the new payload validation edge case.
+
+### `COMP-2026-04-13-06` — Carrier Requests tab and decision cards on the booking-request model
+- Moved from active backlog:
+  - `B11`, `B38`, `B39`, `B40`, and `B90`
+- When: `2026-04-13`
+- Where:
+  - `src/app/(carrier)/carrier/requests/page.tsx`
+  - `src/app/(carrier)/carrier/dashboard/page.tsx`
+  - `src/components/carrier/pending-bookings-alert.tsx`
+  - `src/components/carrier/request-clarification-sheet.tsx`
+  - `src/lib/data/booking-requests.ts`
+  - `src/types/carrier.ts`
+  - `todolist.md`
+  - `completed.md`
+- Why:
+  - The carrier experience still treated Requests as a shell over legacy pending bookings, which left the new booking-request model unused and preserved the wrong action language at the exact point where carrier trust and response speed matter most.
+- What changed:
+  - Rebuilt the dedicated carrier Requests page around live booking-request decision cards instead of legacy pending bookings, while keeping the Requests route as a first-class tab in the MVP IA.
+  - Added a typed carrier request-card view model in the data layer so carrier home and the Requests page can both read payout, route fit, access complexity, item context, response deadline, and Fast Match grouping from the booking-request model.
+  - Reworked the shared request card UI to use Accept, Decline, and Request Clarification actions backed by the new booking-request APIs instead of confirm/cancel booking mutations.
+  - Added a structured clarification sheet with predefined reason codes and factual-message entry, plus lightweight external item-photo thumbnails so carriers can review real move context before deciding.
+- Verification:
+  - `npm run check`
+  - `rg -n "Confirm|Decline|pending bookings|booking request queue until the full booking-request model lands|Needs decision|Request clarification|Fast Match|Request to Book" src/app/(carrier)/carrier/requests/page.tsx src/components/carrier/pending-bookings-alert.tsx src/components/carrier/request-clarification-sheet.tsx src/app/(carrier)/carrier/dashboard/page.tsx`
+  - `node --import tsx --input-type=module -e "import { PATCH } from './src/app/api/booking-requests/[id]/route.ts'; const req = new Request('http://localhost/api/booking-requests/00000000-0000-0000-0000-000000000000',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({action:'clarify'})}); const res = await PATCH(req,{params:{id:'00000000-0000-0000-0000-000000000000'}}); console.log('status',res.status); console.log(await res.text());"`
+  - Note: live carrier-side request mutation against persisted booking-request rows still needs a configured Supabase environment, so the direct route execution here verified the intended unauthenticated guard path while `npm run check` covered the integrated code path.
+
+### `COMP-2026-04-13-07` — Runsheet-first Today view and clearer payout blockers across carrier ops
+- Moved from active backlog:
+  - `B41`, `B91`, and `B92`
+- When: `2026-04-13`
+- Where:
+  - `src/app/(carrier)/carrier/today/page.tsx`
+  - `src/app/(carrier)/carrier/dashboard/page.tsx`
+  - `src/app/(carrier)/carrier/payouts/page.tsx`
+  - `src/components/booking/status-update-actions.tsx`
+  - `todolist.md`
+  - `completed.md`
+- Why:
+  - The carrier trip-day experience was still a trip-health dashboard instead of a runsheet, and payout blockers were explained inconsistently across Home, Today, and Payouts.
+- What changed:
+  - Rebuilt Today around grouped live stops per trip, with the next operational step, inline proof/exception controls, payout context, and direct trip-detail escape hatches on every stop card.
+  - Moved Today away from abstract health-score-first thinking and toward an actual stop-by-stop runsheet that foregrounds the live work carriers need to complete now.
+  - Exposed the existing one-tap persisted status and proof actions directly inline on each live stop in Today, using the booking states the backend already supports instead of hiding those actions inside trip detail only.
+  - Added a consistent `Clears when` explanation line to payout-block cards on carrier Home, Today, and Payouts so carriers can see exactly what unblocks funds and where to act next.
+- Verification:
+  - `npm run check`
+  - `rg -n "Trip health|Which active routes need attention|score is deterministic and only moves|Clears when|Runsheet|StatusUpdateActions" src/app/(carrier)/carrier/today/page.tsx src/app/(carrier)/carrier/dashboard/page.tsx src/app/(carrier)/carrier/payouts/page.tsx`
+  - `node --import tsx --input-type=module -e "import { PATCH } from './src/app/api/bookings/[id]/route.ts'; const req = new Request('http://localhost/api/bookings/00000000-0000-0000-0000-000000000000',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({nextStatus:'picked_up'})}); const res = await PATCH(req,{params:{id:'00000000-0000-0000-0000-000000000000'}}); console.log('status',res.status); console.log(await res.text());"`
+  - Note: Today now exposes the real persisted inline actions the current backend supports (`confirmed` through `delivered`) rather than inventing additional trip-day states that do not yet exist in the data model.
+
 ### `COMP-2026-04-13-01` — Alert naming, route-fit labels, privacy boundaries, and plain-language fit copy
 - Moved from active backlog:
   - `B08`, `B09`, `B53`, `B54`, `B62`, and `B63`
@@ -66,6 +203,41 @@
 - Verification:
   - `npm run check`
   - `rg -n "booking fee|Book into this trip|Book now|Booking created|Creating booking|Continue to payment|fixed \\$5 booking fee|Awaiting Confirmation|Carrier has 2 hours to confirm|booking timeline before you pay|Starting total includes the fixed booking fee" src/app src/components`
+
+### `COMP-2026-04-13-03` — Request-flow schema foundation, typed entity layer, and compatibility scaffolding
+- Moved from active backlog:
+  - `D01`, `D02`, `D03`, `D05`, and `D16`
+- When: `2026-04-13`
+- Where:
+  - `supabase/migrations/017_request_flow_foundation.sql`
+  - `src/types/database.ts`
+  - `src/types/move-request.ts`
+  - `src/types/booking-request.ts`
+  - `src/types/alert.ts`
+  - `src/types/booking.ts`
+  - `src/types/trip.ts`
+  - `src/lib/data/mappers.ts`
+  - `src/lib/data/move-requests.ts`
+  - `src/lib/data/offers.ts`
+  - `src/lib/data/booking-requests.ts`
+  - `src/lib/data/unmatched-requests.ts`
+  - `src/lib/validation/move-request.ts`
+  - `src/lib/validation/booking-request.ts`
+  - `src/lib/validation/unmatched-request.ts`
+  - `src/lib/demo-data.ts`
+  - `src/lib/__tests__/carrier-today.test.ts`
+  - `todolist.md`
+  - `completed.md`
+- Why:
+  - The deeper request-offer migration needed real persisted entities, type contracts, and compatibility mapping before any API or UI layer could safely move off the legacy direct-booking model.
+- What changed:
+  - Added the new request-flow foundation migration with `move_requests`, `offers`, `booking_requests`, and `unmatched_requests`, including RLS policies, customer/carrier/admin access rules, updated-at triggers, and GIST indexes on new geography columns.
+  - Added first-class TypeScript models and database table definitions for move requests, offers, booking requests, and unmatched requests, plus zod validation for the new payload shapes.
+  - Added minimal data-layer helpers and mapper functions so the new entities can be created, listed, and read in code now instead of existing only as database stubs.
+  - Added compatibility flow references onto `Trip` and `Booking`, then updated the mapper layer and fixture data so legacy listings/bookings and the new request-flow entities can coexist during the migration period.
+- Verification:
+  - `npm run check`
+  - `rg -n "enable row level security|using gist|move_requests|offers|booking_requests|unmatched_requests" supabase/migrations/017_request_flow_foundation.sql src/types/database.ts src/lib/data src/lib/validation`
 
 ## 2026-04-12 — Need-first public surface realignment
 

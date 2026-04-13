@@ -42,35 +42,11 @@
 
 ### Data Model and Backend Logic
 
-- [ ] **D01** — Add `MoveRequest` as a first-class persisted entity
-  - **File(s):** `new file: supabase/migrations/017_move_requests_and_offers.sql`, `src/types/database.ts`, `new file: src/types/move-request.ts`
-  - **What:** Introduce a structured `MoveRequest` table and TypeScript model that stores route, item, timing, access, and photo data before matching.
-  - **Why:** The blueprint’s need-first flow depends on move requests existing independently of trips and bookings.
-  - **Done when:** Schema and types support creating, reading, and validating move requests without going straight to bookings.
-
-- [ ] **D02** — Add `Offer` as the ranked match output entity
-  - **File(s):** `new file: supabase/migrations/017_move_requests_and_offers.sql`, `src/types/database.ts`, `src/lib/data/mappers.ts`
-  - **What:** Persist matched offers with match class, explanation, fit confidence, detour estimate, and full price breakdown.
-  - **Why:** The blueprint’s answer-set model needs an explicit offer layer between move requests and booking requests.
-  - **Done when:** Offer records exist and can be assembled into Top Matches, Possible Matches, and Nearby Dates result groups.
-
-- [ ] **D03** — Add `BookingRequest` and request-group support
-  - **File(s):** `new file: supabase/migrations/018_booking_requests.sql`, `src/types/database.ts`, `new file: src/types/booking-request.ts`
-  - **What:** Create the booking-request model, including `request_group_id` for Fast Match and explicit request statuses.
-  - **Why:** The blueprint separates booking requests from confirmed bookings and requires group-level Fast Match logic.
-  - **Done when:** Booking requests can be stored independently from bookings and grouped for Fast Match orchestration.
-
 - [ ] **D04** — Add `ConditionAdjustment` as a one-round structured exception entity
   - **File(s):** `new file: supabase/migrations/019_condition_adjustments.sql`, `src/types/database.ts`, `new file: src/types/condition-adjustment.ts`
   - **What:** Model one structured post-arrival adjustment with predefined reason, amount, and customer response state.
   - **Why:** The blueprint permits one structured adjustment path while rejecting open negotiation.
   - **Done when:** The schema and types support a single condition adjustment per booking with a clear accepted or rejected outcome.
-
-- [ ] **D05** — Add `UnmatchedRequest` for Alert the Network demand capture
-  - **File(s):** `new file: supabase/migrations/020_unmatched_requests.sql`, `src/types/database.ts`, `new file: src/types/alert.ts`
-  - **What:** Create a durable unmatched-demand entity that stores the need, alert state, follow-up status, and expiry.
-  - **Why:** Zero-match recovery is a core survival mechanic, not a waitlist side path.
-  - **Done when:** Unmatched requests can be created from zero-result flows and tracked through active, notified, matched, expired, and cancelled states.
 
 - [ ] **D06** — Add `ConciergeOffer` to keep founder fulfilment on-platform
   - **File(s):** `new file: supabase/migrations/021_concierge_offers.sql`, `src/types/database.ts`, `src/lib/data/admin.ts`
@@ -131,12 +107,6 @@
   - **What:** Define how carrier home mode is derived from activation, live trips, pending requests, today work, proof blockers, and payout blockers.
   - **Why:** The blueprint treats the state-aware carrier home as a core product mechanic, not an ad hoc page heuristic.
   - **Done when:** Carrier home mode can be derived consistently in one place and consumed by page presenters.
-
-- [ ] **D16** — Prepare compatibility types for a dual-read transition off legacy direct bookings
-  - **File(s):** `src/types/booking.ts`, `src/types/trip.ts`, `src/lib/data/mappers.ts`
-  - **What:** Introduce compatibility types that let current pages read legacy and realigned booking/trip records during migration.
-  - **Why:** The codebase cannot jump straight from listings-plus-bookings to the target model without a safe transition layer.
-  - **Done when:** Types and mappers can represent both legacy and new model states without unsafe casting or duplicated page logic.
 
 ### Booking and Marketplace Logic
 
@@ -245,12 +215,6 @@
   - **Done when:** Trip publishing and request acceptance are denied unless the carrier is in the active activation state.
 
 ### Carrier Experience
-
-- [ ] **B11** — Add a dedicated carrier Requests route
-  - **File(s):** `new file: src/app/(carrier)/carrier/requests/page.tsx`, `src/components/layout/site-header.tsx`, `src/components/layout/mobile-nav.tsx`
-  - **What:** Create a first-class Requests page for pending booking decisions and clarification actions.
-  - **Why:** The blueprint calls Requests a separate high-urgency tab, not a hidden fragment of Home.
-  - **Done when:** Carriers can open a dedicated Requests page from primary navigation and see pending decisions there.
 
 - [ ] **B12** — Remove the carrier stats page from primary MVP IA
   - **File(s):** `src/components/layout/site-header.tsx`, `src/components/layout/mobile-nav.tsx`, `src/app/(carrier)/carrier/stats/page.tsx`
@@ -368,24 +332,6 @@
   - **Why:** The blueprint defines zero-match capture as an alert system, not a passive saved query.
   - **Done when:** The no-match panel creates or updates an alert-backed unmatched request instead of a saved search.
 
-- [ ] **B28** — Rework trip detail around trust, route context, pricing, and policy
-  - **File(s):** `src/app/(customer)/trip/[id]/page.tsx`, `src/components/trip/trip-detail-summary.tsx`, `src/components/booking/booking-checkout-panel.tsx`
-  - **What:** Rebuild trip detail so it answers why this option is safe and sensible, instead of reading like a live inventory brochure.
-  - **Why:** The blueprint uses detail pages to strengthen decision confidence, not deepen browsing behavior.
-  - **Done when:** Trip detail leads with trust, route context, price breakdown, restrictions, and request CTAs in the blueprint order.
-
-- [ ] **B29** — Replace trip detail CTAs with Request-to-Book and Fast Match actions
-  - **File(s):** `src/app/(customer)/trip/[id]/page.tsx`, `src/components/booking/sticky-booking-cta.tsx`, `src/components/booking/booking-checkout-panel.tsx`
-  - **What:** Change primary and secondary actions so the detail page leads into single-carrier requests or Fast Match selection.
-  - **Why:** "Book into this trip" preserves the old direct-booking model instead of the blueprint request flow.
-  - **Done when:** Detail-page CTAs create booking-request flows rather than direct bookings.
-
-- [ ] **B30** — Convert the booking form into a staged confirmation flow
-  - **File(s):** `src/components/booking/booking-form.tsx`, `src/app/api/bookings/route.ts`, `src/lib/validation/booking.ts`
-  - **What:** Restructure booking confirmation into item, access, price, payment, and request-submitted stages with blueprint-aligned validations.
-  - **Why:** The current long-form booking flow is listing-first and does not mirror the need-first request flow.
-  - **Done when:** Customers move through staged confirmation screens that prefill from the move request and end in request submission.
-
 - [ ] **B31** — Update the customer booking timeline to the blueprint booking states
   - **File(s):** `src/app/(customer)/bookings/[id]/page.tsx`, `src/components/booking/booking-status-stepper.tsx`, `src/types/booking.ts`
   - **What:** Change the customer timeline to reflect request accepted, pickup due, delivered pending confirmation, completed, and disputed states.
@@ -429,30 +375,6 @@
   - **What:** Remove summary metric emphasis and lead with pending requests, today work, proof blockers, and payout blockers.
   - **Why:** The blueprint explicitly rejects analytics-first carrier homes during MVP.
   - **Done when:** Carrier home mode 3 foregrounds urgent actions and relegates summary metrics out of the hero zone.
-
-- [ ] **B38** — Build the carrier Requests page around decision cards
-  - **File(s):** `new file: src/app/(carrier)/carrier/requests/page.tsx`, `src/components/carrier/pending-bookings-alert.tsx`, `src/lib/data/bookings.ts`
-  - **What:** Create a dedicated Requests page that lists booking-request decision cards with accept, decline, and clarification actions.
-  - **Why:** Pending requests are the carrier’s highest-urgency workflow and need their own home.
-  - **Done when:** Carriers can review all open requests in one requests-specific view with actionable cards.
-
-- [ ] **B39** — Put payout amount, access complexity, and deadline on every decision card
-  - **File(s):** `src/components/carrier/pending-bookings-alert.tsx`, `src/lib/data/bookings.ts`, `src/types/booking-request.ts`
-  - **What:** Expand request cards so they show route fit, access summary, payout after fees, response deadline, and item photos.
-  - **Why:** The blueprint packages carrier decisions into fast, trustworthy cards instead of sparse rows.
-  - **Done when:** Every request card includes payout, access flags, route fit, item context, and a live response deadline.
-
-- [ ] **B40** — Replace generic confirm/decline on pending items with Accept / Decline / Request Clarification
-  - **File(s):** `src/components/carrier/pending-bookings-alert.tsx`, `src/lib/status-machine.ts`, `src/app/api/bookings/[id]/route.ts`
-  - **What:** Change carrier actions on pending work to match the blueprint’s request actions and request-state semantics.
-  - **Why:** "Confirm booking" preserves direct-booking language and hides the bounded clarification mechanic.
-  - **Done when:** Pending carrier actions use Accept, Decline, and Request Clarification with correct state writes.
-
-- [ ] **B41** — Rebuild Today into a runsheet-first trip-day view
-  - **File(s):** `src/app/(carrier)/carrier/today/page.tsx`, `src/lib/data/bookings.ts`, `src/components/carrier/live-bookings-list.tsx`
-  - **What:** Rework Today around next stop, stop order, status actions, proof prompts, and navigation links.
-  - **Why:** The blueprint says trip-day behavior should effectively switch the app into runsheet mode.
-  - **Done when:** Carrier Today view leads with stop-by-stop operational actions instead of trip health summaries.
 
 - [ ] **B42** — Surface proof and payout blockers inline during trip-day operations
   - **File(s):** `src/app/(carrier)/carrier/today/page.tsx`, `src/app/(carrier)/carrier/payouts/page.tsx`, `src/lib/data/bookings.ts`
@@ -532,42 +454,6 @@
 
 ### API and Integration Changes
 
-- [ ] **A20** — Add `POST /api/move-requests` with need-first validation
-  - **File(s):** `new file: src/app/api/move-requests/route.ts`, `new file: src/lib/validation/move-request.ts`, `src/lib/data/bookings.ts`
-  - **What:** Create the authenticated API for move-request submission with route, item, timing, access, and photo validation.
-  - **Why:** The new data model and home wizard need a stable entrypoint before offers are generated.
-  - **Done when:** The app can persist move requests through a dedicated API that enforces the blueprint-required fields.
-
-- [ ] **A21** — Add `GET /api/offers` keyed by move request
-  - **File(s):** `new file: src/app/api/offers/route.ts`, `src/lib/data/trips.ts`, `src/lib/matching/score.ts`
-  - **What:** Expose a dedicated offers API that assembles ranked offers from a stored move request.
-  - **Why:** Results should be driven by move requests and offers, not by direct listing search alone.
-  - **Done when:** The customer results surface can fetch offer groups for a move request through a dedicated API.
-
-- [ ] **A22** — Add `POST /api/booking-requests` for Request-to-Book
-  - **File(s):** `new file: src/app/api/booking-requests/route.ts`, `src/lib/data/bookings.ts`, `src/types/booking-request.ts`
-  - **What:** Create the single-carrier request endpoint that authorizes payment and persists a booking request against a chosen offer.
-  - **Why:** The blueprint requires request submission before acceptance and payment capture.
-  - **Done when:** Request-to-Book submits through a dedicated booking-request API rather than direct booking creation.
-
-- [ ] **A23** — Add `POST /api/booking-requests/fast-match` for capped multi-carrier requests
-  - **File(s):** `new file: src/app/api/booking-requests/fast-match/route.ts`, `src/lib/data/bookings.ts`, `src/types/booking-request.ts`
-  - **What:** Create the capped Fast Match API that creates up to three sibling booking requests in one group.
-  - **Why:** Fast Match is a first-class sparse-supply mechanic and needs a dedicated write path.
-  - **Done when:** Fast Match request groups can be created through a dedicated endpoint with all blueprint constraints enforced.
-
-- [ ] **A24** — Add `PATCH /api/booking-requests/[id]` for accept, decline, and clarify actions
-  - **File(s):** `new file: src/app/api/booking-requests/[id]/route.ts`, `src/lib/status-machine.ts`, `src/lib/data/bookings.ts`
-  - **What:** Create carrier-side request mutation endpoints for accepting, declining, or requesting clarification on booking requests.
-  - **Why:** Carrier decisions should mutate booking requests first, not legacy bookings directly.
-  - **Done when:** Carrier request actions update booking-request records and produce the correct follow-on booking or notification behavior.
-
-- [ ] **A25** — Add `POST /api/unmatched-requests` for zero-match capture
-  - **File(s):** `new file: src/app/api/unmatched-requests/route.ts`, `new file: src/lib/validation/unmatched-request.ts`, `new file: src/lib/data/unmatched-requests.ts`
-  - **What:** Add the authenticated API that creates or updates unmatched requests from zero-match customer flows.
-  - **Why:** Alert the Network should create real unmatched-demand records with consistent validation and auditability.
-  - **Done when:** Zero-match recovery submits through a dedicated unmatched-request API with the correct stored fields.
-
 - [ ] **A26** — Add `POST /api/concierge-offers` for founder-initiated supply recovery
   - **File(s):** `new file: src/app/api/concierge-offers/route.ts`, `new file: src/lib/data/concierge-offers.ts`, `src/lib/data/admin.ts`
   - **What:** Add the operator-only API for creating concierge offers against unmatched requests.
@@ -585,12 +471,6 @@
   - **What:** Wire blueprint-required events into the notification layer instead of the older booking-only triggers.
   - **Why:** Notifications are core product behavior for request handling, alerts, and stale-supply protection.
   - **Done when:** The notification layer is event-complete for requests, alerts, proof, payout, and freshness failures.
-
-- [ ] **A29** — Replace `/api/search` POST waitlist semantics with unmatched-demand semantics
-  - **File(s):** `src/app/api/search/route.ts`, `src/components/customer/waitlist-form.tsx`, `src/lib/data/unmatched-requests.ts`
-  - **What:** Remove waitlist-specific validation, writes, and success messaging from the search POST handler.
-  - **Why:** The governing product no longer uses waitlist capture as the main zero-match mechanic.
-  - **Done when:** `/api/search` no longer writes waitlist entries or returns waitlist-oriented success behavior.
 
 - [ ] **A30** — Notify non-winning Fast Match carriers when another carrier accepts first
   - **File(s):** `src/lib/notifications.ts`, `src/lib/data/bookings.ts`, `new file: src/app/api/booking-requests/fast-match/route.ts`
@@ -672,12 +552,6 @@
   - **Why:** The blueprint allows maps to explain fit after selection, but not to lead the flow.
   - **Done when:** Detail pages can render a secondary map context block and the home/results surfaces still remain map-light.
 
-- [ ] **B76** — Add a lightweight Request-to-Book versus Fast Match explainer at selection time
-  - **File(s):** `src/app/(customer)/trip/[id]/page.tsx`, `src/components/booking/sticky-booking-cta.tsx`, `src/components/booking/booking-checkout-panel.tsx`
-  - **What:** Explain when a customer should choose a single request versus Fast Match without turning the choice into a dense branching flow.
-  - **Why:** Fast Match is explicit, capped, and optional in the governing model, so customers need just enough framing to choose well.
-  - **Done when:** Customers see a concise explainer before choosing between single request and Fast Match.
-
 - [ ] **B77** — Add next-best recovery CTA after a single request declines or expires
   - **File(s):** `src/app/(customer)/bookings/[id]/page.tsx`, `src/lib/data/trips.ts`, `src/lib/notifications.ts`
   - **What:** Route customers to the next-best viable offer or alert capture when a single request fails.
@@ -757,24 +631,6 @@
   - **What:** Convert current soft quality warnings into hard publish blockers where the blueprint requires them.
   - **Why:** Supply-quality enforcement is a first-order marketplace rule in the governing product.
   - **Done when:** Trips cannot publish unless required route, vehicle, category, pricing, and constraint fields are complete.
-
-- [ ] **B90** — Add request-clarification reason picker to carrier request actions
-  - **File(s):** `src/components/carrier/pending-bookings-alert.tsx`, `new file: src/components/carrier/request-clarification-sheet.tsx`, `src/lib/data/bookings.ts`
-  - **What:** Provide a structured UI for clarification reasons so carriers do not fall back to ad hoc notes or hidden decline behavior.
-  - **Why:** Clarification is part of the blueprint’s bounded request flow and needs explicit UI support.
-  - **Done when:** Carriers can request clarification using predefined reason codes from the request card.
-
-- [ ] **B91** — Add per-stop one-tap status buttons to Today
-  - **File(s):** `src/app/(carrier)/carrier/today/page.tsx`, `src/components/booking/status-update-actions.tsx`, `src/lib/data/bookings.ts`
-  - **What:** Put on-my-way, arrived, loaded, and delivered actions directly in the trip-day stop list.
-  - **Why:** The blueprint optimizes trip-day use for minimal typing and fast operational updates.
-  - **Done when:** Every trip-day stop in Today exposes the relevant one-tap status actions inline.
-
-- [ ] **B92** — Add same-day payout blocker explanations to Home and Payouts
-  - **File(s):** `src/app/(carrier)/carrier/dashboard/page.tsx`, `src/app/(carrier)/carrier/payouts/page.tsx`, `src/lib/data/bookings.ts`
-  - **What:** Show exactly why payout is blocked and what action clears it on the main carrier operational surfaces.
-  - **Why:** Payout predictability is one of the carrier truths the blueprint optimizes around.
-  - **Done when:** Carriers can see payout blockers and next actions without leaving Home or Payouts.
 
 ### Admin / Operator Tooling
 
