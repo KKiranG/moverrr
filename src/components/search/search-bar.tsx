@@ -183,6 +183,25 @@ export function SearchBar({
     router.push(`/search${params.toString() ? `?${params.toString()}` : ""}`);
   }
 
+  const searchProgressSteps = [
+    {
+      label: "Route",
+      complete: Boolean(from.trim() && to.trim()),
+      helper: "Pickup and dropoff suburbs",
+    },
+    {
+      label: "Move type",
+      complete: Boolean(intent),
+      helper: "Closest need category",
+    },
+    {
+      label: "Timing",
+      complete: Boolean(when),
+      helper: flexibleDates ? "Flexible dates enabled" : "Preferred date chosen",
+    },
+  ];
+  const completedSearchSteps = searchProgressSteps.filter((step) => step.complete).length;
+
   return (
     <form
       id="search-form"
@@ -190,6 +209,43 @@ export function SearchBar({
       className="surface-card flex flex-col gap-3 p-4"
       aria-label="Tell moverrr what needs moving"
     >
+      <div className="grid gap-3 rounded-2xl border border-border/80 bg-black/[0.02] p-3 dark:bg-white/[0.03]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="section-label">Need declaration progress</p>
+            <p className="mt-1 text-sm text-text">
+              Step {Math.min(completedSearchSteps + 1, searchProgressSteps.length)} of{" "}
+              {searchProgressSteps.length}
+            </p>
+          </div>
+          <p className="text-xs text-text-secondary">
+            {completedSearchSteps === searchProgressSteps.length
+              ? "Ready to search"
+              : `${searchProgressSteps.length - completedSearchSteps} step${searchProgressSteps.length - completedSearchSteps === 1 ? "" : "s"} left`}
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {searchProgressSteps.map((step, index) => (
+            <div key={step.label} className="grid gap-2 rounded-xl border border-border bg-background px-3 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs uppercase tracking-[0.18em] text-text-secondary">
+                  {index + 1}
+                </span>
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    step.complete ? "bg-success" : "bg-border"
+                  }`}
+                />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-text">{step.label}</p>
+                <p className="mt-1 text-xs text-text-secondary">{step.helper}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-text">Moving from</span>

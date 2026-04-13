@@ -1,6 +1,7 @@
 import {
   BOOKING_PAYMENT_LABELS,
   BOOKING_CANCELLATION_REASONS,
+  DELIVERY_AUTO_RELEASE_HOURS,
   PENDING_BOOKING_HOLD_MS,
 } from "@/lib/constants";
 import type {
@@ -56,22 +57,42 @@ export function getBookingPaymentStateSummary(booking: Booking) {
   }
 
   if (paymentStatus === "authorized") {
+    if (booking.status === "delivered") {
+      return {
+        badge: BOOKING_PAYMENT_LABELS.authorized,
+        tone: "warning" as const,
+        title: "Funds are held while the delivery window closes",
+        description: `moverrr is holding the authorized amount while proof is reviewed and the ${DELIVERY_AUTO_RELEASE_HOURS}-hour dispute window runs.`,
+        retryable: false,
+      };
+    }
+
     return {
       badge: BOOKING_PAYMENT_LABELS.authorized,
       tone: "success" as const,
-      title: "Your card has been authorized",
+      title: "Funds are held in moverrr",
       description:
-        "Funds are reserved only. The booking is not fully charged until the job is completed.",
+        "The card hold is active. moverrr only finalizes the charge when the booking reaches the release path.",
       retryable: false,
     };
   }
 
   if (paymentStatus === "captured") {
+    if (booking.status === "completed") {
+      return {
+        badge: BOOKING_PAYMENT_LABELS.captured,
+        tone: "success" as const,
+        title: "Payment finalized after the release window",
+        description: "The job is complete, the release window closed, and moverrr finalized the booking payment.",
+        retryable: false,
+      };
+    }
+
     return {
       badge: BOOKING_PAYMENT_LABELS.captured,
       tone: "success" as const,
-      title: "Payment captured",
-      description: "The completed booking charge has been finalized.",
+      title: "Payment finalized in moverrr",
+      description: "The booking charge has been captured and is now attached to the proof and payout trail.",
       retryable: false,
     };
   }

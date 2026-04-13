@@ -17,13 +17,14 @@ export async function PATCH(
   { params }: { params: { id: string } },
 ) {
   try {
-    await requireAdminUser();
+    const user = await requireAdminUser();
     const payload = updateCarrierNotesSchema.parse(await request.json());
     const carrier = await updateAdminCarrierOpsFields({
       carrierId: params.id,
       verificationNotes: payload.verificationNotes ?? null,
       internalNotes: payload.internalNotes ?? null,
       internalTags: payload.internalTags ?? [],
+      adminUserId: user.id,
     });
 
     return NextResponse.json({ carrier });

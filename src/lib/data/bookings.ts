@@ -8,6 +8,7 @@ import { AppError } from "@/lib/errors";
 import { buildBookingEmail, buildReviewRequestEmail } from "@/lib/email";
 import { sendBookingTransactionalEmail } from "@/lib/notifications";
 import { captureAppError } from "@/lib/sentry";
+import { ensureCustomerStripeIdentity } from "@/lib/data/customer-payments";
 import { reverseBookingPayment } from "@/lib/stripe/payment-actions";
 import { getStripeServerClient } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -666,6 +667,13 @@ export async function createPaymentIntentForBooking(userId: string, bookingId: s
   }
 
   const stripe = getStripeServerClient();
+  let stripeCustomerId: string | null = null;
+
+  try {
+    stripeCustomerId = (await ensureCustomerStripeIdentity(userId)).stripeCustomerId;
+  } catch {
+    stripeCustomerId = null;
+  }
 
   if (booking.stripePaymentIntentId) {
     try {
@@ -675,7 +683,8 @@ export async function createPaymentIntentForBooking(userId: string, bookingId: s
         existingIntent.status !== "canceled" &&
         existingIntent.amount === booking.pricing.totalPriceCents &&
         existingIntent.currency === "aud" &&
-        existingIntent.metadata?.bookingId === booking.id;
+        existingIntent.metadata?.bookingId === booking.id &&
+        (!stripeCustomerId || existingIntent.customer === stripeCustomerId);
 
       if (isCompatibleIntent) {
         return existingIntent;
@@ -692,6 +701,10 @@ export async function createPaymentIntentForBooking(userId: string, bookingId: s
       amount: booking.pricing.totalPriceCents,
       currency: "aud",
       capture_method: "manual",
+      ...(stripeCustomerId ? { customer: stripeCustomerId } : {}),
+      automatic_payment_methods: {
+        enabled: true,
+      },
       metadata: {
         bookingId: booking.id,
         bookingReference: booking.bookingReference,
@@ -726,6 +739,70 @@ export async function createPaymentIntentForBooking(userId: string, bookingId: s
   });
 
   return intent;
+}
+
+export async function autoReleaseDeliveredBookings(params?: {
+  limit?: number;
+  now?: string;
+}) {
+  if (!hasSupabaseAdminEnv()) {
+    return [] as string[];
+  }
+
+  const now = params?.now ?? new Date().toISOString();
+  const cutoff = new Date(new Date(now).getTime() - 72 * 60 * 60 * 1000).toISOString();
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("id, delivered_at")
+    .eq("status", "delivered")
+    .is("customer_confirmed_at", null)
+    .lte("delivered_at", cutoff)
+    .order("delivered_at", { ascending: true })
+    .limit(params?.limit ?? 50);
+
+  if (error) {
+    throw new AppError(error.message, 500, "auto_release_booking_lookup_failed");
+  }
+
+  const releasedIds: string[] = [];
+
+  for (const row of data ?? []) {
+    const { data: openDispute } = await supabase
+      .from("disputes")
+      .select("id")
+      .eq("booking_id", row.id)
+      .in("status", ["open", "investigating"])
+      .maybeSingle();
+
+    if (openDispute) {
+      continue;
+    }
+
+    await updateBookingStatusForActor({
+      userId: "system-auto-release-runner",
+      bookingId: row.id,
+      nextStatus: "completed",
+      actorRole: "admin",
+      adminReason: "Auto-released after 72 hours with delivery proof and no open dispute.",
+      skipStatusEmails: false,
+    });
+
+    await recordBookingEvent({
+      bookingId: row.id,
+      actorRole: "admin",
+      actorUserId: null,
+      eventType: "delivery_auto_released",
+      metadata: {
+        deliveredAt: row.delivered_at,
+        releasedAt: now,
+      },
+    });
+
+    releasedIds.push(row.id);
+  }
+
+  return releasedIds;
 }
 
 export async function updateBookingStatusForActor(params: {

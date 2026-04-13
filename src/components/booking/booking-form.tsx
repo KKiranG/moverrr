@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { Camera, Upload } from "lucide-react";
 
+import { ManagePaymentMethodButton } from "@/components/customer/manage-payment-method-button";
 import { FileSelectionPreview } from "@/components/ui/file-selection-preview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ import { getBookingTrustIssues } from "@/lib/validation/booking";
 import { formatCurrency } from "@/lib/utils";
 import type { MoveRequest } from "@/types/move-request";
 import type { ItemCategory, Trip } from "@/types/trip";
+import type { CustomerPaymentProfile } from "@/lib/data/customer-payments";
 
 interface ResolvedAddress {
   label: string;
@@ -39,6 +41,7 @@ interface BookingFormProps {
   requestMode: RequestMode;
   existingMoveRequest?: MoveRequest | null;
   initialOfferId?: string | null;
+  customerPaymentProfile?: CustomerPaymentProfile | null;
   onRequestModeChange?: (mode: RequestMode) => void;
   onOptionsChange?: (options: {
     needsStairs: boolean;
@@ -63,6 +66,7 @@ export function BookingForm({
   requestMode,
   existingMoveRequest,
   initialOfferId,
+  customerPaymentProfile,
   onRequestModeChange,
   onOptionsChange,
 }: BookingFormProps) {
@@ -615,10 +619,31 @@ export function BookingForm({
   }
 
   const stageIndex = getStageIndex(activeStage);
+  const completedProgressSteps = stageIndex;
+  const flowProgressPercent = Math.round(((stageIndex + 1) / FORM_STAGES.length) * 100);
 
   return (
     <form id={id} className="grid gap-4" onSubmit={handleSubmit}>
       <div className="grid gap-3 rounded-2xl border border-border p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="section-label">Confirmation flow</p>
+            <p className="mt-1 text-sm text-text">
+              Step {stageIndex + 1} of {FORM_STAGES.length}
+            </p>
+          </div>
+          <p className="text-xs text-text-secondary">
+            {completedProgressSteps === FORM_STAGES.length - 1
+              ? "Ready to send"
+              : `${FORM_STAGES.length - (stageIndex + 1)} step${FORM_STAGES.length - (stageIndex + 1) === 1 ? "" : "s"} left`}
+          </p>
+        </div>
+        <div className="h-2 overflow-hidden rounded-full bg-border">
+          <div
+            className="h-full rounded-full bg-accent transition-[width]"
+            style={{ width: `${flowProgressPercent}%` }}
+          />
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           {FORM_STAGES.map((stage, index) => {
             const active = stage === activeStage;
@@ -643,7 +668,6 @@ export function BookingForm({
           })}
         </div>
         <div>
-          <p className="section-label">Confirmation flow</p>
           <h2 className="mt-1 text-lg text-text">
             {activeStage === "item"
               ? "Describe the item clearly"
@@ -1108,14 +1132,38 @@ export function BookingForm({
           <div className="rounded-xl border border-border bg-black/[0.02] p-4 text-sm text-text-secondary dark:bg-white/[0.04]">
             <p className="font-medium text-text">Payment setup and return path</p>
             <div className="mt-2 grid gap-2">
-              <p>
-                Need to check payment details before sending? moverrr keeps this request draft on
-                this device, so you can jump to account and come back safely.
-              </p>
+              {customerPaymentProfile?.stripeConfigured ? (
+                customerPaymentProfile.defaultPaymentMethod ? (
+                  <p>
+                    Saved card on file: {customerPaymentProfile.defaultPaymentMethod.brand.toUpperCase()} ending in{" "}
+                    {customerPaymentProfile.defaultPaymentMethod.last4}. Update it here if this request should use a different card later.
+                  </p>
+                ) : (
+                  <p>
+                    No saved card on file yet. Add one now so an accepted booking does not stall when payment setup needs to happen.
+                  </p>
+                )
+              ) : (
+                <p>
+                  Need to check payment details before sending? moverrr keeps this request draft on
+                  this device, so you can jump to account and come back safely.
+                </p>
+              )}
               <div className="pt-1">
-                <Button asChild variant="secondary" className="min-h-[44px]">
-                  <Link href={accountReturnHref}>Review payment help in account</Link>
-                </Button>
+                {customerPaymentProfile?.stripeConfigured ? (
+                  <ManagePaymentMethodButton
+                    returnTo={accountReturnHref}
+                    label={
+                      customerPaymentProfile.hasSavedPaymentMethod
+                        ? "Update saved card securely"
+                        : "Add saved card securely"
+                    }
+                  />
+                ) : (
+                  <Button asChild variant="secondary" className="min-h-[44px]">
+                    <Link href={accountReturnHref}>Review payment help in account</Link>
+                  </Button>
+                )}
               </div>
             </div>
           </div>

@@ -2,6 +2,7 @@ import { hasSupabaseAdminEnv, hasSupabaseEnv } from "@/lib/env";
 import { AppError } from "@/lib/errors";
 import { buildRouteAlertSearchHref } from "@/lib/alert-presenters";
 import { getCorridorDemandSnapshot } from "@/lib/data/admin";
+import { ensureOperatorTask } from "@/lib/data/operator-tasks";
 import { toGeographyPoint, toUnmatchedRequest } from "@/lib/data/mappers";
 import { sendAlertLifecycleEmail } from "@/lib/notifications";
 import { unmatchedRequestSchema, type UnmatchedRequestInput } from "@/lib/validation/unmatched-request";
@@ -289,27 +290,124 @@ export async function markRecoveryAlertMatched(moveRequestId: string) {
         return;
       }
 
-      await sendAlertLifecycleEmail({
-        to: row.notify_email,
-        subject: `Recovered route match available: ${row.pickup_suburb} to ${row.dropoff_suburb}`,
-        title: "A new match is ready for the same move request",
-        intro:
-          "moverrr found a viable route for the same move need, so you can reopen that request instead of starting from scratch.",
-        routeLabel: `${row.pickup_suburb} to ${row.dropoff_suburb}`,
-        ctaPath: buildRouteAlertSearchHref({
-          pickupSuburb: row.pickup_suburb,
-          dropoffSuburb: row.dropoff_suburb,
-          preferredDate: row.preferred_date,
-          itemCategory: row.item_category,
-          moveRequestId: row.move_request_id,
-          preferMoveRequest: true,
-        }),
-        ctaLabel: "Open recovered matches",
-        bodyLines: [
-          "You will land back on the same move request with the viable offers that now fit it.",
-          "If one of those options looks right, continue the request flow without rebuilding the job details.",
-        ],
-      });
+      const dedupeKey = `${row.id}:matched:${row.notify_email.toLowerCase()}`;
+      const { error: notificationInsertError } = await supabase
+        .from("matched_alert_notifications")
+        .insert({
+          unmatched_request_id: row.id,
+          customer_id: row.customer_id,
+          dedupe_key: dedupeKey,
+          status: "pending",
+          metadata: {
+            moveRequestId: moveRequestId,
+            pickupSuburb: row.pickup_suburb,
+            dropoffSuburb: row.dropoff_suburb,
+          },
+        });
+
+      if (notificationInsertError && notificationInsertError.code === "23505") {
+        return;
+      }
+
+      if (notificationInsertError) {
+        throw new AppError(
+          notificationInsertError.message,
+          500,
+          "matched_alert_notification_log_failed",
+        );
+      }
+
+      try {
+        const result = await sendAlertLifecycleEmail({
+          to: row.notify_email,
+          subject: `Recovered route match available: ${row.pickup_suburb} to ${row.dropoff_suburb}`,
+          title: "A new match is ready for the same move request",
+          intro:
+            "moverrr found a viable route for the same move need, so you can reopen that request instead of starting from scratch.",
+          routeLabel: `${row.pickup_suburb} to ${row.dropoff_suburb}`,
+          ctaPath: buildRouteAlertSearchHref({
+            pickupSuburb: row.pickup_suburb,
+            dropoffSuburb: row.dropoff_suburb,
+            preferredDate: row.preferred_date,
+            itemCategory: row.item_category,
+            moveRequestId: row.move_request_id,
+            preferMoveRequest: true,
+          }),
+          ctaLabel: "Open recovered matches",
+          bodyLines: [
+            "You will land back on the same move request with the viable offers that now fit it.",
+            "If one of those options looks right, continue the request flow without rebuilding the job details.",
+          ],
+        });
+        const skipped =
+          typeof result === "object" &&
+          result !== null &&
+          "skipped" in result &&
+          Boolean((result as { skipped?: boolean }).skipped);
+
+        await supabase
+          .from("matched_alert_notifications")
+          .update({
+            status: skipped ? "skipped" : "sent",
+            sent_at: new Date().toISOString(),
+            failure_reason: null,
+          })
+          .eq("dedupe_key", dedupeKey);
+      } catch (error) {
+        await supabase
+          .from("matched_alert_notifications")
+          .update({
+            status: "failed",
+            failure_reason:
+              error instanceof Error ? error.message : "Matched alert notification failed.",
+          })
+          .eq("dedupe_key", dedupeKey);
+        throw error;
+      }
     }),
   );
+}
+
+export async function ensureUnmatchedRequestSlaTasks(params?: {
+  now?: string;
+  slaHours?: number;
+}) {
+  if (!hasSupabaseAdminEnv()) {
+    return [] as Array<Awaited<ReturnType<typeof ensureOperatorTask>>>;
+  }
+
+  const supabase = createAdminClient();
+  const now = params?.now ? new Date(params.now) : new Date();
+  const cutoff = new Date(now.getTime() - (params?.slaHours ?? 12) * 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from("unmatched_requests")
+    .select("id, pickup_suburb, dropoff_suburb, created_at, status, move_request_id")
+    .in("status", ["active", "notified"])
+    .lte("created_at", cutoff);
+
+  if (error) {
+    throw new AppError(error.message, 500, "unmatched_request_sla_query_failed");
+  }
+
+  const tasks = await Promise.all(
+    (data ?? []).map((row) =>
+      ensureOperatorTask({
+        taskType: "unmatched_sla_breach",
+        priority: "high",
+        unmatchedRequestId: row.id,
+        corridorKey: `${row.pickup_suburb}:${row.dropoff_suburb}`,
+        title: `${row.pickup_suburb} to ${row.dropoff_suburb} needs founder follow-up`,
+        blocker: "No carrier has picked up this route request inside the SLA window.",
+        nextAction: "Review corridor supply, ping viable carriers, or send a concierge offer.",
+        dueAt: now.toISOString(),
+        metadata: {
+          createdAt: row.created_at,
+          moveRequestId: row.move_request_id,
+          status: row.status,
+        },
+      }),
+    ),
+  );
+
+  return tasks.filter(Boolean);
 }

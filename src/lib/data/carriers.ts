@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 import { hasSupabaseAdminEnv, hasSupabaseEnv } from "@/lib/env";
 import { AppError } from "@/lib/errors";
+import { recordAdminActionEvent } from "@/lib/data/operator-tasks";
 import { toCarrierProfile, toVehicle } from "@/lib/data/mappers";
 import { getPrivateFileDisplay } from "@/lib/storage";
 import { sanitizeText } from "@/lib/utils";
@@ -357,6 +358,7 @@ export async function verifyCarrier(params: {
   carrierId: string;
   isApproved: boolean;
   notes?: string;
+  adminUserId?: string;
 }) {
   if (!hasSupabaseAdminEnv()) {
     throw new AppError("Supabase admin is not configured.", 503, "supabase_admin_unavailable");
@@ -379,6 +381,20 @@ export async function verifyCarrier(params: {
 
   if (error) {
     throw new AppError(error.message, 500, "carrier_verify_failed");
+  }
+
+  if (params.adminUserId) {
+    await recordAdminActionEvent({
+      adminUserId: params.adminUserId,
+      entityType: "carrier",
+      entityId: params.carrierId,
+      actionType: params.isApproved ? "carrier_activation_approved" : "carrier_activation_rejected",
+      reason: params.notes?.trim() || null,
+      metadata: {
+        verificationStatus: data.verification_status,
+        payoutReady: Boolean(data.stripe_onboarding_complete),
+      },
+    });
   }
 
   return toCarrierProfile(data);
@@ -416,6 +432,7 @@ export async function updateAdminCarrierOpsFields(params: {
   verificationNotes?: string | null;
   internalNotes?: string | null;
   internalTags?: string[] | null;
+  adminUserId?: string;
 }) {
   if (!hasSupabaseAdminEnv()) {
     throw new AppError("Supabase admin is not configured.", 503, "supabase_admin_unavailable");
@@ -450,6 +467,19 @@ export async function updateAdminCarrierOpsFields(params: {
 
   if (error) {
     throw new AppError(error.message, 500, "carrier_ops_update_failed");
+  }
+
+  if (params.adminUserId) {
+    await recordAdminActionEvent({
+      adminUserId: params.adminUserId,
+      entityType: "carrier",
+      entityId: params.carrierId,
+      actionType: "carrier_ops_notes_updated",
+      metadata: {
+        verificationNotes: patch.verification_notes ?? null,
+        internalTags: patch.internal_tags ?? [],
+      },
+    });
   }
 
   return toCarrierProfile(data);

@@ -230,32 +230,32 @@ function QueueCard({
 
   const checks = [
     {
-      label: "Licence photo",
+      label: "Identity check",
       value: carrier.licencePhotoUrl ? "Uploaded" : "Missing",
       ok: Boolean(carrier.licencePhotoUrl),
     },
     {
-      label: "Insurance doc",
+      label: "Vehicle and insurance",
       value: carrier.insurancePhotoUrl ? "Uploaded" : "Missing",
       ok: Boolean(carrier.insurancePhotoUrl),
     },
     {
       label: "Vehicle photo",
-      value: carrier.vehiclePhotoUrl ? "Uploaded" : "Optional, not uploaded",
+      value: carrier.vehiclePhotoUrl ? "Uploaded" : "Missing",
       ok: Boolean(carrier.vehiclePhotoUrl),
     },
     {
-      label: "Service area",
+      label: "Route rules",
       value:
         carrier.serviceSuburbs.length > 0
           ? carrier.serviceSuburbs.slice(0, 4).join(", ")
-          : "No suburbs provided",
+          : "No service suburbs provided",
       ok: carrier.serviceSuburbs.length > 0,
     },
     {
-      label: "Profile",
-      value: carrier.bio ? "Business profile filled" : "Bio missing",
-      ok: Boolean(carrier.bio),
+      label: "Payout readiness",
+      value: carrier.stripeOnboardingComplete ? "Ready" : "Stripe setup incomplete",
+      ok: carrier.stripeOnboardingComplete,
     },
   ];
 
@@ -332,7 +332,7 @@ function QueueCard({
                 <p className={`mt-2 text-sm ${check.ok ? "text-text" : "text-error"}`}>
                   {check.value}
                 </p>
-                {check.label === "Licence photo" && carrier.licencePhotoUrl ? (
+                {check.label === "Identity check" && carrier.licencePhotoUrl ? (
                   <div className="mt-2">
                     <DocumentPreviewDialog
                       triggerLabel="View licence"
@@ -340,7 +340,7 @@ function QueueCard({
                     />
                   </div>
                 ) : null}
-                {check.label === "Insurance doc" && carrier.insurancePhotoUrl ? (
+                {check.label === "Vehicle and insurance" && carrier.insurancePhotoUrl ? (
                   <div className="mt-2">
                     <DocumentPreviewDialog
                       triggerLabel="View insurance"
@@ -371,11 +371,9 @@ function QueueCard({
               <p className="mt-1 text-sm text-text-secondary">{queueAgeLabel}</p>
             </div>
             <div className="rounded-xl border border-border px-3 py-3">
-              <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">
-                Existing admin note
-              </p>
+              <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">Gate summary</p>
               <p className="mt-2 text-sm text-text">
-                {carrier.verificationNotes?.trim() || "No DB-backed note saved yet."}
+                {carrier.verificationNotes?.trim() || "No DB-backed gate summary saved yet."}
               </p>
             </div>
             <div className="rounded-xl border border-border px-3 py-3">
