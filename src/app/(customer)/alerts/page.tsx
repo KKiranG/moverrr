@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { requirePageSessionUser } from "@/lib/auth";
 import { listUnmatchedRequestsForCustomer } from "@/lib/data/unmatched-requests";
-import { listUserSavedSearchesWithOptions } from "@/lib/data/saved-searches";
+import { listUserAlertsWithOptions } from "@/lib/data/alerts";
 import { PageIntro } from "@/components/layout/page-intro";
 import { AlertsManager } from "@/components/search/alerts-manager";
 
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export default async function AlertsPage() {
   const user = await requirePageSessionUser();
   const [alerts, routeRequests] = await Promise.all([
-    listUserSavedSearchesWithOptions(user.id, {
+    listUserAlertsWithOptions(user.id, {
       includeInactive: true,
     }),
     listUnmatchedRequestsForCustomer(user.id),

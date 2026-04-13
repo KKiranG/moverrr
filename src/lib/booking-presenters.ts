@@ -37,6 +37,18 @@ export function getBookingPaymentStateSummary(booking: Booking) {
     paymentStatus,
   });
 
+  if (booking.paymentFailureCode === "condition_adjustment_accepted") {
+    return {
+      badge: BOOKING_PAYMENT_LABELS.failed,
+      tone: "warning" as const,
+      title: "Updated total needs a fresh card authorization",
+      description:
+        booking.paymentFailureReason ??
+        "The customer accepted a structured condition adjustment, so moverrr needs a fresh authorization for the updated booking total before pickup can continue.",
+      retryable: true,
+    };
+  }
+
   if (lifecyclePhase === "authorization_failed") {
     return {
       badge: BOOKING_PAYMENT_LABELS.failed,
@@ -56,7 +68,7 @@ export function getBookingPaymentStateSummary(booking: Booking) {
       title: "The card hold was released",
       description:
         "No charge was captured. If you still want this trip, restart payment setup from this booking.",
-      retryable: booking.status === "pending",
+      retryable: !["cancelled", "completed", "disputed"].includes(booking.status),
     };
   }
 
@@ -140,4 +152,66 @@ export function getConfirmedBookingChecklist() {
     "Keep building access details, gate codes, and loading instructions handy.",
     "Have ID or proof-of-ownership available if the carrier needs a handoff photo.",
   ];
+}
+
+export function getBookingPaymentLifecycleLabelFromState(params: {
+  bookingStatus: Booking["status"];
+  paymentStatus?: Booking["paymentStatus"] | null;
+}) {
+  const lifecyclePhase = getBookingPaymentLifecyclePhase({
+    bookingStatus: params.bookingStatus,
+    paymentStatus: params.paymentStatus,
+  });
+
+  switch (lifecyclePhase) {
+    case "authorization_pending":
+      return "Authorization pending";
+    case "funds_held":
+      return "Funds held";
+    case "release_pending":
+      return "Release pending";
+    case "paid":
+      return "Paid";
+    case "manual_review":
+      return "Manual review";
+    case "refunded":
+      return "Refunded";
+    case "authorization_failed":
+      return "Authorization failed";
+    case "hold_released":
+      return "Hold released";
+    default:
+      return "Payment review";
+  }
+}
+
+export function getBookingPaymentLifecycleLabel(booking: Booking) {
+  return getBookingPaymentLifecycleLabelFromState({
+    bookingStatus: booking.status,
+    paymentStatus: booking.paymentStatus,
+  });
+}
+
+export function getBookingPriceSummaryRows(booking: Booking) {
+  const rows = [
+    { label: "Base route price", valueCents: booking.pricing.basePriceCents },
+    { label: "Stairs add-on", valueCents: booking.pricing.stairsFeeCents },
+    { label: "Helper add-on", valueCents: booking.pricing.helperFeeCents },
+  ];
+
+  if (booking.pricing.adjustmentFeeCents > 0) {
+    rows.push({
+      label: "Condition adjustment",
+      valueCents: booking.pricing.adjustmentFeeCents,
+    });
+  }
+
+  rows.push(
+    { label: "Platform fee", valueCents: booking.pricing.platformFeeCents },
+    { label: "GST", valueCents: booking.pricing.gstCents },
+    { label: "Customer total", valueCents: booking.pricing.totalPriceCents },
+    { label: "Carrier payout", valueCents: booking.pricing.carrierPayoutCents },
+  );
+
+  return rows;
 }

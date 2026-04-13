@@ -473,14 +473,13 @@ export async function getBookingByIdForUser(userId: string, bookingId: string) {
   const supabase = createServerSupabaseClient();
   const { data: carrier } = await supabase
     .from("carriers")
-    .select("business_name, phone")
+    .select("business_name")
     .eq("id", booking.carrierId)
     .maybeSingle();
 
   return {
     ...booking,
     carrierBusinessName: carrier?.business_name ?? undefined,
-    carrierPhone: carrier?.phone ?? undefined,
   };
 }
 
@@ -718,7 +717,7 @@ export async function createPaymentIntentForBooking(userId: string, bookingId: s
       },
     },
     {
-      idempotencyKey: `booking:${booking.id}`,
+      idempotencyKey: `booking:${booking.id}:total:${booking.pricing.totalPriceCents}`,
     },
   );
 
@@ -1657,6 +1656,7 @@ export async function getCarrierPayoutDashboard(
         tripDate: trip?.tripDate ?? null,
         routeLabel: trip?.route.label ?? `${booking.pickupSuburb ?? "Pickup"} → ${booking.dropoffSuburb ?? "Dropoff"}`,
         basePriceCents: booking.pricing.basePriceCents,
+        adjustmentFeeCents: booking.pricing.adjustmentFeeCents,
         platformCommissionCents: booking.pricing.platformCommissionCents,
         platformFeeCents: booking.pricing.platformFeeCents,
         gstCents: booking.pricing.gstCents,

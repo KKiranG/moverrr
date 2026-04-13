@@ -4,24 +4,44 @@ import { LogoutButton } from "@/components/layout/logout-button";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Button } from "@/components/ui/button";
 import { getOptionalSessionUser, isAdminUser } from "@/lib/auth";
+import { listCarrierRequestCards } from "@/lib/data/booking-requests";
 import { getCarrierByUserId } from "@/lib/data/carriers";
+import { listUnmatchedRequestsForCustomer } from "@/lib/data/unmatched-requests";
+import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 
 type NavItem = {
   href: string;
   label: string;
+  badgeCount?: number;
 };
 
 export async function SiteHeader() {
   const user = await getOptionalSessionUser();
   const carrier = user ? await getCarrierByUserId(user.id) : null;
   const isAdmin = user ? await isAdminUser(user.id, user.email) : false;
+  const supabase = user ? createServerSupabaseClient() : null;
+  const customer =
+    user && !carrier && supabase
+      ? await supabase.from("customers").select("id").eq("user_id", user.id).maybeSingle()
+      : { data: null };
+  const [carrierRequests, routeRequests] = await Promise.all([
+    user && carrier ? listCarrierRequestCards(user.id) : Promise.resolve([]),
+    customer.data?.id
+      ? listUnmatchedRequestsForCustomer(customer.data.id)
+      : Promise.resolve([]),
+  ]);
   const postTripHref = user ? (carrier ? "/carrier/post" : "/carrier/onboarding") : "/carrier/signup";
   const postTripLabel = carrier ? "Post a trip" : "Share a trip";
+  const matchedAlertCount = routeRequests.filter((request) => request.status === "matched").length;
 
   const navItems: NavItem[] = carrier
     ? [
         { href: "/carrier/dashboard", label: "Home" },
-        { href: "/carrier/requests", label: "Requests" },
+        {
+          href: "/carrier/requests",
+          label: "Requests",
+          badgeCount: carrierRequests.length > 0 ? carrierRequests.length : undefined,
+        },
         { href: "/carrier/trips", label: "Trips" },
         { href: "/carrier/payouts", label: "Payouts" },
         { href: "/carrier/account", label: "Account" },
@@ -30,7 +50,15 @@ export async function SiteHeader() {
     : [
         { href: "/", label: "Home" },
         ...(user ? [{ href: "/bookings", label: "Bookings" }] : []),
-        ...(user ? [{ href: "/alerts", label: "Alerts" }] : []),
+        ...(user
+          ? [
+              {
+                href: "/alerts",
+                label: "Alerts",
+                badgeCount: matchedAlertCount > 0 ? matchedAlertCount : undefined,
+              },
+            ]
+          : []),
         ...(user ? [{ href: "/account", label: "Account" }] : [{ href: "/search", label: "Tell us your move" }]),
         ...(!user ? [{ href: "/become-a-carrier", label: "Become a carrier" }] : []),
         ...(isAdmin ? [{ href: "/admin/dashboard", label: "Admin" }] : []),
@@ -56,9 +84,14 @@ export async function SiteHeader() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-lg px-2 py-1 transition-colors hover:text-text active:bg-black/[0.04] active:text-text dark:hover:text-text dark:active:bg-white/[0.08]"
+                className="inline-flex items-center gap-2 rounded-lg px-2 py-1 transition-colors hover:text-text active:bg-black/[0.04] active:text-text dark:hover:text-text dark:active:bg-white/[0.08]"
               >
                 {item.label}
+                {item.badgeCount ? (
+                  <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground">
+                    {item.badgeCount}
+                  </span>
+                ) : null}
               </Link>
             ))}
           </nav>

@@ -7,7 +7,7 @@ export interface CustomerProfile {
   averageRating: number;
 }
 
-export interface SavedSearch {
+export interface RouteAlert {
   id: string;
   userId?: string | null;
   fromSuburb: string;
@@ -24,3 +24,5 @@ export interface SavedSearch {
   isActive: boolean;
   createdAt: string;
 }
+
+export type SavedSearch = RouteAlert;

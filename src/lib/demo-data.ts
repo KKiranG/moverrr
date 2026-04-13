@@ -242,6 +242,7 @@ export const demoBookings: Booking[] = [
       basePriceCents: 8500,
       stairsFeeCents: 0,
       helperFeeCents: 0,
+      adjustmentFeeCents: 0,
       platformFeeCents: 1275,
       gstCents: 978,
       bookingFeeCents: 0,

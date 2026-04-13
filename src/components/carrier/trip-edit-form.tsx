@@ -291,8 +291,8 @@ export function TripEditForm({ trip }: { trip: Trip }) {
             <p className="section-label">Publish readiness</p>
             <p className="mt-1 text-sm text-text">
               {blockingPublishIssues.length > 0
-                ? "This listing needs capacity fixes before it should stay live."
-                : "Capacity and accepted item types are still aligned for browse."}
+                ? "This route needs capacity fixes before it should stay live."
+                : "Capacity and accepted item types are still aligned for matching."}
             </p>
           </div>
           <span className="text-xs uppercase tracking-[0.18em] text-text-secondary">

@@ -21,22 +21,33 @@ async function BookingsListSection({ userId }: { userId: string }) {
     listUserBookings(userId),
     listCustomerRequestCards(userId),
   ]);
-  const activeRequests = requestCards.filter((request) =>
-    ["pending", "clarification_requested"].includes(request.status),
+  const clarificationRequests = requestCards.filter(
+    (request) => request.status === "clarification_requested",
+  );
+  const liveFastMatchRequests = requestCards.filter(
+    (request) => request.status === "pending" && Boolean(request.requestGroupId),
+  );
+  const liveSingleRequests = requestCards.filter(
+    (request) => request.status === "pending" && !request.requestGroupId,
   );
   const resolvedRequests = requestCards.filter((request) =>
-    ["declined", "expired", "revoked"].includes(request.status),
+    ["declined", "expired", "revoked", "cancelled"].includes(request.status),
   );
+  const activeRequests = [
+    ...clarificationRequests,
+    ...liveFastMatchRequests,
+    ...liveSingleRequests,
+  ];
 
   return (
     <div className="grid gap-4">
-      {activeRequests.length > 0 ? (
+      {clarificationRequests.length > 0 ? (
         <div className="grid gap-4">
           <div>
-            <p className="section-label">Open requests</p>
-            <h2 className="mt-1 text-lg text-text">Still waiting on a carrier decision</h2>
+            <p className="section-label">Reply needed</p>
+            <h2 className="mt-1 text-lg text-text">Clarifications waiting on you</h2>
           </div>
-          {activeRequests.map((request) => (
+          {clarificationRequests.map((request) => (
             <Link key={request.id} href={`/bookings/${request.id}`}>
               <Card className="p-4">
                 <div className="flex items-start justify-between gap-4">
@@ -49,16 +60,91 @@ async function BookingsListSection({ userId }: { userId: string }) {
                       {request.pickupSuburb} to {request.dropoffSuburb}
                     </p>
                     <p className="mt-2 text-sm text-text-secondary">
-                      {request.status === "clarification_requested"
-                        ? `Clarification reply due by ${formatDateTime(
-                            request.clarificationExpiresAt ?? request.responseDeadlineAt,
-                          )}`
-                        : `Carrier decision due by ${formatDateTime(request.responseDeadlineAt)}`}
+                      Clarification reply due by{" "}
+                      {formatDateTime(
+                        request.clarificationExpiresAt ?? request.responseDeadlineAt,
+                      )}
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-accent">Reply to clarification</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm capitalize text-accent">
+                      {request.status.replaceAll("_", " ")}
+                    </p>
+                    <p className="mt-1 font-medium text-text">
+                      {formatCurrency(request.requestedTotalPriceCents)}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      ) : null}
+
+      {liveFastMatchRequests.length > 0 ? (
+        <div className="grid gap-4">
+          <div>
+            <p className="section-label">Fast Match live</p>
+            <h2 className="mt-1 text-lg text-text">Shared requests still looking for the first accept</h2>
+          </div>
+          {liveFastMatchRequests.map((request) => (
+            <Link key={request.id} href={`/bookings/${request.id}`}>
+              <Card className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg text-text">{request.itemDescription}</h2>
+                    <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-text-secondary">
+                      Fast Match
+                    </p>
+                    <p className="mt-2 subtle-text">
+                      {request.pickupSuburb} to {request.dropoffSuburb}
+                    </p>
+                    <p className="mt-2 text-sm text-text-secondary">
+                      Up to three fitting carriers are inside the same response window until one accepts first.
                     </p>
                     <p className="mt-2 text-sm font-medium text-accent">
-                      {request.status === "clarification_requested"
-                        ? "Reply to clarification"
-                        : "Track request"}
+                      {request.urgencyLabel ?? "Track Fast Match"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm capitalize text-accent">
+                      {request.status.replaceAll("_", " ")}
+                    </p>
+                    <p className="mt-1 font-medium text-text">
+                      {formatCurrency(request.requestedTotalPriceCents)}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      ) : null}
+
+      {liveSingleRequests.length > 0 ? (
+        <div className="grid gap-4">
+          <div>
+            <p className="section-label">Request to Book</p>
+            <h2 className="mt-1 text-lg text-text">Single-carrier requests awaiting decision</h2>
+          </div>
+          {liveSingleRequests.map((request) => (
+            <Link key={request.id} href={`/bookings/${request.id}`}>
+              <Card className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg text-text">{request.itemDescription}</h2>
+                    <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-text-secondary">
+                      Request to Book
+                    </p>
+                    <p className="mt-2 subtle-text">
+                      {request.pickupSuburb} to {request.dropoffSuburb}
+                    </p>
+                    <p className="mt-2 text-sm text-text-secondary">
+                      Carrier decision due by {formatDateTime(request.responseDeadlineAt)}
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-accent">
+                      {request.urgencyLabel ?? "Track request"}
                     </p>
                   </div>
                   <div className="text-right">
@@ -136,9 +222,16 @@ async function BookingsListSection({ userId }: { userId: string }) {
                           </p>
                         ) : null}
                       </div>
-                      <p className="text-xs uppercase tracking-[0.16em] text-text-secondary">
-                        {request.status.replaceAll("_", " ")}
-                      </p>
+                      <div className="text-right">
+                        <p className="text-xs uppercase tracking-[0.16em] text-text-secondary">
+                          {request.status.replaceAll("_", " ")}
+                        </p>
+                        {request.status === "expired" && request.typeLabel === "Fast Match" ? (
+                          <p className="mt-1 text-xs text-text-secondary">
+                            Fast Match timed out
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                 </Link>

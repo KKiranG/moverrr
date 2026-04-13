@@ -8,6 +8,99 @@
 
 ## 2026-04-13 — Vocabulary-layer alignment for alerts, fit labels, privacy, and customer-facing copy
 
+### `COMP-2026-04-13-17` — Condition adjustments, freshness suspension ops, alert-native routes, and MVP cleanup reconciliation
+- Moved from active backlog:
+  - `D04`
+  - `D07`
+  - `D14`
+  - `A10`
+  - `A19`
+  - `A27`
+  - `A45`
+  - `B12`
+  - `B14`
+  - `B32`
+  - `B51`
+  - `B52`
+  - `B58`
+  - `B64`
+  - `B65`
+  - `B66`
+  - `B93`
+  - `B94`
+  - `A68`
+- When: `2026-04-13`
+- Where:
+  - `supabase/migrations/031_request_events_condition_adjustments_and_freshness_audit.sql`
+  - `supabase/migrations/032_condition_adjustment_booking_pricing.sql`
+  - `src/types/customer.ts`
+  - `src/types/trip.ts`
+  - `src/types/booking.ts`
+  - `src/types/database.ts`
+  - `src/types/condition-adjustment.ts`
+  - `src/lib/constants.ts`
+  - `src/lib/request-presenters.ts`
+  - `src/lib/booking-presenters.ts`
+  - `src/lib/pricing/breakdown.ts`
+  - `src/lib/data/alerts.ts`
+  - `src/lib/data/saved-searches.ts`
+  - `src/lib/data/condition-adjustments.ts`
+  - `src/lib/data/booking-requests.ts`
+  - `src/lib/data/bookings.ts`
+  - `src/lib/data/trips.ts`
+  - `src/lib/data/admin.ts`
+  - `src/lib/data/carriers.ts`
+  - `src/lib/validation/condition-adjustment.ts`
+  - `src/app/api/alerts/route.ts`
+  - `src/app/api/alerts/[id]/route.ts`
+  - `src/app/api/booking-requests/[id]/route.ts`
+  - `src/app/api/bookings/[id]/condition-adjustment/route.ts`
+  - `src/app/api/condition-adjustments/[id]/route.ts`
+  - `src/app/api/admin/operator-tasks/[id]/route.ts`
+  - `src/app/api/admin/trips/[id]/freshness/route.ts`
+  - `src/app/(customer)/alerts/page.tsx`
+  - `src/app/(customer)/bookings/page.tsx`
+  - `src/app/(customer)/bookings/[id]/page.tsx`
+  - `src/app/(customer)/account/page.tsx`
+  - `src/app/(carrier)/carrier/requests/page.tsx`
+  - `src/app/(carrier)/carrier/trips/[id]/page.tsx`
+  - `src/app/(carrier)/carrier/stats/page.tsx`
+  - `src/app/(admin)/admin/alerts/page.tsx`
+  - `src/app/(admin)/admin/bookings/[id]/page.tsx`
+  - `src/app/(admin)/admin/carriers/[id]/page.tsx`
+  - `src/app/(admin)/admin/disputes/[id]/page.tsx`
+  - `src/components/search/alerts-manager.tsx`
+  - `src/components/search/save-alert-form.tsx`
+  - `src/components/layout/site-header.tsx`
+  - `src/components/layout/mobile-nav.tsx`
+  - `src/components/booking/booking-request-timeline.tsx`
+  - `src/components/booking/cancel-booking-request-button.tsx`
+  - `src/components/booking/condition-adjustment-trigger-form.tsx`
+  - `src/components/booking/condition-adjustment-response-card.tsx`
+  - `src/components/admin/operator-task-actions.tsx`
+  - `src/components/admin/trip-freshness-actions.tsx`
+  - `src/app/not-found.tsx`
+  - `src/app/robots.ts`
+  - `README.md`
+  - `src/lib/__tests__/breakdown.test.ts`
+  - `src/lib/__tests__/condition-adjustment.test.ts`
+  - `todolist.md`
+  - `completed.md`
+- Why:
+  - The repo had reached the request-based MVP shape, but several important seams were still unfinished: there was no bounded misdescription path, stale trips still needed stronger auditability and customer recovery, alerts still leaked saved-search internals, and the backlog still listed work that the code had already overtaken.
+  - Carrier/customer/admin surfaces also needed one more pass to remove direct-contact drift, expose the new request-state and freshness-state truth, and keep the product anchored to work queues rather than stats-first behavior.
+- What changed:
+  - Added a full one-round condition-adjustment exception path with schema, validation, customer response API, carrier trigger UI, admin visibility, booking event logging, and updated pricing math that preserves base-only commission while recalculating GST and payout correctly.
+  - Added freshness auditability and operations handling around auto-suspended trips, including admin-visible suspension trails, operator task updates, manual unsuspend actions, carrier-facing freshness state cards, customer suspension-aware recovery messaging, and matching filters that keep suspended trips out of public result fallback paths.
+  - Added request-state timeline and cancel tooling, expanded booking-request data for customer and carrier queue views, and kept pending requests visibly separate from accepted bookings across customer and carrier surfaces.
+  - Made alerts more truthful by introducing alert-native API routes and wrappers, shifting active customer flows to `/api/alerts`, and cleaning user-facing saved-search wording and failure messages out of the live path while keeping compatibility wrappers in place.
+  - Removed remaining customer-facing carrier phone presenter data, added matched-alert and request badges in navigation/account surfaces, demoted the carrier stats page to a secondary historical surface, and cleaned remaining browse-first copy leaks in the touched recovery/error/docs surfaces.
+- Verification:
+  - `npm run check`
+  - `node --test --import tsx src/lib/__tests__/breakdown.test.ts src/lib/__tests__/condition-adjustment.test.ts`
+  - `node --import tsx --input-type=module -e "import { GET as getAlerts, POST as postAlerts } from './src/app/api/alerts/route.ts'; const getRes = await getAlerts(); console.log('GET', getRes.status, await getRes.text()); const postReq = new Request('http://localhost/api/alerts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ fromSuburb: 'Newtown', toSuburb: 'Parramatta', notifyEmail: 'test@example.com' }) }); const postRes = await postAlerts(postReq); console.log('POST', postRes.status, await postRes.text());"`
+  - Note: the alert and condition-adjustment routes still need real Supabase/Stripe/Resend credentials for full persisted end-to-end verification, but unauthenticated guard paths, static typing, and targeted pricing/validation tests all passed in this workspace.
+
 ### `COMP-2026-04-13-16` — Pricing contract migration, proof metadata gating, payment lifecycle mapping, and trip freshness automation
 - Moved from active backlog:
   - `A11`

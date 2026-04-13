@@ -6,9 +6,14 @@ import { AdminBookingSupportPanel } from "@/components/admin/admin-booking-suppo
 import { PageIntro } from "@/components/layout/page-intro";
 import { Card } from "@/components/ui/card";
 import { requirePageAdminUser } from "@/lib/auth";
-import { getBookingPaymentStateSummary } from "@/lib/booking-presenters";
+import {
+  getBookingPaymentStateSummary,
+  getBookingPriceSummaryRows,
+} from "@/lib/booking-presenters";
 import { getAdminBookingById } from "@/lib/data/bookings";
+import { listConditionAdjustmentsForAdmin } from "@/lib/data/condition-adjustments";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
+import { getConditionAdjustmentReasonLabel } from "@/lib/validation/condition-adjustment";
 
 export async function generateMetadata({
   params,
@@ -39,6 +44,7 @@ export default async function AdminBookingDetailPage({
   }
 
   const paymentSummary = getBookingPaymentStateSummary(booking);
+  const adjustments = await listConditionAdjustmentsForAdmin({ bookingId: booking.id, limit: 5 });
 
   return (
     <main id="main-content" className="page-shell">
@@ -72,17 +78,49 @@ export default async function AdminBookingDetailPage({
                 <p className="mt-2 text-sm font-medium text-text">{paymentSummary.badge}</p>
                 <p className="mt-1 text-sm text-text-secondary">{paymentSummary.description}</p>
               </div>
-              <div className="rounded-xl border border-border p-3">
-                <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">Customer total</p>
-                <p className="mt-2 text-sm font-medium text-text">
-                  {formatCurrency(booking.pricing.totalPriceCents)}
-                </p>
-              </div>
-              <div className="rounded-xl border border-border p-3">
-                <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">Carrier payout</p>
-                <p className="mt-2 text-sm font-medium text-text">
-                  {formatCurrency(booking.pricing.carrierPayoutCents)}
-                </p>
+              {getBookingPriceSummaryRows(booking).map((row) => (
+                <div key={row.label} className="rounded-xl border border-border p-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">{row.label}</p>
+                  <p className="mt-2 text-sm font-medium text-text">
+                    {formatCurrency(row.valueCents)}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-xl border border-border p-3">
+              <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">Condition adjustments</p>
+              <div className="mt-3 grid gap-3">
+                {adjustments.map((adjustment) => (
+                  <div key={adjustment.id} className="rounded-xl border border-border/80 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-text">
+                          {getConditionAdjustmentReasonLabel(adjustment.reasonCode)}
+                        </p>
+                        <p className="mt-1 text-sm text-text-secondary">
+                          {formatCurrency(adjustment.amountCents)} · {adjustment.status.replaceAll("_", " ")}
+                        </p>
+                      </div>
+                      <p className="text-xs text-text-secondary">
+                        {formatDateTime(adjustment.createdAt)}
+                      </p>
+                    </div>
+                    {adjustment.note ? (
+                      <p className="mt-2 text-sm text-text-secondary">{adjustment.note}</p>
+                    ) : null}
+                    {adjustment.customerResponseNote ? (
+                      <p className="mt-2 text-sm text-text-secondary">
+                        Customer note: {adjustment.customerResponseNote}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+                {adjustments.length === 0 ? (
+                  <p className="text-sm text-text-secondary">
+                    No condition adjustments have been raised for this booking.
+                  </p>
+                ) : null}
               </div>
             </div>
 

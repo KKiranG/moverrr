@@ -119,8 +119,8 @@ export function getTripPublishReadiness(input: TripPublishReadinessInput) {
     issues.push({
       code: "space_weight_too_low",
       severity: "blocking",
-      message: `${input.spaceSize} listings need at least ${minimumWeight}kg to stay believable in browse.`,
-      hint: "Raise the weight limit or move the listing back to draft until capacity is firm.",
+      message: `${input.spaceSize} routes need at least ${minimumWeight}kg to stay trustworthy in matching.`,
+      hint: "Raise the weight limit or move the route back to draft until spare capacity is firm.",
       path: ["availableWeightKg"],
     });
   }
@@ -174,7 +174,7 @@ export function getTripPublishReadiness(input: TripPublishReadinessInput) {
     issues.push({
       code: "flexible_window_needs_note",
       severity: "warning",
-      message: "Flexible timing converts better when the listing explains the rough pickup rhythm.",
+      message: "Flexible timing converts better when the route explains the rough pickup rhythm.",
       hint: "Add a short note like after 2pm, school-hours only, or customer should expect a call ahead.",
       path: ["timeWindow", "specialNotes"],
     });
@@ -184,7 +184,7 @@ export function getTripPublishReadiness(input: TripPublishReadinessInput) {
     issues.push({
       code: "large_listing_needs_note",
       severity: "warning",
-      message: "Bigger listings need one plain-language handling note before they feel trustworthy in browse.",
+      message: "Bigger routes need one plain-language handling note before they feel trustworthy in matching.",
       hint: "Call out access limits, curbside-only handoff, or how bulky items should be prepared.",
       path: ["spaceSize", "specialNotes"],
     });

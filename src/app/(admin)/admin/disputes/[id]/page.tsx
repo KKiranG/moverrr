@@ -7,6 +7,9 @@ import { Card } from "@/components/ui/card";
 import { PRIVATE_BUCKETS } from "@/lib/constants";
 import { requirePageAdminUser } from "@/lib/auth";
 import { getAdminDisputeById } from "@/lib/data/admin";
+import { listConditionAdjustmentsForAdmin } from "@/lib/data/condition-adjustments";
+import { formatCurrency, formatDateTime } from "@/lib/utils";
+import { getConditionAdjustmentReasonLabel } from "@/lib/validation/condition-adjustment";
 
 export async function generateMetadata({
   params,
@@ -35,6 +38,11 @@ export default async function AdminDisputeDetailPage({
   if (!dispute) {
     notFound();
   }
+
+  const adjustments = await listConditionAdjustmentsForAdmin({
+    bookingId: dispute.booking_id,
+    limit: 5,
+  });
 
   const bookingReference =
     (dispute.booking as { booking_reference?: string } | null)?.booking_reference ??
@@ -126,6 +134,43 @@ export default async function AdminDisputeDetailPage({
                 <p className="text-sm text-text-secondary">No booking timeline events were attached to this dispute record.</p>
               ) : null}
             </div>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <div className="space-y-4">
+          <div>
+            <p className="section-label">Condition adjustment trail</p>
+            <h2 className="mt-1 text-lg text-text">Misdescription history tied to this booking</h2>
+          </div>
+          <div className="grid gap-3">
+            {adjustments.map((adjustment) => (
+              <div key={adjustment.id} className="rounded-xl border border-border p-3">
+                <p className="text-sm font-medium text-text">
+                  {getConditionAdjustmentReasonLabel(adjustment.reasonCode)}
+                </p>
+                <p className="mt-1 text-sm text-text-secondary">
+                  {formatCurrency(adjustment.amountCents)} · {adjustment.status.replaceAll("_", " ")}
+                </p>
+                <p className="mt-1 text-xs text-text-secondary">
+                  Raised {formatDateTime(adjustment.createdAt)}
+                </p>
+                {adjustment.note ? (
+                  <p className="mt-2 text-sm text-text-secondary">{adjustment.note}</p>
+                ) : null}
+                {adjustment.customerResponseNote ? (
+                  <p className="mt-2 text-sm text-text-secondary">
+                    Customer note: {adjustment.customerResponseNote}
+                  </p>
+                ) : null}
+              </div>
+            ))}
+            {adjustments.length === 0 ? (
+              <p className="text-sm text-text-secondary">
+                No condition adjustments were recorded against this booking.
+              </p>
+            ) : null}
           </div>
         </div>
       </Card>

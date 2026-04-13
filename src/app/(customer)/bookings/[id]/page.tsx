@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BookingStatusStepper } from "@/components/booking/booking-status-stepper";
+import { ConditionAdjustmentResponseCard } from "@/components/booking/condition-adjustment-response-card";
+import { BookingRequestTimeline } from "@/components/booking/booking-request-timeline";
+import { CancelBookingRequestButton } from "@/components/booking/cancel-booking-request-button";
 import { ConfirmReceiptButton } from "@/components/booking/confirm-receipt-button";
 import { DisputeForm } from "@/components/booking/dispute-form";
 import { PaymentRecoveryCard } from "@/components/booking/payment-recovery-card";
@@ -15,10 +18,20 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PRIVATE_BUCKETS } from "@/lib/constants";
 import { requirePageSessionUser } from "@/lib/auth";
-import { getBookingPaymentStateSummary, getConfirmedBookingChecklist } from "@/lib/booking-presenters";
+import {
+  getBookingPaymentStateSummary,
+  getConfirmedBookingChecklist,
+} from "@/lib/booking-presenters";
 import { getBookingByIdForUser } from "@/lib/data/bookings";
-import { listCustomerRequestCards } from "@/lib/data/booking-requests";
+import {
+  getCustomerRequestGroupSummary,
+  listCustomerRequestCards,
+  listCustomerRequestTimeline,
+} from "@/lib/data/booking-requests";
 import { getBookingFeedbackForUser } from "@/lib/data/feedback";
+import { getTripById } from "@/lib/data/trips";
+import { listConditionAdjustmentsForBookingUser } from "@/lib/data/condition-adjustments";
+import { buildBookingRequestTimeline, getBookingRequestOutcomeCopy } from "@/lib/request-presenters";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
 import type {
   Booking,
@@ -27,6 +40,7 @@ import type {
   BookingPickupProof,
 } from "@/types/booking";
 import type { CustomerBookingRequestCard } from "@/types/booking-request";
+import type { ConditionAdjustment } from "@/types/condition-adjustment";
 
 function getBookingEventTimestamp(booking: { events?: Array<{ eventType: string; createdAt: string }> }, eventType: string) {
   return booking.events?.find((event) => event.eventType === eventType)?.createdAt ?? null;
@@ -101,6 +115,10 @@ function getEventSummaryLines(event: {
 }
 
 function getBookingNextAction(booking: Booking) {
+  if (booking.paymentFailureCode === "condition_adjustment_accepted") {
+    return "A structured condition adjustment was accepted. Re-authorize the updated total here before pickup can continue.";
+  }
+
   if (booking.status === "pending") {
     return "The carrier already accepted and this booking is now in the live fulfilment queue. Keep access details ready and watch the booking record for the next operational update.";
   }
@@ -161,7 +179,15 @@ function getRequestNextAction(request: CustomerBookingRequestCard) {
   return "This request is no longer waiting on a customer or carrier action.";
 }
 
-function RequestDetailPage({ request }: { request: CustomerBookingRequestCard }) {
+function RequestDetailPage({
+  request,
+  timeline,
+  groupSummary,
+}: {
+  request: CustomerBookingRequestCard;
+  timeline: Awaited<ReturnType<typeof listCustomerRequestTimeline>>;
+  groupSummary: Awaited<ReturnType<typeof getCustomerRequestGroupSummary>>;
+}) {
   const restartHref = `/search?${new URLSearchParams({
     from: request.pickupSuburb,
     to: request.dropoffSuburb,
@@ -177,6 +203,18 @@ function RequestDetailPage({ request }: { request: CustomerBookingRequestCard })
     request.status === "clarification_requested" &&
     !request.customerResponseAt &&
     Boolean(clarificationDeadline);
+  const timelineEntries = buildBookingRequestTimeline(
+    {
+      status: request.status,
+      createdAt: request.createdAt,
+      clarificationRequestedAt: request.clarificationRequestedAt,
+      customerResponseAt: request.customerResponseAt,
+      respondedAt: request.respondedAt,
+      expiresAt: request.expiresAt,
+    },
+    timeline,
+  );
+  const outcomeCopy = getBookingRequestOutcomeCopy(request.status, request.typeLabel);
 
   return (
     <main id="main-content" className="page-shell">
@@ -225,6 +263,9 @@ function RequestDetailPage({ request }: { request: CustomerBookingRequestCard })
               <Link href={recoveryHref}>{recoveryLabel}</Link>
             </Button>
           ) : null}
+          {["pending", "clarification_requested"].includes(request.status) ? (
+            <CancelBookingRequestButton bookingRequestId={request.id} />
+          ) : null}
         </div>
       </Card>
 
@@ -251,10 +292,54 @@ function RequestDetailPage({ request }: { request: CustomerBookingRequestCard })
               <p className="mt-2 text-sm text-text-secondary">
                 Customer total {formatCurrency(request.requestedTotalPriceCents)}
               </p>
+              {request.urgencyLabel ? (
+                <p className="mt-2 text-xs uppercase tracking-[0.16em] text-warning">
+                  {request.urgencyLabel}
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
       </Card>
+
+      {groupSummary ? (
+        <Card className="p-4">
+          <div className="space-y-4">
+            <div>
+              <p className="section-label">Fast Match group</p>
+              <h2 className="mt-1 text-lg text-text">How this shared request resolved</h2>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-xl border border-border p-3">
+                <p className="text-sm font-medium text-text">Requests sent</p>
+                <p className="mt-2 text-2xl text-text">{groupSummary.totalRequests}</p>
+              </div>
+              <div className="rounded-xl border border-border p-3">
+                <p className="text-sm font-medium text-text">Still live</p>
+                <p className="mt-2 text-2xl text-text">{groupSummary.liveRequestCount}</p>
+              </div>
+              <div className="rounded-xl border border-border p-3">
+                <p className="text-sm font-medium text-text">Revoked</p>
+                <p className="mt-2 text-2xl text-text">{groupSummary.revokedCount}</p>
+              </div>
+              <div className="rounded-xl border border-border p-3">
+                <p className="text-sm font-medium text-text">Declined or expired</p>
+                <p className="mt-2 text-2xl text-text">
+                  {groupSummary.declinedCount + groupSummary.expiredCount}
+                </p>
+              </div>
+            </div>
+            {groupSummary.winningCarrierBusinessName ? (
+              <div className="rounded-xl border border-success/20 bg-success/5 p-3">
+                <p className="text-sm font-medium text-text">Accepted by</p>
+                <p className="mt-1 text-sm text-text-secondary">
+                  {groupSummary.winningCarrierBusinessName} accepted first, so moverrr revoked the remaining Fast Match requests automatically.
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </Card>
+      ) : null}
 
       {request.clarificationMessage ? (
         <Card className="p-4">
@@ -295,6 +380,21 @@ function RequestDetailPage({ request }: { request: CustomerBookingRequestCard })
       <Card className="p-4">
         <div className="space-y-4">
           <div>
+            <p className="section-label">Request timeline</p>
+            <h2 className="mt-1 text-lg text-text">Decision history in moverrr</h2>
+          </div>
+          <BookingRequestTimeline entries={timelineEntries} />
+          {outcomeCopy ? (
+            <div className="rounded-xl border border-border p-3">
+              <p className="text-sm text-text-secondary">{outcomeCopy}</p>
+            </div>
+          ) : null}
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <div className="space-y-4">
+          <div>
             <p className="section-label">What happens next</p>
             <h2 className="mt-1 text-lg text-text">Before this becomes a booking</h2>
           </div>
@@ -319,9 +419,13 @@ function RequestDetailPage({ request }: { request: CustomerBookingRequestCard })
 function BookingDetailPageContent({
   booking,
   feedback,
+  trip,
+  adjustment,
 }: {
   booking: Booking;
   feedback: Awaited<ReturnType<typeof getBookingFeedbackForUser>>;
+  trip: Awaited<ReturnType<typeof getTripById>>;
+  adjustment?: ConditionAdjustment | null;
 }) {
   const paymentSummary = getBookingPaymentStateSummary(booking);
   const checklist = getConfirmedBookingChecklist();
@@ -377,6 +481,56 @@ function BookingDetailPageContent({
           ) : null}
         </div>
       </Card>
+
+      {trip?.status === "suspended" ? (
+        <Card className="border-error/20 bg-error/5 p-4">
+          <div className="space-y-3">
+            <div>
+              <p className="section-label">Route recovery</p>
+              <h2 className="mt-1 text-lg text-text">This carrier trip is temporarily suspended</h2>
+            </div>
+            <p className="text-sm text-text-secondary">
+              moverrr suspended the underlying route after a missed freshness reconfirmation, so ops
+              is reviewing whether this booking can still run as planned or needs a next-best route.
+            </p>
+            <div className="grid gap-2 text-sm text-text-secondary">
+              <p>
+                Keep communication, proof, and support requests in moverrr while ops confirms the
+                route or helps recover the move.
+              </p>
+              {trip.freshnessSuspensionReason ? (
+                <p>Suspension reason: {trip.freshnessSuspensionReason.replaceAll("_", " ")}.</p>
+              ) : null}
+              {trip.freshnessSuspendedAt ? (
+                <p>Suspended on {formatDateTime(trip.freshnessSuspendedAt)}.</p>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild variant="secondary">
+                <Link href="/alerts">Open recovery alerts</Link>
+              </Button>
+              <Button asChild variant="ghost">
+                <a href="mailto:hello@moverrr.com.au">Contact ops support</a>
+              </Button>
+            </div>
+          </div>
+        </Card>
+      ) : null}
+
+      {adjustment ? <ConditionAdjustmentResponseCard adjustment={adjustment} /> : null}
+
+      {booking.status === "delivered" ? (
+        <Card className="border-warning/20 bg-warning/10 p-4">
+          <div className="space-y-2">
+            <p className="section-label">Delivery confirmation</p>
+            <h2 className="text-lg text-text">Confirm receipt or the release window will keep running</h2>
+            <p className="text-sm text-text-secondary">
+              moverrr waits up to 72 hours after delivery for receipt confirmation or a dispute.
+              Use this page to confirm handoff as soon as the item is checked.
+            </p>
+          </div>
+        </Card>
+      ) : null}
 
       {["confirmed", "picked_up", "in_transit", "delivered", "completed"].includes(booking.status) ? (
         <Card className="p-4">
@@ -622,9 +776,25 @@ export default async function BookingDetailPage({
       notFound();
     }
 
-    return <RequestDetailPage request={request} />;
+    const [timeline, groupSummary] = await Promise.all([
+      listCustomerRequestTimeline(user.id, request.id),
+      request.requestGroupId
+        ? getCustomerRequestGroupSummary(user.id, request.requestGroupId)
+        : Promise.resolve(null),
+    ]);
+
+    return <RequestDetailPage request={request} timeline={timeline} groupSummary={groupSummary} />;
   }
 
   const feedback = await getBookingFeedbackForUser(user.id, params.id);
-  return <BookingDetailPageContent booking={booking} feedback={feedback} />;
+  const trip = await getTripById(booking.listingId);
+  const adjustment = (await listConditionAdjustmentsForBookingUser(user.id, booking.id))[0] ?? null;
+  return (
+    <BookingDetailPageContent
+      booking={booking}
+      feedback={feedback}
+      trip={trip}
+      adjustment={adjustment}
+    />
+  );
 }

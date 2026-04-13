@@ -14,6 +14,24 @@ export type BookingRequestClarificationReason =
   | "photos"
   | "other";
 
+export type BookingRequestEventActorRole =
+  | "customer"
+  | "carrier"
+  | "admin"
+  | "system";
+
+export interface BookingRequestEvent {
+  id: string;
+  bookingRequestId: string;
+  moveRequestId: string;
+  requestGroupId?: string | null;
+  actorRole: BookingRequestEventActorRole;
+  actorUserId?: string | null;
+  eventType: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface BookingRequest {
   id: string;
   moveRequestId: string;
@@ -56,12 +74,27 @@ export interface CustomerBookingRequestCard {
   carrierBusinessName: string;
   fitExplanation: string;
   typeLabel: string;
+  urgencyLabel?: string | null;
+  declineReason?: string | null;
   clarificationReason?: BookingRequestClarificationReason | null;
   clarificationMessage?: string | null;
   clarificationRequestedAt?: string | null;
   clarificationExpiresAt?: string | null;
   customerResponse?: string | null;
   customerResponseAt?: string | null;
+  respondedAt?: string | null;
+  expiresAt?: string | null;
   recoveryAlertId?: string | null;
   createdAt: string;
+}
+
+export interface CustomerRequestGroupSummary {
+  requestGroupId: string;
+  totalRequests: number;
+  winningBookingRequestId?: string | null;
+  winningCarrierBusinessName?: string | null;
+  liveRequestCount: number;
+  revokedCount: number;
+  declinedCount: number;
+  expiredCount: number;
 }

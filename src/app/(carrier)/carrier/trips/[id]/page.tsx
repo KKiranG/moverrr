@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 
 import { DisputeForm } from "@/components/booking/dispute-form";
 import { CarrierReviewResponseForm } from "@/components/booking/carrier-review-response-form";
+import { ConditionAdjustmentTriggerForm } from "@/components/booking/condition-adjustment-trigger-form";
 import { ReviewForm } from "@/components/booking/review-form";
 import { StatusUpdateActions } from "@/components/booking/status-update-actions";
 import { SaveTripTemplateAction } from "@/components/carrier/save-trip-template-action";
@@ -16,8 +17,11 @@ import { getBookingPaymentStateSummary } from "@/lib/booking-presenters";
 import { listCarrierBookings } from "@/lib/data/bookings";
 import { getCarrierByUserId } from "@/lib/data/carriers";
 import { getBookingFeedbackForUser } from "@/lib/data/feedback";
+import { listConditionAdjustmentsForBookingUser } from "@/lib/data/condition-adjustments";
 import { getTripById } from "@/lib/data/trips";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDateTime } from "@/lib/utils";
+import { getConditionAdjustmentReasonLabel } from "@/lib/validation/condition-adjustment";
+import type { ConditionAdjustment } from "@/types/condition-adjustment";
 
 export const metadata: Metadata = {
   title: "Carrier trip detail",
@@ -154,14 +158,89 @@ function getBookingOperationsSummary(booking: CarrierBooking) {
   };
 }
 
+function getTripFreshnessSummary(
+  trip: NonNullable<Awaited<ReturnType<typeof getTripById>>>,
+  freshnessParam?: string,
+) {
+  if (freshnessParam === "24h-confirmed") {
+    return {
+      tone: "border-success/20 bg-success/5",
+      eyebrow: "Freshness confirmed",
+      title: "24-hour reconfirmation was recorded",
+      description:
+        "This route stays fully eligible while moverrr waits for the final 2-hour reconfirmation window closer to departure.",
+    };
+  }
+
+  if (freshnessParam === "2h-confirmed") {
+    return {
+      tone: "border-success/20 bg-success/5",
+      eyebrow: "Freshness confirmed",
+      title: "2-hour reconfirmation was recorded",
+      description:
+        "This route is live again for fulfilment and ops only steps in if another trust or timing issue appears.",
+    };
+  }
+
+  if (freshnessParam === "failed") {
+    return {
+      tone: "border-error/20 bg-error/5",
+      eyebrow: "Freshness update failed",
+      title: "moverrr could not record the reconfirmation link",
+      description:
+        "Use the trip detail and ops trail here as the source of truth while the reconfirmation issue is resolved.",
+    };
+  }
+
+  if (trip.status === "suspended") {
+    return {
+      tone: "border-error/20 bg-error/5",
+      eyebrow: "Route suspended",
+      title: "This trip is suspended until ops finishes freshness review",
+      description:
+        "New customers will not see this route while it is suspended. Keep all updates in moverrr and wait for ops to manually unsuspend it after reconfirmation.",
+    };
+  }
+
+  if (trip.checkin2hRequestedAt && !trip.checkin2hConfirmed) {
+    return {
+      tone: "border-warning/20 bg-warning/10",
+      eyebrow: "Freshness required now",
+      title: "The 2-hour reconfirmation window is open",
+      description:
+        "Confirm that the trip is still running now. If moverrr misses this check, ops will suspend the route and affected customers will be notified.",
+    };
+  }
+
+  if (trip.checkin24hRequestedAt && !trip.checkin24hConfirmed) {
+    return {
+      tone: "border-warning/20 bg-warning/10",
+      eyebrow: "Freshness due soon",
+      title: "The 24-hour reconfirmation window is open",
+      description:
+        "Confirm that the route is still on so moverrr can keep matching it normally before the tighter 2-hour check starts.",
+    };
+  }
+
+  return {
+    tone: "border-success/20 bg-success/5",
+    eyebrow: "Freshness healthy",
+    title: "This route is currently confirmed",
+    description:
+      "No freshness action is waiting right now. Keep any timing or access changes inside moverrr so ops can see the latest route state.",
+  };
+}
+
 function CarrierBookingCard({
   booking,
   feedback,
   isFocused,
+  adjustment,
 }: {
   booking: CarrierBooking;
   feedback: BookingFeedback | undefined;
   isFocused: boolean;
+  adjustment?: ConditionAdjustment;
 }) {
   const paymentSummary = getBookingPaymentStateSummary(booking);
   const canOpenDispute = ["delivered", "completed", "disputed"].includes(booking.status);
@@ -215,6 +294,28 @@ function CarrierBookingCard({
       <div className="mt-3">
         <StatusUpdateActions bookingId={booking.id} currentStatus={booking.status} />
       </div>
+      {booking.status === "confirmed" && !adjustment ? (
+        <div className="mt-4">
+          <ConditionAdjustmentTriggerForm bookingId={booking.id} />
+        </div>
+      ) : null}
+      {adjustment ? (
+        <div className="mt-4 rounded-xl border border-warning/20 bg-warning/10 p-3">
+          <p className="section-label">Condition adjustment</p>
+          <p className="mt-1 text-sm font-medium text-text">
+            {getConditionAdjustmentReasonLabel(adjustment.reasonCode)} · {adjustment.status.replaceAll("_", " ")}
+          </p>
+          <p className="mt-2 text-sm text-text-secondary">
+            Amount {formatCurrency(adjustment.amountCents)}
+            {adjustment.note ? ` · ${adjustment.note}` : ""}
+          </p>
+          {adjustment.customerResponseNote ? (
+            <p className="mt-2 text-sm text-text-secondary">
+              Customer note: {adjustment.customerResponseNote}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       {booking.status === "completed" && !feedback?.userReview ? (
         <div className="mt-4 space-y-2">
           <p className="section-label">Review customer</p>
@@ -276,6 +377,8 @@ export default async function CarrierTripDetailPage({
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const focusValue = resolvedSearchParams.focus;
   const focusBookingId = Array.isArray(focusValue) ? focusValue[0] : focusValue;
+  const freshnessValue = resolvedSearchParams.freshness;
+  const freshnessParam = Array.isArray(freshnessValue) ? freshnessValue[0] : freshnessValue;
   const savingsCents = trip.dedicatedEstimateCents - trip.priceCents;
   const repostHref = buildRepostHref(trip);
   const bookings = await listCarrierBookings(user.id, { listingId: trip.id });
@@ -286,13 +389,21 @@ export default async function CarrierTripDetailPage({
     ] as const),
   );
   const feedbackByBookingId = new Map<string, BookingFeedback>(feedbackEntries);
+  const adjustmentEntries = await Promise.all(
+    bookings.map(async (booking) => [
+      booking.id,
+      (await listConditionAdjustmentsForBookingUser(user.id, booking.id))[0] ?? null,
+    ] as const),
+  );
+  const adjustmentByBookingId = new Map<string, ConditionAdjustment | null>(adjustmentEntries);
+  const freshnessSummary = getTripFreshnessSummary(trip, freshnessParam);
 
   return (
     <main id="main-content" className="page-shell">
       <PageIntro
         eyebrow="Carrier trip detail"
         title={trip.route.label}
-        description="Edit live inventory, then manage proof-backed status changes for each booking on the run."
+        description="Edit the live route, then manage proof-backed status changes for each booking on the run."
       />
 
       {savingsCents > 0 ? (
@@ -328,6 +439,36 @@ export default async function CarrierTripDetailPage({
         </p>
       </Card>
 
+      <Card className={`p-4 ${freshnessSummary.tone}`}>
+        <div className="space-y-3">
+          <div>
+            <p className="section-label">{freshnessSummary.eyebrow}</p>
+            <h2 className="mt-1 text-lg text-text">{freshnessSummary.title}</h2>
+          </div>
+          <p className="text-sm text-text-secondary">{freshnessSummary.description}</p>
+          <div className="grid gap-2 text-sm text-text-secondary sm:grid-cols-2">
+            <p>
+              Route status {trip.status?.replaceAll("_", " ") ?? "active"}
+              {trip.freshnessSuspensionReason
+                ? ` · reason ${trip.freshnessSuspensionReason.replaceAll("_", " ")}`
+                : ""}
+            </p>
+            <p>
+              Freshness misses {trip.freshnessMissCount ?? 0}
+              {trip.lastFreshnessConfirmedAt
+                ? ` · last confirmed ${formatDateTime(trip.lastFreshnessConfirmedAt)}`
+                : ""}
+            </p>
+            {trip.checkin24hRequestedAt ? (
+              <p>24-hour window opened {formatDateTime(trip.checkin24hRequestedAt)}</p>
+            ) : null}
+            {trip.checkin2hRequestedAt ? (
+              <p>2-hour window opened {formatDateTime(trip.checkin2hRequestedAt)}</p>
+            ) : null}
+          </div>
+        </div>
+      </Card>
+
       <Card className="p-4">
         <div className="space-y-4">
           <div>
@@ -347,6 +488,7 @@ export default async function CarrierTripDetailPage({
               booking={booking}
               feedback={feedbackByBookingId.get(booking.id)}
               isFocused={focusBookingId === booking.id}
+              adjustment={adjustmentByBookingId.get(booking.id) ?? undefined}
             />
           ))}
           {bookings.length === 0 ? (

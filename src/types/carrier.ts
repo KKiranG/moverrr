@@ -187,11 +187,13 @@ export interface CarrierRequestCard {
   requestedTotalPriceCents: number;
   carrierPayoutCents: number;
   responseDeadlineAt: string;
+  urgencyLabel?: string | null;
   fitLabel: string;
   fitExplanation: string;
   accessSummary: string;
   photoCount: number;
   photoUrls: string[];
+  declineReason?: string | null;
   clarificationReason?: string | null;
   clarificationMessage?: string | null;
   typeLabel: string;

@@ -197,8 +197,8 @@ export function QuickPostTemplates({
                           </div>
                         ) : (
                           <p className="mt-2 text-sm text-text-secondary">
-                            This template is aligned well enough to quick-post
-                            live inventory.
+                            This template is aligned well enough to quick-post a
+                            live route.
                           </p>
                         )}
                       </div>

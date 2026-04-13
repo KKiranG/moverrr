@@ -74,6 +74,18 @@ export interface Trip {
   checkin2hConfirmed?: boolean;
   checkin2hRequestedAt?: string | null;
   freshnessSuspendedAt?: string | null;
+  freshnessMissCount?: number;
+  freshnessLastAction?:
+    | "none"
+    | "requested_24h"
+    | "confirmed_24h"
+    | "requested_2h"
+    | "confirmed_2h"
+    | "suspended"
+    | "unsuspended";
+  freshnessSuspensionReason?: "missed_2h_checkin" | "manual_ops" | "other" | null;
+  lastFreshnessConfirmedAt?: string | null;
+  lastFreshnessUnsuspendedAt?: string | null;
   publishAt?: string | null;
   rules: TripRules;
 }

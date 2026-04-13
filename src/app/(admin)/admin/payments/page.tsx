@@ -4,6 +4,10 @@ import { PageIntro } from "@/components/layout/page-intro";
 import { Card } from "@/components/ui/card";
 import { requirePageAdminUser } from "@/lib/auth";
 import { listAdminBookings } from "@/lib/data/bookings";
+import {
+  getBookingPaymentLifecycleLabel,
+  getBookingPaymentStateSummary,
+} from "@/lib/booking-presenters";
 
 export const metadata: Metadata = {
   title: "Admin payments",
@@ -47,18 +51,12 @@ export default async function AdminPaymentsPage() {
     );
   }
 
-  const paymentIntentFailures = bookings.filter(
-    (booking) => booking.paymentStatus === "failed",
+  const paymentIntentFailures = bookings.filter((booking) =>
+    ["failed", "pending"].includes(booking.paymentStatus ?? "pending"),
   );
-  const captureFailures = bookings.filter(
-    (booking) => booking.paymentStatus === "capture_failed",
-  );
-  const authorizationCancelled = bookings.filter(
-    (booking) => booking.paymentStatus === "authorization_cancelled",
-  );
-  const refundOutcomes = bookings.filter(
-    (booking) => booking.paymentStatus === "refunded",
-  );
+  const captureFailures = bookings.filter((booking) => booking.paymentStatus === "capture_failed");
+  const authorizationCancelled = bookings.filter((booking) => booking.paymentStatus === "authorization_cancelled");
+  const refundOutcomes = bookings.filter((booking) => booking.paymentStatus === "refunded");
   const deliveredAwaitingConfirmation = bookings.filter(
     (booking) => booking.status === "delivered",
   );
@@ -99,7 +97,7 @@ export default async function AdminPaymentsPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         <Card className="p-4">
-          <p className="section-label">Intent failures</p>
+          <p className="section-label">Authorization issues</p>
           <p className="mt-2 text-3xl text-text">
             {paymentIntentFailures.length}
           </p>
@@ -109,7 +107,7 @@ export default async function AdminPaymentsPage() {
           <p className="mt-2 text-3xl text-text">{captureFailures.length}</p>
         </Card>
         <Card className="p-4">
-          <p className="section-label">Authorization cancelled</p>
+          <p className="section-label">Hold released</p>
           <p className="mt-2 text-3xl text-text">
             {authorizationCancelled.length}
           </p>
@@ -151,10 +149,10 @@ export default async function AdminPaymentsPage() {
                 </p>
                 <p className="mt-1 text-sm text-text-secondary">
                   {booking.status === "delivered"
-                    ? "Waiting on customer confirmation after delivery."
+                    ? "Waiting on customer confirmation or the auto-release window."
                     : booking.paymentStatus === "capture_failed"
                       ? "Payment capture failed after completion."
-                      : "Completed, but capture has not cleared yet."}
+                      : "Delivery is done, but release is still pending."}
                 </p>
               </div>
             ))}
@@ -181,13 +179,20 @@ export default async function AdminPaymentsPage() {
                 key={booking.id}
                 className="rounded-xl border border-border p-3"
               >
+                {(() => {
+                  const paymentSummary = getBookingPaymentStateSummary(booking);
+
+                  return (
+                    <>
                 <p className="text-sm font-medium text-text">
                   {booking.bookingReference}
                 </p>
                 <p className="mt-1 text-sm text-text-secondary">
-                  {booking.paymentStatus} ·{" "}
-                  {booking.paymentFailureReason ?? "No failure reason recorded"}
+                  {getBookingPaymentLifecycleLabel(booking)} · {paymentSummary.description}
                 </p>
+                    </>
+                  );
+                })()}
               </div>
             ))}
             {recentPaymentIssues.length === 0 ? (

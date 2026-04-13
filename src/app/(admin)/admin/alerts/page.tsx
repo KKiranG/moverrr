@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 
 import { ConciergeOfferForm } from "@/components/admin/concierge-offer-form";
+import { OperatorTaskActions } from "@/components/admin/operator-task-actions";
+import { TripFreshnessActions } from "@/components/admin/trip-freshness-actions";
 import { PageIntro } from "@/components/layout/page-intro";
 import { Card } from "@/components/ui/card";
 import { requirePageAdminUser } from "@/lib/auth";
+import { listConditionAdjustmentsForAdmin } from "@/lib/data/condition-adjustments";
 import { listAdminAlertQueueData } from "@/lib/data/admin";
 import { formatCurrency } from "@/lib/utils";
+import { getConditionAdjustmentReasonLabel } from "@/lib/validation/condition-adjustment";
 
 export const metadata: Metadata = {
   title: "Admin alerts",
@@ -13,7 +17,10 @@ export const metadata: Metadata = {
 
 export default async function AdminAlertsPage() {
   await requirePageAdminUser();
-  const data = await listAdminAlertQueueData();
+  const [data, conditionAdjustments] = await Promise.all([
+    listAdminAlertQueueData(),
+    listConditionAdjustmentsForAdmin({ status: "pending", limit: 10 }),
+  ]);
 
   return (
     <main id="main-content" className="page-shell">
@@ -38,6 +45,11 @@ export default async function AdminAlertsPage() {
           <p className="section-label">Freshness follow-up</p>
           <p className="mt-2 text-3xl text-text">{data.staleTrips.length}</p>
           <p className="mt-2 text-sm text-text-secondary">Trips close to go-time that still need manual freshness review.</p>
+        </Card>
+        <Card className="p-4">
+          <p className="section-label">Open adjustments</p>
+          <p className="mt-2 text-3xl text-text">{conditionAdjustments.length}</p>
+          <p className="mt-2 text-sm text-text-secondary">Structured misdescription paths waiting on customer response.</p>
         </Card>
       </div>
 
@@ -140,10 +152,39 @@ export default async function AdminAlertsPage() {
                     {task.priority} priority · {task.status}
                     {task.dueAt ? ` · due ${new Date(task.dueAt).toLocaleString("en-AU")}` : ""}
                   </p>
+                  <div className="mt-3">
+                    <OperatorTaskActions taskId={task.id} initialStatus={task.status} />
+                  </div>
                 </div>
               ))}
               {data.operatorTasks.length === 0 ? (
                 <p className="text-sm text-text-secondary">No open operator tasks right now.</p>
+              ) : null}
+            </div>
+          </Card>
+
+          <Card className="p-4">
+            <p className="section-label">Condition adjustments</p>
+            <h2 className="mt-1 text-lg text-text">Structured exception paths in flight</h2>
+            <div className="mt-4 grid gap-3">
+              {conditionAdjustments.map((adjustment) => (
+                <div key={adjustment.id} className="rounded-xl border border-border p-3">
+                  <p className="text-sm font-medium text-text">
+                    {getConditionAdjustmentReasonLabel(adjustment.reasonCode)}
+                  </p>
+                  <p className="mt-1 text-sm text-text-secondary">
+                    {formatCurrency(adjustment.amountCents)} · {adjustment.status}
+                  </p>
+                  <p className="mt-2 text-xs text-text-secondary">
+                    Booking {adjustment.bookingId.slice(0, 8).toUpperCase()} · due{" "}
+                    {new Date(adjustment.responseDeadlineAt).toLocaleString("en-AU")}
+                  </p>
+                </div>
+              ))}
+              {conditionAdjustments.length === 0 ? (
+                <p className="text-sm text-text-secondary">
+                  No structured condition adjustments are waiting right now.
+                </p>
               ) : null}
             </div>
           </Card>
@@ -154,9 +195,37 @@ export default async function AdminAlertsPage() {
             <div className="mt-4 grid gap-3">
               {data.staleTrips.map((trip) => (
                 <div key={trip.listingId} className="rounded-xl border border-border p-3">
-                  <p className="text-sm font-medium text-text">{trip.routeLabel}</p>
-                  <p className="mt-1 text-sm text-text-secondary">{trip.blocker}</p>
-                  <p className="mt-2 text-xs text-text-secondary">Trip date {trip.tripDate}</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-text">{trip.routeLabel}</p>
+                      <p className="mt-1 text-sm text-text-secondary">{trip.blocker}</p>
+                    </div>
+                    <p
+                      className={`text-xs uppercase tracking-[0.16em] ${
+                        trip.status === "suspended" ? "text-error" : "text-warning"
+                      }`}
+                    >
+                      {trip.status}
+                    </p>
+                  </div>
+                  <div className="mt-3 grid gap-2 text-xs text-text-secondary">
+                    <p>Trip date {trip.tripDate}</p>
+                    <p>
+                      Impacted live bookings {trip.bookingCount} · freshness misses {trip.freshnessMissCount}
+                    </p>
+                    {trip.suspensionReason ? (
+                      <p>Reason {trip.suspensionReason.replaceAll("_", " ")}</p>
+                    ) : null}
+                    {trip.lastActionAt ? (
+                      <p>
+                        Last ops action {trip.lastActionLabel?.replaceAll("_", " ") ?? "recorded"} on{" "}
+                        {new Date(trip.lastActionAt).toLocaleString("en-AU")}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="mt-3">
+                    <TripFreshnessActions tripId={trip.listingId} canUnsuspend={trip.status === "suspended"} />
+                  </div>
                 </div>
               ))}
               {data.staleTrips.length === 0 ? (

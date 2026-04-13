@@ -46,6 +46,7 @@ function toAdminActionEvent(row: AdminActionEventRow): AdminActionEvent {
   return {
     id: row.id,
     adminUserId: row.admin_user_id,
+    actorRole: row.actor_role,
     entityType: row.entity_type,
     entityId: row.entity_id,
     actionType: row.action_type,
@@ -79,7 +80,8 @@ export async function getAdminActorId(userId: string) {
 }
 
 export async function recordAdminActionEvent(params: {
-  adminUserId: string;
+  adminUserId?: string | null;
+  actorRole?: AdminActionEvent["actorRole"];
   entityType: AdminActionEvent["entityType"];
   entityId: string;
   actionType: string;
@@ -90,12 +92,17 @@ export async function recordAdminActionEvent(params: {
     return null;
   }
 
-  const adminUserId = await getAdminActorId(params.adminUserId);
+  const actorRole = params.actorRole ?? "admin";
+  const adminUserId =
+    actorRole === "admin" && params.adminUserId
+      ? await getAdminActorId(params.adminUserId)
+      : null;
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("admin_action_events")
     .insert({
       admin_user_id: adminUserId,
+      actor_role: actorRole,
       entity_type: params.entityType,
       entity_id: params.entityId,
       action_type: params.actionType,

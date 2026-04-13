@@ -8,11 +8,11 @@ import { getRouteAlertPrimaryAction } from "@/lib/alert-presenters";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import type { SavedSearch } from "@/types/customer";
+import type { RouteAlert } from "@/types/customer";
 import type { UnmatchedRequest } from "@/types/alert";
 import { formatDateTime } from "@/lib/utils";
 
-function AlertCard({ alert }: { alert: SavedSearch }) {
+function AlertCard({ alert }: { alert: RouteAlert }) {
   const router = useRouter();
   const [notifyEmail, setNotifyEmail] = useState(alert.notifyEmail);
   const [dateFrom, setDateFrom] = useState(alert.dateFrom ?? "");
@@ -32,7 +32,7 @@ function AlertCard({ alert }: { alert: SavedSearch }) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/saved-searches/${alert.id}`, {
+      const response = await fetch(`/api/alerts/${alert.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -48,7 +48,7 @@ function AlertCard({ alert }: { alert: SavedSearch }) {
         throw new Error(payload.error ?? "Unable to update this alert.");
       }
 
-      setIsActive(payload.savedSearch.isActive);
+      setIsActive(payload.alert.isActive);
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to update this alert.");
@@ -62,7 +62,7 @@ function AlertCard({ alert }: { alert: SavedSearch }) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/saved-searches/${alert.id}`, {
+      const response = await fetch(`/api/alerts/${alert.id}`, {
         method: "DELETE",
       });
       const payload = await response.json().catch(() => ({}));
@@ -216,7 +216,7 @@ export function AlertsManager({
   alerts,
   routeRequests,
 }: {
-  alerts: SavedSearch[];
+  alerts: RouteAlert[];
   routeRequests: UnmatchedRequest[];
 }) {
   const activeRouteRequests = routeRequests.filter((entry) => entry.status === "active");

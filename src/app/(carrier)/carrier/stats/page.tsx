@@ -9,7 +9,7 @@ import { getCarrierPerformanceStats } from "@/lib/data/bookings";
 import { formatCurrency } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "Carrier performance",
+  title: "Carrier history",
 };
 
 function formatMonthLabel(month: string) {
@@ -39,9 +39,9 @@ export default async function CarrierStatsPage() {
   return (
     <main id="main-content" className="page-shell">
       <PageIntro
-        eyebrow="Performance"
-        title="Track how your trips are performing"
-        description="A lightweight quality loop for improving acceptance, completion, and repeat-route performance."
+        eyebrow="History"
+        title="Review historical route quality signals"
+        description="Carrier home stays the primary work queue. This page is only for looking back at long-run patterns once your live work is already handled."
         actions={
           <Button asChild variant="secondary">
             <Link href="/carrier/dashboard">Back to carrier home</Link>
@@ -53,10 +53,10 @@ export default async function CarrierStatsPage() {
         <Card className="border-accent/20 bg-accent/5 p-4">
           <div className="space-y-4">
             <div>
-              <p className="section-label">Unlock your performance profile</p>
-              <h2 className="mt-1 text-lg text-text">Post a few trips to see your live stats</h2>
+              <p className="section-label">Historical view unlocks later</p>
+              <h2 className="mt-1 text-lg text-text">Finish a few bookings before this page becomes useful</h2>
               <p className="mt-2 text-sm text-text-secondary">
-                Carrier home will light up once your first completed bookings land.
+                Carrier home should stay the place you manage live work. This page only becomes useful once enough completed jobs exist to show real patterns.
               </p>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -69,7 +69,7 @@ export default async function CarrierStatsPage() {
               ].map((item) => (
                 <div key={item} className="rounded-xl border border-border bg-background p-3">
                   <p className="text-sm font-medium text-text">{item}</p>
-                  <p className="mt-1 text-sm text-text-secondary">Unlock after your first completed jobs.</p>
+                  <p className="mt-1 text-sm text-text-secondary">Appears once completed work creates enough history.</p>
                 </div>
               ))}
             </div>
@@ -107,7 +107,7 @@ export default async function CarrierStatsPage() {
           </div>
 
           <Card className="p-4">
-            <p className="section-label">Monthly earnings</p>
+              <p className="section-label">Historical earnings</p>
             <div className="mt-4 grid gap-3">
               {stats.monthlyEarnings.map((entry) => (
                 <div key={entry.month} className="rounded-xl border border-border p-3">
@@ -135,7 +135,7 @@ export default async function CarrierStatsPage() {
 
           <div className="grid gap-4 lg:grid-cols-2">
             <Card className="p-4">
-              <p className="section-label">Rating trend</p>
+              <p className="section-label">Rating history</p>
               <div className="mt-4 grid gap-3">
                 {stats.ratingTrend.map((entry) => (
                   <div key={entry.month} className="rounded-xl border border-border p-3">
@@ -152,7 +152,7 @@ export default async function CarrierStatsPage() {
             </Card>
 
             <Card className="p-4">
-              <p className="section-label">Top corridors</p>
+              <p className="section-label">Repeat corridors</p>
               <div className="mt-4 grid gap-3">
                 {stats.topCorridors.map(([corridor, count]) => (
                   <div key={corridor} className="rounded-xl border border-border p-3">
