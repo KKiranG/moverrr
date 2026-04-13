@@ -60,6 +60,79 @@ export default async function AdminDisputeDetailPage({
       <Card className="p-4">
         <div className="space-y-4">
           <div>
+            <p className="section-label">Booking context</p>
+            <h2 className="mt-1 text-lg text-text">Proof, timeline, and payment state</h2>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-xl border border-border p-3">
+              <p className="text-sm font-medium text-text">Booking status</p>
+              <p className="mt-1 text-sm text-text-secondary">
+                {(dispute.booking as { status?: string } | null)?.status ?? "Unavailable"}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border p-3">
+              <p className="text-sm font-medium text-text">Payment state</p>
+              <p className="mt-1 text-sm text-text-secondary">
+                {(dispute.booking as { payment_status?: string } | null)?.payment_status ?? "Unavailable"}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border p-3">
+              <p className="text-sm font-medium text-text">Proof packs</p>
+              <p className="mt-1 text-sm text-text-secondary">
+                {(dispute.booking as {
+                  pickup_proof_photo_url?: string | null;
+                  delivery_proof_photo_url?: string | null;
+                } | null)?.pickup_proof_photo_url
+                  ? "Pickup proof on file"
+                  : "Pickup proof missing"}
+                {" · "}
+                {(dispute.booking as {
+                  pickup_proof_photo_url?: string | null;
+                  delivery_proof_photo_url?: string | null;
+                } | null)?.delivery_proof_photo_url
+                  ? "Delivery proof on file"
+                  : "Delivery proof missing"}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border p-3">
+              <p className="text-sm font-medium text-text">Delivery timeline</p>
+              <p className="mt-1 text-sm text-text-secondary">
+                Delivered{" "}
+                {(dispute.booking as { delivered_at?: string | null } | null)?.delivered_at
+                  ? new Date(
+                      (dispute.booking as { delivered_at?: string | null }).delivered_at as string,
+                    ).toLocaleString("en-AU")
+                  : "not recorded"}
+                {" · "}
+                Customer confirmation{" "}
+                {(dispute.booking as { customer_confirmed_at?: string | null } | null)?.customer_confirmed_at
+                  ? "recorded"
+                  : "not recorded"}
+              </p>
+            </div>
+          </div>
+          <div className="rounded-xl border border-border p-3">
+            <p className="text-sm font-medium text-text">Recent timeline events</p>
+            <div className="mt-2 grid gap-2">
+              {((dispute.events as Array<{ event_type?: string; created_at?: string }> | null) ?? [])
+                .slice(0, 6)
+                .map((event, index) => (
+                  <div key={`${event.event_type ?? "event"}:${index}`} className="rounded-xl border border-border bg-black/[0.02] px-3 py-2 text-sm text-text-secondary dark:bg-white/[0.04]">
+                    <span className="text-text">{event.event_type ?? "Event"}</span>
+                    <span> · {event.created_at ? new Date(event.created_at).toLocaleString("en-AU") : "time unavailable"}</span>
+                  </div>
+                ))}
+              {(((dispute.events as Array<{ event_type?: string; created_at?: string }> | null) ?? []).length === 0) ? (
+                <p className="text-sm text-text-secondary">No booking timeline events were attached to this dispute record.</p>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <div className="space-y-4">
+          <div>
             <p className="section-label">Evidence gallery</p>
             <h2 className="mt-1 text-lg text-text">Photos and supporting uploads</h2>
           </div>

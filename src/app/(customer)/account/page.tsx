@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { ManagePaymentMethodButton } from "@/components/customer/manage-payment-method-button";
 import { PageIntro } from "@/components/layout/page-intro";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { requirePageSessionUser } from "@/lib/auth";
+import { getCustomerPaymentProfileForUser } from "@/lib/data/customer-payments";
 import { hasResendEnv } from "@/lib/env";
 
 export const metadata: Metadata = {
@@ -25,8 +27,18 @@ export default async function CustomerAccountPage({
   const params = searchParams ? await searchParams : {};
   const focus = getSearchValue(params.focus);
   const returnTo = getSearchValue(params.returnTo);
+  const paymentSetup = getSearchValue(params.paymentSetup);
+  const checkoutSessionId = getSearchValue(params.session_id);
   const focusPayments = focus === "payments";
   const supportEmail = "hello@moverrr.com.au";
+  const paymentProfile = await getCustomerPaymentProfileForUser({
+    userId: user.id,
+    checkoutSessionId:
+      paymentSetup === "success" && checkoutSessionId ? checkoutSessionId : undefined,
+  });
+  const paymentUpdatedAt = paymentProfile.defaultPaymentMethod?.updatedAt
+    ? new Date(paymentProfile.defaultPaymentMethod.updatedAt).toLocaleString("en-AU")
+    : null;
 
   return (
     <main id="main-content" className="page-shell">
@@ -54,17 +66,56 @@ export default async function CustomerAccountPage({
 
         <Card className={`p-4 ${focusPayments ? "border-accent bg-accent/5" : ""}`}>
           <p className="section-label">Payment preparation</p>
-          <h2 className="mt-1 text-lg text-text">Keep request progress safe before payment work</h2>
+          <h2 className="mt-1 text-lg text-text">Manage the saved card before a request turns live</h2>
           <div className="mt-3 grid gap-3 text-sm text-text-secondary">
+            {paymentSetup === "success" ? (
+              <p className="rounded-xl border border-success/20 bg-success/10 px-3 py-2 text-sm text-success">
+                Saved card updated. You can head back to the request flow without losing your move details.
+              </p>
+            ) : null}
+            {paymentSetup === "cancelled" ? (
+              <p className="rounded-xl border border-warning/20 bg-warning/10 px-3 py-2 text-sm text-text">
+                Secure card setup was cancelled. Your request draft is still safe if you want to try again.
+              </p>
+            ) : null}
+            {paymentProfile.stripeConfigured ? (
+              <div className="rounded-xl border border-border bg-background px-4 py-3">
+                <p className="text-sm font-medium text-text">Saved payment method</p>
+                {paymentProfile.defaultPaymentMethod ? (
+                  <div className="mt-2 grid gap-1 text-sm text-text-secondary">
+                    <p className="text-text">
+                      {paymentProfile.defaultPaymentMethod.brand.toUpperCase()} ending in{" "}
+                      {paymentProfile.defaultPaymentMethod.last4}
+                    </p>
+                    <p>
+                      moverrr can reuse this card when a request becomes a live booking and needs payment setup or recovery.
+                    </p>
+                    {paymentUpdatedAt ? <p>Last updated {paymentUpdatedAt}</p> : null}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-text-secondary">
+                    No saved card yet. Add one now so accepted bookings do not stall on payment recovery later.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p>
+                Stripe is not configured in this environment, so the secure add/update-card flow is hidden here.
+              </p>
+            )}
             <p>
-              moverrr already keeps your in-progress request draft on this device, so you can step
-              out to account and come back without losing the move details you entered.
+              moverrr keeps your in-progress request draft on this device, so you can step out to account and come back without losing the move details you entered.
             </p>
-            <p>
-              Customer self-serve card management is still being wired into the platform. Until
-              that lands, payment retries happen from booking records and support can help with any
-              card or billing issue that blocks an accepted booking.
-            </p>
+            {paymentProfile.stripeConfigured ? (
+              <ManagePaymentMethodButton
+                returnTo={returnTo || "/account?focus=payments"}
+                label={
+                  paymentProfile.hasSavedPaymentMethod
+                    ? "Replace saved card securely"
+                    : "Add a saved card securely"
+                }
+              />
+            ) : null}
             {returnTo ? (
               <Button asChild className="min-h-[44px] justify-start">
                 <Link href={returnTo}>Return to your saved request draft</Link>

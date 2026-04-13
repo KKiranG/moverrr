@@ -415,6 +415,11 @@ export interface Database {
           email: string;
           total_bookings: number;
           average_rating: number;
+          stripe_customer_id: string | null;
+          stripe_default_payment_method_id: string | null;
+          stripe_default_payment_method_brand: string | null;
+          stripe_default_payment_method_last4: string | null;
+          stripe_payment_method_updated_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -425,6 +430,11 @@ export interface Database {
           email: string;
           total_bookings?: number;
           average_rating?: number;
+          stripe_customer_id?: string | null;
+          stripe_default_payment_method_id?: string | null;
+          stripe_default_payment_method_brand?: string | null;
+          stripe_default_payment_method_last4?: string | null;
+          stripe_payment_method_updated_at?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["customers"]["Insert"]>;
@@ -883,6 +893,156 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["unmatched_requests"]["Insert"]>;
+      };
+      operator_tasks: {
+        Row: {
+          id: string;
+          task_type:
+            | "unmatched_sla_breach"
+            | "stale_trip_followup"
+            | "concierge_followup"
+            | "dispute_review"
+            | "verification_review"
+            | "payout_blocker";
+          status: "open" | "in_progress" | "resolved" | "cancelled";
+          priority: "urgent" | "high" | "normal" | "low";
+          unmatched_request_id: string | null;
+          listing_id: string | null;
+          booking_id: string | null;
+          dispute_id: string | null;
+          carrier_id: string | null;
+          assigned_admin_user_id: string | null;
+          corridor_key: string | null;
+          title: string;
+          blocker: string | null;
+          next_action: string | null;
+          due_at: string | null;
+          resolved_at: string | null;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          task_type:
+            | "unmatched_sla_breach"
+            | "stale_trip_followup"
+            | "concierge_followup"
+            | "dispute_review"
+            | "verification_review"
+            | "payout_blocker";
+          status?: "open" | "in_progress" | "resolved" | "cancelled";
+          priority?: "urgent" | "high" | "normal" | "low";
+          unmatched_request_id?: string | null;
+          listing_id?: string | null;
+          booking_id?: string | null;
+          dispute_id?: string | null;
+          carrier_id?: string | null;
+          assigned_admin_user_id?: string | null;
+          corridor_key?: string | null;
+          title: string;
+          blocker?: string | null;
+          next_action?: string | null;
+          due_at?: string | null;
+          resolved_at?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["operator_tasks"]["Insert"]>;
+      };
+      concierge_offers: {
+        Row: {
+          id: string;
+          unmatched_request_id: string;
+          carrier_id: string;
+          operator_task_id: string | null;
+          created_by_admin_user_id: string;
+          status: "draft" | "sent" | "accepted" | "declined" | "cancelled";
+          quoted_total_price_cents: number;
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          unmatched_request_id: string;
+          carrier_id: string;
+          operator_task_id?: string | null;
+          created_by_admin_user_id: string;
+          status?: "draft" | "sent" | "accepted" | "declined" | "cancelled";
+          quoted_total_price_cents: number;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["concierge_offers"]["Insert"]>;
+      };
+      admin_action_events: {
+        Row: {
+          id: string;
+          admin_user_id: string;
+          entity_type:
+            | "unmatched_request"
+            | "listing"
+            | "booking"
+            | "dispute"
+            | "carrier"
+            | "concierge_offer"
+            | "operator_task";
+          entity_id: string;
+          action_type: string;
+          reason: string | null;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          admin_user_id: string;
+          entity_type:
+            | "unmatched_request"
+            | "listing"
+            | "booking"
+            | "dispute"
+            | "carrier"
+            | "concierge_offer"
+            | "operator_task";
+          entity_id: string;
+          action_type: string;
+          reason?: string | null;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["admin_action_events"]["Insert"]>;
+      };
+      matched_alert_notifications: {
+        Row: {
+          id: string;
+          unmatched_request_id: string;
+          customer_id: string | null;
+          carrier_id: string | null;
+          channel: "email";
+          status: "pending" | "sent" | "failed" | "skipped";
+          dedupe_key: string;
+          sent_at: string | null;
+          failure_reason: string | null;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          unmatched_request_id: string;
+          customer_id?: string | null;
+          carrier_id?: string | null;
+          channel?: "email";
+          status?: "pending" | "sent" | "failed" | "skipped";
+          dedupe_key: string;
+          sent_at?: string | null;
+          failure_reason?: string | null;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["matched_alert_notifications"]["Insert"]>;
       };
       admin_users: {
         Row: {

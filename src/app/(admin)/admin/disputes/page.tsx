@@ -142,12 +142,26 @@ export default async function AdminDisputesPage() {
                 <p className="mt-1 text-sm text-text-secondary">
                   Owner {dispute.assigned_admin_user_id ?? "Unassigned"} · Age {ageHours}h
                 </p>
+                <p className="mt-1 text-sm text-text-secondary">
+                  Payment {(dispute.booking as { payment_status?: string } | null)?.payment_status ?? "pending"} ·
+                  Proof {(
+                    (dispute.booking as { pickup_proof_photo_url?: string | null; delivery_proof_photo_url?: string | null } | null)
+                      ?.pickup_proof_photo_url &&
+                    (dispute.booking as { pickup_proof_photo_url?: string | null; delivery_proof_photo_url?: string | null } | null)
+                      ?.delivery_proof_photo_url
+                  )
+                    ? " complete"
+                    : " incomplete"}
+                </p>
               </div>
               <div className="text-right">
                 <span className="text-sm text-text-secondary">
                   Booking{" "}
                   {(dispute.booking as { booking_reference?: string } | null)?.booking_reference ?? dispute.booking_id}
                 </span>
+                <p className="mt-1 text-xs text-text-secondary">
+                  {(dispute.booking as { status?: string } | null)?.status ?? "status unavailable"}
+                </p>
               </div>
             </div>
             <p className="mt-3 subtle-text">{dispute.description}</p>

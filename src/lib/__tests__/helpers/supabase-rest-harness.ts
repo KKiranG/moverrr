@@ -463,6 +463,11 @@ export function createCustomerRow(
     email: "customer@example.com",
     total_bookings: 1,
     average_rating: 5,
+    stripe_customer_id: null,
+    stripe_default_payment_method_id: null,
+    stripe_default_payment_method_brand: null,
+    stripe_default_payment_method_last4: null,
+    stripe_payment_method_updated_at: null,
     created_at: DEFAULT_TIMESTAMP,
     ...overrides,
   };

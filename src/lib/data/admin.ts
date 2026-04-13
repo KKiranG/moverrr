@@ -6,9 +6,12 @@ import { sendBookingTransactionalEmail } from "@/lib/notifications";
 import { captureAppError } from "@/lib/sentry";
 import { reverseBookingPayment } from "@/lib/stripe/payment-actions";
 import { updateBookingStatusForActor } from "@/lib/data/bookings";
+import { listConciergeOffersForUnmatchedRequest } from "@/lib/data/concierge-offers";
+import { listOperatorTasks, recordAdminActionEvent } from "@/lib/data/operator-tasks";
+import { ensureUnmatchedRequestSlaTasks } from "@/lib/data/unmatched-requests";
 import { sanitizeText } from "@/lib/utils";
 import { getTripPublishReadiness } from "@/lib/validation/trip";
-import type { ValidationMetric } from "@/types/admin";
+import type { ConciergeOfferRecord, MatchedAlertNotificationRecord, OperatorTask, ValidationMetric } from "@/types/admin";
 
 export async function getCorridorDemandSnapshot(params: {
   pickupSuburb: string;
@@ -58,7 +61,7 @@ export async function listAdminDisputes() {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("disputes")
-    .select("*, booking:bookings(booking_reference,total_price_cents,status)")
+    .select("*, booking:bookings(id,booking_reference,total_price_cents,status,payment_status,pickup_proof_photo_url,delivery_proof_photo_url,delivered_at,customer_confirmed_at), events:booking_events!booking_events_booking_id_fkey(event_type,created_at,metadata)")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -76,7 +79,7 @@ export async function getAdminDisputeById(disputeId: string) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("disputes")
-    .select("*, booking:bookings(booking_reference,total_price_cents,status)")
+    .select("*, booking:bookings(id,booking_reference,total_price_cents,status,payment_status,pickup_proof_photo_url,delivery_proof_photo_url,delivered_at,customer_confirmed_at), events:booking_events!booking_events_booking_id_fkey(event_type,created_at,metadata)")
     .eq("id", disputeId)
     .maybeSingle();
 
@@ -138,6 +141,18 @@ export async function resolveDispute(params: {
       status: params.status,
       bookingStatus: params.bookingStatus ?? null,
       reason: sanitizedResolutionNotes,
+    },
+  });
+
+  await recordAdminActionEvent({
+    adminUserId: params.resolvedBy,
+    entityType: "dispute",
+    entityId: params.disputeId,
+    actionType: `dispute_${params.status}`,
+    reason: sanitizedResolutionNotes,
+    metadata: {
+      bookingId: data.booking_id,
+      bookingStatus: params.bookingStatus ?? null,
     },
   });
 
@@ -550,5 +565,141 @@ export async function getFounderOpsCockpitData() {
         items: riskyBookings.slice(0, 5),
       },
     ],
+  };
+}
+
+export async function listAdminAlertQueueData() {
+  if (!hasSupabaseAdminEnv()) {
+    return {
+      sections: [] as Array<{
+        key: "active" | "notified" | "matched" | "expired";
+        title: string;
+        items: Array<{
+          id: string;
+          routeLabel: string;
+          itemLabel: string;
+          notifyEmail: string | null;
+          createdAt: string;
+          matchedAt: string | null;
+          moveRequestId: string | null;
+          carrierSuggestions: Array<{
+            carrierId: string;
+            businessName: string;
+            tripDate: string;
+            timeWindow: string;
+            basePriceCents: number;
+          }>;
+          conciergeOffers: ConciergeOfferRecord[];
+        }>;
+      }>,
+      operatorTasks: [] as OperatorTask[],
+      notificationLogs: [] as MatchedAlertNotificationRecord[],
+      staleTrips: [] as Array<{
+        listingId: string;
+        routeLabel: string;
+        tripDate: string;
+        blocker: string;
+      }>,
+    };
+  }
+
+  await ensureUnmatchedRequestSlaTasks();
+
+  const supabase = createAdminClient();
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const [{ data: unmatchedRequests }, operatorTasks, { data: notificationRows }, { data: staleListings }] =
+    await Promise.all([
+      supabase
+        .from("unmatched_requests")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100),
+      listOperatorTasks({ status: "open", limit: 50 }),
+      supabase
+        .from("matched_alert_notifications")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50),
+      supabase
+        .from("capacity_listings")
+        .select("id, origin_suburb, destination_suburb, trip_date, status")
+        .in("status", ["active", "booked_partial"])
+        .lte("trip_date", tomorrow)
+        .order("trip_date", { ascending: true })
+        .limit(30),
+    ]);
+
+  const items = await Promise.all(
+    (unmatchedRequests ?? []).map(async (row) => {
+      const [{ data: carrierSuggestions }, conciergeOffers] = await Promise.all([
+        supabase
+          .from("capacity_listings")
+          .select("carrier_id, trip_date, time_window, price_cents, carriers!inner(business_name)")
+          .eq("origin_suburb", row.pickup_suburb)
+          .eq("destination_suburb", row.dropoff_suburb)
+          .in("status", ["active", "booked_partial"])
+          .order("trip_date", { ascending: true })
+          .limit(5),
+        listConciergeOffersForUnmatchedRequest(row.id),
+      ]);
+
+      return {
+        id: row.id,
+        routeLabel: `${row.pickup_suburb} to ${row.dropoff_suburb}`,
+        itemLabel: row.item_description,
+        notifyEmail: row.notify_email,
+        createdAt: row.created_at,
+        matchedAt: row.matched_at,
+        moveRequestId: row.move_request_id,
+        status: row.status as "active" | "notified" | "matched" | "expired",
+        carrierSuggestions: (carrierSuggestions ?? []).map((listing) => ({
+          carrierId: listing.carrier_id,
+          businessName:
+            (listing.carriers as { business_name?: string } | null)?.business_name ?? "Carrier",
+          tripDate: listing.trip_date,
+          timeWindow: listing.time_window,
+          basePriceCents: listing.price_cents,
+        })),
+        conciergeOffers,
+      };
+    }),
+  );
+
+  const sections = [
+    { key: "active" as const, title: "Active route requests" },
+    { key: "notified" as const, title: "Notified and waiting" },
+    { key: "matched" as const, title: "Matched alerts" },
+    { key: "expired" as const, title: "Expired alerts" },
+  ].map((section) => ({
+    ...section,
+    items: items.filter((item) => item.status === section.key),
+  }));
+
+  return {
+    sections,
+    operatorTasks,
+    notificationLogs: (notificationRows ?? []).map((row) => ({
+      id: row.id,
+      unmatchedRequestId: row.unmatched_request_id,
+      customerId: row.customer_id,
+      carrierId: row.carrier_id,
+      channel: row.channel,
+      status: row.status,
+      dedupeKey: row.dedupe_key,
+      sentAt: row.sent_at,
+      failureReason: row.failure_reason,
+      metadata:
+        row.metadata && typeof row.metadata === "object"
+          ? (row.metadata as Record<string, unknown>)
+          : {},
+      createdAt: row.created_at,
+    })),
+    staleTrips: (staleListings ?? []).map((listing) => ({
+      listingId: listing.id,
+      routeLabel: `${listing.origin_suburb} to ${listing.destination_suburb}`,
+      tripDate: listing.trip_date,
+      blocker:
+        "Trip is inside the freshness window and needs a human follow-up check until the explicit freshness scheduler lands.",
+    })),
   };
 }

@@ -15,17 +15,20 @@ import { calculateBookingBreakdown } from "@/lib/pricing/breakdown";
 import { formatCurrency } from "@/lib/utils";
 import type { MoveRequest } from "@/types/move-request";
 import type { Trip } from "@/types/trip";
+import type { CustomerPaymentProfile } from "@/lib/data/customer-payments";
 
 export function BookingCheckoutPanel({
   trip,
   isAuthenticated,
   existingMoveRequest,
   initialOfferId,
+  customerPaymentProfile,
 }: {
   trip: Trip;
   isAuthenticated: boolean;
   existingMoveRequest?: MoveRequest | null;
   initialOfferId?: string | null;
+  customerPaymentProfile?: CustomerPaymentProfile | null;
 }) {
   const [needsStairs, setNeedsStairs] = useState(false);
   const [needsHelper, setNeedsHelper] = useState(false);
@@ -193,6 +196,7 @@ export function BookingCheckoutPanel({
         requestMode={requestMode}
         existingMoveRequest={existingMoveRequest}
         initialOfferId={initialOfferId}
+        customerPaymentProfile={customerPaymentProfile}
         onRequestModeChange={setRequestMode}
         onOptionsChange={({ needsStairs: nextNeedsStairs, needsHelper: nextNeedsHelper }) => {
           setNeedsStairs(nextNeedsStairs);

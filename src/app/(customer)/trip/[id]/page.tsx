@@ -9,6 +9,7 @@ import { ShareTripButton } from "@/components/trip/share-trip-button";
 import { Card } from "@/components/ui/card";
 import { TripDetailSummary } from "@/components/trip/trip-detail-summary";
 import { getOptionalSessionUser } from "@/lib/auth";
+import { getCustomerPaymentProfileForUser } from "@/lib/data/customer-payments";
 import { getMoveRequestByIdForCustomer } from "@/lib/data/move-requests";
 import { getCustomerProfileForUser } from "@/lib/data/profiles";
 import { getTripById } from "@/lib/data/trips";
@@ -76,6 +77,11 @@ export default async function TripDetailPage({
   const moveRequestId = getSearchValue(resolvedSearchParams.moveRequestId);
   const offerId = getSearchValue(resolvedSearchParams.offerId);
   const customer = user ? await getCustomerProfileForUser(user.id) : null;
+  const paymentProfile = user
+    ? await getCustomerPaymentProfileForUser({
+        userId: user.id,
+      })
+    : null;
   const existingMoveRequest =
     customer && moveRequestId ? await getMoveRequestByIdForCustomer(customer.id, moveRequestId) : null;
   const price = `$${Math.round(trip.priceCents / 100)}`;
@@ -131,6 +137,7 @@ export default async function TripDetailPage({
             isAuthenticated={Boolean(user)}
             existingMoveRequest={existingMoveRequest}
             initialOfferId={offerId || null}
+            customerPaymentProfile={paymentProfile}
           />
         ) : (
           <Card className="p-4">

@@ -15,6 +15,7 @@ export const SEARCH_PAGE_SIZE = 20;
 export const ADMIN_PAGE_SIZE = 25;
 export const SEARCH_REVALIDATE_SECONDS = 30;
 export const PENDING_BOOKING_HOLD_MS = 2 * 60 * 60 * 1000;
+export const DELIVERY_AUTO_RELEASE_HOURS = 72;
 export const DELIVERY_REMINDER_HOURS = [2, 24] as const;
 export const DOCUMENT_EXPIRY_REMINDER_DAYS = [30, 7] as const;
 
@@ -194,8 +195,8 @@ export const BOOKING_CANCELLATION_REASONS: Array<{
 
 export const BOOKING_PAYMENT_LABELS: Record<BookingPaymentStatus, string> = {
   pending: "Payment pending",
-  authorized: "Card authorized",
-  captured: "Payment captured",
+  authorized: "Funds held",
+  captured: "Paid through moverrr",
   capture_failed: "Capture failed",
   refunded: "Refunded",
   failed: "Payment failed",

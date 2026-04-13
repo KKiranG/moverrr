@@ -8,6 +8,73 @@
 
 ## 2026-04-13 — Vocabulary-layer alignment for alerts, fit labels, privacy, and customer-facing copy
 
+### `COMP-2026-04-13-15` — Customer saved-card flow, wizard progress, operator queue, and payout auto-release
+- Moved from active backlog:
+  - `B71`
+  - `B79`
+  - `A12`
+  - `A18`
+  - `A31`
+  - `A32`
+  - `A33`
+  - `A34`
+  - `A35`
+  - `A36`
+  - `A38`
+  - `A63`
+- When: `2026-04-13`
+- Where:
+  - `supabase/migrations/029_customer_payments_and_admin_ops.sql`
+  - `src/types/database.ts`
+  - `src/types/admin.ts`
+  - `src/lib/data/customer-payments.ts`
+  - `src/app/api/payments/payment-method-session/route.ts`
+  - `src/components/customer/manage-payment-method-button.tsx`
+  - `src/app/(customer)/account/page.tsx`
+  - `src/app/(customer)/trip/[id]/page.tsx`
+  - `src/components/booking/booking-checkout-panel.tsx`
+  - `src/components/booking/booking-form.tsx`
+  - `src/components/search/search-bar.tsx`
+  - `src/lib/data/operator-tasks.ts`
+  - `src/lib/data/concierge-offers.ts`
+  - `src/lib/data/unmatched-requests.ts`
+  - `src/lib/data/admin.ts`
+  - `src/app/(admin)/admin/alerts/page.tsx`
+  - `src/components/admin/concierge-offer-form.tsx`
+  - `src/app/api/concierge-offers/route.ts`
+  - `src/app/(admin)/admin/dashboard/page.tsx`
+  - `src/app/(admin)/admin/disputes/page.tsx`
+  - `src/app/(admin)/admin/disputes/[id]/page.tsx`
+  - `src/app/(admin)/admin/verification/page.tsx`
+  - `src/components/admin/verification-queue.tsx`
+  - `src/lib/data/carriers.ts`
+  - `src/app/api/admin/carriers/[id]/route.ts`
+  - `src/app/api/admin/carriers/[id]/verify/route.ts`
+  - `src/lib/constants.ts`
+  - `src/lib/booking-presenters.ts`
+  - `src/lib/data/bookings.ts`
+  - `src/app/api/cron/payout-auto-release/route.ts`
+  - `vercel.json`
+  - `todolist.md`
+  - `completed.md`
+- Why:
+  - The request-first product still had a fake payment-prep placeholder, no visible progress through the need declaration flow, and no dedicated operator queue for unmatched demand or matched-alert follow-up.
+  - The payout promise also still depended on manual closure rather than a predictable 72-hour release path when delivery proof existed and no dispute was open.
+- What changed:
+  - Added persisted customer Stripe identity fields and a hosted secure add/update-card flow that customers can open from both Account and the request review step.
+  - Synced saved-card summaries back into the customer profile and attached Stripe customer identity to booking payment-intent creation when available.
+  - Added visible step progress to the need declaration wizard and the request-confirmation flow so customers can see completion state instead of guessing.
+  - Added operator-task, concierge-offer, admin-action-event, and matched-alert-notification schema plus typed data helpers.
+  - Added a dedicated `/admin/alerts` queue for unmatched demand, stale-supply review, concierge offer creation, operator tasks, and matched-alert delivery logs.
+  - Upgraded dispute and verification admin surfaces so they show proof, payment, and activation-gate context more explicitly.
+  - Added a scheduled payout auto-release route that completes delivered bookings after 72 hours when no dispute is open.
+- Verification:
+  - `npm run check`
+  - `node --import tsx --input-type=module -e "import { POST } from './src/app/api/payments/payment-method-session/route.ts'; const response = await POST(new Request('http://localhost/api/payments/payment-method-session', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ returnTo: '/account?focus=payments' }) })); console.log(response.status, await response.text());"`
+  - `node --import tsx --input-type=module -e "import { GET } from './src/app/api/cron/payout-auto-release/route.ts'; const response = await GET(new Request('http://localhost/api/cron/payout-auto-release')); console.log(response.status, await response.text());"`
+  - `node --import tsx --input-type=module -e "import { getCustomerPaymentProfileForUser } from './src/lib/data/customer-payments.ts'; const profile = await getCustomerPaymentProfileForUser({ userId: 'missing-user' }); console.log(JSON.stringify(profile, null, 2));"`
+  - Note: live Stripe setup-session completion, saved-card sync, and auto-release over real bookings still depend on configured Supabase and Stripe credentials.
+
 ### `COMP-2026-04-13-14` — Returning-customer Home now surfaces recent move requests
 - Moved from active backlog:
   - `B81`

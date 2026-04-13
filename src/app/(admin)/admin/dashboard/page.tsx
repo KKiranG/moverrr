@@ -215,6 +215,48 @@ export default async function AdminDashboardPage() {
         />
       )}
 
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card className="p-4">
+          <p className="section-label">Demand queue</p>
+          <h2 className="mt-1 text-lg text-text">Alerts and unmatched demand</h2>
+          <p className="mt-2 text-sm text-text-secondary">
+            Open the founder queue for unmatched requests, concierge offers, and matched-alert delivery logs.
+          </p>
+          <Link
+            href="/admin/alerts"
+            className="mt-4 inline-flex min-h-[44px] items-center text-sm font-medium text-accent active:opacity-80"
+          >
+            Open alerts queue
+          </Link>
+        </Card>
+        <Card className="p-4">
+          <p className="section-label">Dispute review</p>
+          <h2 className="mt-1 text-lg text-text">Proof-backed dispute decisions</h2>
+          <p className="mt-2 text-sm text-text-secondary">
+            Review disputes against proof packs, booking timeline, and payment state instead of a shallow summary.
+          </p>
+          <Link
+            href="/admin/disputes"
+            className="mt-4 inline-flex min-h-[44px] items-center text-sm font-medium text-accent active:opacity-80"
+          >
+            Open disputes
+          </Link>
+        </Card>
+        <Card className="p-4">
+          <p className="section-label">Activation gate</p>
+          <h2 className="mt-1 text-lg text-text">Carrier go-live checklist</h2>
+          <p className="mt-2 text-sm text-text-secondary">
+            Work the verification queue against identity, vehicle, route rules, and payout readiness.
+          </p>
+          <Link
+            href="/admin/verification"
+            className="mt-4 inline-flex min-h-[44px] items-center text-sm font-medium text-accent active:opacity-80"
+          >
+            Open verification
+          </Link>
+        </Card>
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <ReviewQueue />
         <Card className="p-4">

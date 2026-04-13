@@ -25,12 +25,13 @@ export async function PATCH(
   { params }: { params: { id: string } },
 ) {
   try {
-    await requireAdminUser();
+    const user = await requireAdminUser();
     const payload = verifyCarrierSchema.parse(await request.json());
     const carrier = await verifyCarrier({
       carrierId: params.id,
       isApproved: payload.isApproved,
       notes: payload.notes,
+      adminUserId: user.id,
     });
 
     if (carrier.email) {

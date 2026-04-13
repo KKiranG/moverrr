@@ -18,8 +18,8 @@ export default async function AdminVerificationPage() {
     <main id="main-content" className="page-shell">
       <PageIntro
         eyebrow="Admin verification"
-        title="Review carrier trust signals"
-        description="Verification should be fast, manual, and consistent while supply quality matters more than scale."
+        title="Review the go-live checklist"
+        description="Approve carriers against the hard gate: identity, vehicle, route rules, and payout readiness. Optional trust boosters stay secondary."
       />
       <Card className="p-4">
         <p className="section-label">Ops note</p>

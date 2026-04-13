@@ -164,11 +164,6 @@
   - **Why:** The current payment state model is too shallow to express the trust and payout mechanics the blueprint depends on.
   - **Done when:** Payment state transitions map cleanly to the request, proof, dispute, and payout lifecycle in code and persisted records.
 
-- [ ] **A12** — Reshape payout release around valid proof plus a 72-hour dispute window
-  - **File(s):** `src/lib/data/bookings.ts`, `src/lib/status-machine.ts`, `src/components/booking/confirm-receipt-button.tsx`
-  - **What:** Update payout eligibility, auto-release timing, and blocked-state handling to match the 72-hour post-proof window in the governing blueprint.
-  - **Why:** The codebase still mixes older payout timing assumptions and needs one consistent trust contract.
-  - **Done when:** Payout release waits for customer confirmation or 72 hours after valid proof with no dispute, and blocks correctly on disputes.
 
 ### Pricing / Negotiation / Quoting
 
@@ -223,12 +218,6 @@
   - **Done when:** Customers have an Alerts page in primary navigation and no primary nav item says Saved searches.
 
 ### Admin / Operator Tooling
-
-- [ ] **A18** — Add an operator queue for unmatched demand and stale-supply follow-up
-  - **File(s):** `src/lib/data/admin.ts`, `new file: src/lib/data/operator-tasks.ts`, `new file: src/app/(admin)/admin/alerts/page.tsx`
-  - **What:** Create admin queries and a dedicated view for unmatched requests, stale trips, and manual follow-up actions.
-  - **Why:** Sparse-supply MVP depends on founder/operator intervention being visible, structured, and auditable.
-  - **Done when:** Admin can view and act on unmatched demand and stale-supply tasks in one operator queue.
 
 - [ ] **A19** — Enforce trip freshness suspension in matching eligibility
   - **File(s):** `src/lib/data/trips.ts`, `src/lib/matching/filter.ts`, `src/app/api/search/route.ts`
@@ -498,18 +487,6 @@
   - **Why:** The blueprint allows a compressed desktop input card but keeps the mobile-first interaction order fixed.
   - **Done when:** Desktop shows a compact but equivalent wizard entry and mobile still renders one primary decision per screen.
 
-- [ ] **B71** — Add visible progress indicators across the wizard and request-confirmation flow
-  - **File(s):** `src/components/search/search-bar.tsx`, `src/components/booking/booking-form.tsx`, `src/app/globals.css`
-  - **What:** Add progress indicators so customers know how many steps remain in the need declaration and request confirmation flow.
-  - **Why:** A more structured flow needs clear progress cues to reduce abandonment and keep trust high.
-  - **Done when:** Wizard and request-confirmation screens show a consistent step progress pattern.
-
-- [ ] **B79** — Add real customer payment-method management backed by stored Stripe customer identity
-  - **File(s):** `src/components/booking/booking-form.tsx`, `src/app/(customer)/account/page.tsx`, `src/lib/stripe/client.ts`, `src/types/database.ts`, `src/lib/data/bookings.ts`
-  - **What:** Persist a customer Stripe identity and add actual add/update payment-method flows from Account and request confirmation rather than just continuity links.
-  - **Why:** The request flow needs genuine self-serve payment-method management before acceptance; the current repo only supports safe return-to-request continuity and booking-level payment retries.
-  - **Done when:** Customers can open a real payment-method management flow from request confirmation or Account, update their card details, and return to the in-progress request safely.
-
 ### Carrier Experience
 
 - [ ] **B83** — Add a true under-30-second quick-post path
@@ -556,53 +533,11 @@
 
 ### Admin / Operator Tooling
 
-- [ ] **A31** — Create operator tasks when unmatched demand crosses SLA
-  - **File(s):** `new file: src/lib/data/operator-tasks.ts`, `src/lib/data/unmatched-requests.ts`, `src/lib/notifications.ts`
-  - **What:** Generate operator tasks when unmatched requests receive no carrier response within the configured SLA.
-  - **Why:** Sparse-supply MVP depends on founder follow-up when demand would otherwise go cold.
-  - **Done when:** SLA breaches on unmatched demand automatically produce operator tasks tied to the original request.
-
-- [ ] **A32** — Add an admin view for unmatched demand by status and corridor
-  - **File(s):** `new file: src/app/(admin)/admin/alerts/page.tsx`, `src/lib/data/admin.ts`, `src/lib/data/unmatched-requests.ts`
-  - **What:** Provide a dedicated admin page for active, notified, matched, and expired unmatched requests grouped by corridor.
-  - **Why:** Admin needs a clear view of demand capture if Alert the Network is a core operating loop.
-  - **Done when:** Admin can review unmatched demand by state, corridor, and urgency from a dedicated page.
-
-- [ ] **A33** — Add concierge-offer creation UI from unmatched demand
-  - **File(s):** `new file: src/app/(admin)/admin/alerts/page.tsx`, `new file: src/components/admin/concierge-offer-form.tsx`, `src/lib/data/admin.ts`
-  - **What:** Let operators create a concierge offer directly from an unmatched-demand item.
-  - **Why:** Founder manual fulfilment only works cleanly if the operator path is part of the product system.
-  - **Done when:** Admin can create a concierge offer from an unmatched request without off-platform notes or ad hoc DB edits.
-
-- [ ] **A34** — Add a stale-trip review surface for unconfirmed and auto-suspended supply
-  - **File(s):** `src/app/(admin)/admin/dashboard/page.tsx`, `src/lib/data/admin.ts`, `src/lib/data/trips.ts`
-  - **What:** Surface trips that missed 24-hour or 2-hour freshness checks and need admin review or carrier follow-up.
-  - **Why:** Freshness enforcement needs visible operational follow-up to preserve trust.
-  - **Done when:** Admin has a surface that lists stale or suspended trips with direct follow-up actions.
-
-- [ ] **A35** — Add a founder dispute review surface keyed to proof, timeline, and payment state
-  - **File(s):** `src/app/(admin)/admin/disputes/page.tsx`, `src/components/admin/resolve-dispute-actions.tsx`, `src/lib/data/bookings.ts`
-  - **What:** Align dispute review with proof records, structured events, and payout-block states instead of legacy booking summaries.
-  - **Why:** Founder-adjudicated disputes are part of MVP trust and need the right evidence model.
-  - **Done when:** Dispute review surfaces show the full request, proof, timeline, and payment context needed for a founder decision.
-
-- [ ] **A36** — Add an activation review checklist aligned to the blueprint gate
-  - **File(s):** `src/app/(admin)/admin/verification/page.tsx`, `src/components/admin/verification-queue.tsx`, `src/lib/data/carriers.ts`
-  - **What:** Replace generic verification review with an explicit gate checklist for identity, vehicle, rules, and payout readiness.
-  - **Why:** Verification is a hard gate in the blueprint and needs checklist-level enforcement rather than generic approval behavior.
-  - **Done when:** Admin verification review reflects the exact go-live gate fields required by the blueprint.
-
 - [ ] **A37** — Add audit events for concierge, suspension, dispute, and activation interventions
-  - **File(s):** `src/lib/data/admin.ts`, `new file: src/lib/data/operator-tasks.ts`, `src/types/admin.ts`
-  - **What:** Record structured admin actions for concierge fulfilment, trip suspensions, dispute decisions, and activation outcomes.
-  - **Why:** Founder-led manual operations need durable audit trails to keep product truth and ops history aligned.
-  - **Done when:** Key operator interventions write explicit admin audit events tied to the relevant entities.
-
-- [ ] **A38** — Add matched-alert notification logs for customer and carrier follow-up
-  - **File(s):** `src/lib/notifications.ts`, `src/lib/data/unmatched-requests.ts`, `src/lib/data/admin.ts`
-  - **What:** Persist notification-send state for alert-matched events so follow-up and dedupe work reliably.
-  - **Why:** Demand capture only works if matched alerts are delivered once and tracked cleanly.
-  - **Done when:** Alert-match sends can be audited, deduped, and reviewed from stored notification logs.
+  - **File(s):** `src/lib/data/admin.ts`, `new file: src/lib/data/operator-tasks.ts`, `src/types/admin.ts`, `src/app/(admin)/admin/alerts/page.tsx`
+  - **What:** Finish the remaining audit coverage by writing explicit admin action events for future stale-trip suspension and follow-up actions, not just concierge, dispute, and activation actions.
+  - **Why:** This batch added audit events for the manual actions that already exist, but stale-trip suspension still needs the same durable trail once that intervention is surfaced.
+  - **Done when:** Existing concierge, dispute, and activation actions already log events, and any new stale-trip suspension action also writes a durable admin audit event.
 
 ### Design System / UX Consistency
 
@@ -860,11 +795,6 @@
   - **Why:** The blueprint’s trust model depends on valid proof, not just uploaded images.
   - **Done when:** Proof uploads must contain required metadata before they can unlock the payout-pending state.
 
-- [ ] **A63** — Add the payout auto-release scheduler with dispute-window enforcement
-  - **File(s):** `new file: src/app/api/cron/payout-auto-release/route.ts`, `src/lib/data/bookings.ts`, `vercel.json`
-  - **What:** Schedule auto-release of payouts after valid proof and 72 hours without dispute.
-  - **Why:** The product’s payout promise is incomplete unless the auto-release path runs automatically and predictably.
-  - **Done when:** Auto-release runs on schedule, respects disputes, and updates payout state without manual intervention.
 
 - [ ] **A64** — Add 24-hour and 2-hour trip-freshness schedulers
   - **File(s):** `new file: src/app/api/cron/trip-freshness-checks/route.ts`, `src/lib/data/trips.ts`, `vercel.json`
