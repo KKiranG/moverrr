@@ -39,13 +39,13 @@ export function WaitlistForm({ from, to, when, what }: WaitlistFormProps) {
       const payload = await response.json();
 
       if (!response.ok) {
-        throw new Error(payload.error ?? "Unable to join the waitlist.");
+        throw new Error(payload.error ?? "Unable to save this route request.");
       }
 
-      setMessage("Thanks. We’ll use this route request in the launch waitlist and concierge flow.");
+      setMessage(payload.message ?? "Route request saved. We’ll use it for alerts and concierge follow-up.");
       setEmail("");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to join the waitlist.");
+      setError(caught instanceof Error ? caught.message : "Unable to save this route request.");
     } finally {
       setIsSubmitting(false);
     }
@@ -66,7 +66,7 @@ export function WaitlistForm({ from, to, when, what }: WaitlistFormProps) {
       {error ? <p className="text-sm text-error">{error}</p> : null}
       {message ? <p className="text-sm text-success">{message}</p> : null}
       <Button type="submit" variant="secondary" disabled={isSubmitting}>
-        {isSubmitting ? "Saving alert..." : "Get notified"}
+        {isSubmitting ? "Saving route request..." : "Request alerts"}
       </Button>
     </form>
   );

@@ -113,7 +113,10 @@ export default async function CarrierPayoutsPage() {
                     </p>
                   </div>
                   <p className="mt-3 text-sm text-text-secondary">{hold.explanation}</p>
-                  <p className="mt-2 text-sm text-text">{hold.nextAction}</p>
+                  <p className="mt-2 text-xs uppercase tracking-[0.16em] text-text-secondary">
+                    Clears when
+                  </p>
+                  <p className="mt-1 text-sm text-text">{hold.nextAction}</p>
                   {hold.ctaHref ? (
                     <Button asChild variant="secondary" className="mt-3">
                       <Link href={hold.ctaHref}>{hold.ctaLabel ?? "Open"}</Link>

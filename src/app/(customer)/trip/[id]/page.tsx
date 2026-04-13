@@ -98,8 +98,8 @@ export default async function TripDetailPage({
     <main id="main-content" className="page-shell pb-28 lg:pb-0">
       <PageIntro
         eyebrow="Trip detail"
-        title="Confirm fit, then send your request"
-        description="Check route fit, trust signals, and pricing first. Exact addresses and direct contact stay hidden until the booking is confirmed."
+        title="Check trust, route fit, and request options"
+        description="This page should answer whether the trip is safe, sensible, and worth requesting before you commit to a single carrier or Fast Match."
         actions={
           <Link href={backHref} className="inline-flex min-h-[44px] items-center text-sm font-medium text-accent">
             Back to results
@@ -113,7 +113,7 @@ export default async function TripDetailPage({
         savingsCents={savingsCents}
         savingsNote="Starting total includes moverrr charges. Add-ons can change the final total."
         isBookable={isBookable}
-        href={isBookable ? "#booking-form" : similarTripsHref}
+        href={isBookable ? "#request-options" : similarTripsHref}
       />
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">

@@ -169,6 +169,34 @@ export interface CarrierTodaySnapshot {
   payoutHolds: CarrierPayoutHold[];
 }
 
+export interface CarrierRequestCard {
+  id: string;
+  moveRequestId: string;
+  offerId: string;
+  listingId: string;
+  bookingId?: string | null;
+  requestGroupId?: string | null;
+  status: "pending" | "clarification_requested";
+  itemDescription: string;
+  itemCategory: string;
+  pickupAddress: string;
+  dropoffAddress: string;
+  pickupSuburb: string;
+  dropoffSuburb: string;
+  preferredDate?: string | null;
+  requestedTotalPriceCents: number;
+  carrierPayoutCents: number;
+  responseDeadlineAt: string;
+  fitLabel: string;
+  fitExplanation: string;
+  accessSummary: string;
+  photoCount: number;
+  photoUrls: string[];
+  clarificationReason?: string | null;
+  clarificationMessage?: string | null;
+  typeLabel: string;
+}
+
 export interface RecurringTemplateSuggestion {
   routeLabel: string;
   templateIds: string[];

@@ -1,7 +1,10 @@
 import { DEFAULT_DEDICATED_ESTIMATES } from "@/lib/constants";
 import type { Booking, BookingEvent, BookingPriceBreakdown } from "@/types/booking";
+import type { BookingRequest } from "@/types/booking-request";
 import type { CarrierProfile, Vehicle } from "@/types/carrier";
 import type { Database } from "@/types/database";
+import type { UnmatchedRequest } from "@/types/alert";
+import type { MoveRequest, Offer } from "@/types/move-request";
 import type { Trip, TripSearchResult } from "@/types/trip";
 
 type CarrierRow = Database["public"]["Tables"]["carriers"]["Row"];
@@ -9,6 +12,10 @@ type VehicleRow = Database["public"]["Tables"]["vehicles"]["Row"];
 type ListingRow = Database["public"]["Tables"]["capacity_listings"]["Row"];
 type BookingRow = Database["public"]["Tables"]["bookings"]["Row"];
 type BookingEventRow = Database["public"]["Tables"]["booking_events"]["Row"];
+type MoveRequestRow = Database["public"]["Tables"]["move_requests"]["Row"];
+type OfferRow = Database["public"]["Tables"]["offers"]["Row"];
+type BookingRequestRow = Database["public"]["Tables"]["booking_requests"]["Row"];
+type UnmatchedRequestRow = Database["public"]["Tables"]["unmatched_requests"]["Row"];
 
 export interface ListingJoinedRecord extends ListingRow {
   carrier: CarrierRow | null;
@@ -122,6 +129,12 @@ export function toTrip(record: ListingJoinedRecord): Trip {
 
   return {
     id: record.id,
+    flow: {
+      source: "legacy_listing",
+      listingId: record.id,
+      moveRequestId: null,
+      offerId: null,
+    },
     carrier,
     vehicle,
     route: {
@@ -221,6 +234,14 @@ export function toBooking(record: BookingJoinedRecord): Booking {
     id: record.id,
     bookingReference: record.booking_reference ?? record.id.slice(0, 8).toUpperCase(),
     listingId: record.listing_id,
+    flow: {
+      source: "legacy_booking",
+      listingId: record.listing_id,
+      moveRequestId: null,
+      offerId: null,
+      bookingRequestId: null,
+      requestGroupId: null,
+    },
     carrierId: record.carrier_id,
     customerId: record.customer_id,
     itemDescription: record.item_description,
@@ -258,6 +279,155 @@ export function toBooking(record: BookingJoinedRecord): Booking {
     createdAt: record.created_at,
     updatedAt: record.updated_at,
     events: (record.events ?? []).map(toBookingEvent),
+  };
+}
+
+export function toMoveRequest(row: MoveRequestRow): MoveRequest {
+  const pickup = parsePoint(row.pickup_point);
+  const dropoff = parsePoint(row.dropoff_point);
+
+  return {
+    id: row.id,
+    customerId: row.customer_id,
+    status: row.status,
+    item: {
+      description: row.item_description,
+      category: row.item_category,
+      sizeClass: row.item_size_class,
+      weightBand: row.item_weight_band,
+      dimensions: row.item_dimensions,
+      weightKg: row.item_weight_kg,
+      photoUrls: row.item_photo_urls ?? [],
+    },
+    route: {
+      pickupAddress: row.pickup_address,
+      pickupSuburb: row.pickup_suburb,
+      pickupPostcode: row.pickup_postcode,
+      pickupLatitude: pickup.latitude ?? 0,
+      pickupLongitude: pickup.longitude ?? 0,
+      pickupAccessNotes: row.pickup_access_notes,
+      dropoffAddress: row.dropoff_address,
+      dropoffSuburb: row.dropoff_suburb,
+      dropoffPostcode: row.dropoff_postcode,
+      dropoffLatitude: dropoff.latitude ?? 0,
+      dropoffLongitude: dropoff.longitude ?? 0,
+      dropoffAccessNotes: row.dropoff_access_notes,
+      preferredDate: row.preferred_date,
+      preferredTimeWindow: row.preferred_time_window,
+    },
+    needsStairs: row.needs_stairs,
+    needsHelper: row.needs_helper,
+    specialInstructions: row.special_instructions,
+    expiresAt: row.expires_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function toOffer(row: OfferRow): Offer {
+  const platformCommissionCents = Math.round(row.base_price_cents * 0.15);
+  const carrierPayoutCents =
+    row.base_price_cents + row.stairs_fee_cents + row.helper_fee_cents - platformCommissionCents;
+
+  return {
+    id: row.id,
+    moveRequestId: row.move_request_id,
+    listingId: row.listing_id,
+    carrierId: row.carrier_id,
+    status: row.status,
+    matchClass: row.match_class,
+    fitConfidence: row.fit_confidence,
+    matchExplanation: row.match_explanation,
+    rankingScore: row.ranking_score,
+    pickupDistanceKm: row.pickup_distance_km,
+    dropoffDistanceKm: row.dropoff_distance_km,
+    detourDistanceKm: row.detour_distance_km,
+    pricing: {
+      basePriceCents: row.base_price_cents,
+      stairsFeeCents: row.stairs_fee_cents,
+      helperFeeCents: row.helper_fee_cents,
+      bookingFeeCents: row.booking_fee_cents,
+      totalPriceCents: row.total_price_cents,
+      carrierPayoutCents,
+      platformCommissionCents,
+    },
+    expiresAt: row.expires_at,
+    createdAt: row.created_at,
+  };
+}
+
+export function toBookingRequest(row: BookingRequestRow): BookingRequest {
+  return {
+    id: row.id,
+    moveRequestId: row.move_request_id,
+    offerId: row.offer_id,
+    listingId: row.listing_id,
+    customerId: row.customer_id,
+    carrierId: row.carrier_id,
+    bookingId: row.booking_id,
+    requestGroupId: row.request_group_id,
+    status: row.status,
+    requestedTotalPriceCents: row.requested_total_price_cents,
+    responseDeadlineAt: row.response_deadline_at,
+    clarificationReason: row.clarification_reason,
+    clarificationMessage: row.clarification_message,
+    customerResponse: row.customer_response,
+    respondedAt: row.responded_at,
+    expiresAt: row.expires_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function toUnmatchedRequest(row: UnmatchedRequestRow): UnmatchedRequest {
+  const pickup = parsePoint(row.pickup_point);
+  const dropoff = parsePoint(row.dropoff_point);
+
+  return {
+    id: row.id,
+    customerId: row.customer_id,
+    moveRequestId: row.move_request_id,
+    status: row.status,
+    pickupSuburb: row.pickup_suburb,
+    pickupPostcode: row.pickup_postcode,
+    pickupLatitude: pickup.latitude ?? 0,
+    pickupLongitude: pickup.longitude ?? 0,
+    dropoffSuburb: row.dropoff_suburb,
+    dropoffPostcode: row.dropoff_postcode,
+    dropoffLatitude: dropoff.latitude ?? 0,
+    dropoffLongitude: dropoff.longitude ?? 0,
+    itemCategory: row.item_category,
+    itemDescription: row.item_description,
+    preferredDate: row.preferred_date,
+    notifyEmail: row.notify_email,
+    lastNotifiedAt: row.last_notified_at,
+    notificationCount: row.notification_count,
+    matchedAt: row.matched_at,
+    expiresAt: row.expires_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function toOfferTripFlowCompatibility(row: Pick<OfferRow, "id" | "listing_id" | "move_request_id">) {
+  return {
+    source: "offer" as const,
+    listingId: row.listing_id,
+    moveRequestId: row.move_request_id,
+    offerId: row.id,
+  };
+}
+
+export function toBookingRequestFlowCompatibility(
+  row: Pick<BookingRequestRow, "id" | "listing_id" | "move_request_id" | "offer_id" | "request_group_id">,
+) {
+  return {
+    source: "booking_request" as const,
+    listingId: row.listing_id,
+    moveRequestId: row.move_request_id,
+    offerId: row.offer_id,
+    bookingRequestId: row.id,
+    requestGroupId: row.request_group_id,
   };
 }
 

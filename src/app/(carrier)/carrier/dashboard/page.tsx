@@ -16,6 +16,7 @@ import {
   getCarrierTodaySnapshot,
   listCarrierBookings,
 } from "@/lib/data/bookings";
+import { listCarrierRequestCards } from "@/lib/data/booking-requests";
 import { listCarrierTemplates } from "@/lib/data/templates";
 import { listCarrierTrips } from "@/lib/data/trips";
 import { PageIntro } from "@/components/layout/page-intro";
@@ -41,10 +42,11 @@ function isTripActive(tripDate: string, status?: string | null) {
 }
 
 async function CarrierDashboardContent({ userId }: { userId: string }) {
-  const [carrier, carrierTrips, carrierBookings] = await Promise.all([
+  const [carrier, carrierTrips, carrierBookings, carrierRequestCards] = await Promise.all([
     getCarrierByUserId(userId),
     listCarrierTrips(userId),
     listCarrierBookings(userId),
+    listCarrierRequestCards(userId),
   ]);
 
   const [laneInsights, todaySnapshot, templates] = await Promise.all([
@@ -54,8 +56,7 @@ async function CarrierDashboardContent({ userId }: { userId: string }) {
   ]);
 
   const liveListings = carrierTrips.filter((trip) => isTripActive(trip.tripDate, trip.status)).length;
-  const pendingBookings = carrierBookings.filter((booking) => booking.status === "pending");
-  const awaitingDecision = carrierBookings.filter((booking) => booking.status === "pending").length;
+  const awaitingDecision = carrierRequestCards.length;
   const bookedWork = carrierBookings.filter((booking) =>
     ["confirmed", "picked_up", "in_transit", "delivered"].includes(booking.status),
   ).length;
@@ -90,7 +91,7 @@ async function CarrierDashboardContent({ userId }: { userId: string }) {
 
   return (
     <>
-      <PendingBookingsAlert bookings={pendingBookings} />
+      <PendingBookingsAlert requests={carrierRequestCards.slice(0, 3)} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link href="/carrier/trips" className="block min-h-11 active:opacity-95">
@@ -235,7 +236,10 @@ async function CarrierDashboardContent({ userId }: { userId: string }) {
                   </p>
                 </div>
                 <p className="mt-3 text-sm text-text-secondary">{hold.explanation}</p>
-                <p className="mt-2 text-sm text-text">{hold.nextAction}</p>
+                <p className="mt-2 text-xs uppercase tracking-[0.16em] text-text-secondary">
+                  Clears when
+                </p>
+                <p className="mt-1 text-sm text-text">{hold.nextAction}</p>
                 <Button asChild variant="secondary" className="mt-3">
                   <Link href={hold.ctaHref}>{hold.ctaLabel}</Link>
                 </Button>

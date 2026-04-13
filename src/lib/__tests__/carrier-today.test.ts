@@ -11,6 +11,13 @@ import type { Trip } from "@/types/trip";
 function createTrip(overrides: Partial<Trip> = {}): Trip {
   return {
     id: overrides.id ?? "trip-1",
+    flow:
+      overrides.flow ?? {
+        source: "legacy_listing",
+        listingId: overrides.id ?? "trip-1",
+        moveRequestId: null,
+        offerId: null,
+      },
     carrier: overrides.carrier ?? ({} as Trip["carrier"]),
     vehicle: overrides.vehicle ?? ({} as Trip["vehicle"]),
     route:
@@ -50,6 +57,15 @@ function createBooking(overrides: Partial<Booking> = {}): Booking {
     id: overrides.id ?? "booking-1",
     bookingReference: overrides.bookingReference ?? "MOV-001",
     listingId: overrides.listingId ?? "trip-1",
+    flow:
+      overrides.flow ?? {
+        source: "legacy_booking",
+        listingId: overrides.listingId ?? "trip-1",
+        moveRequestId: null,
+        offerId: null,
+        bookingRequestId: null,
+        requestGroupId: null,
+      },
     carrierId: overrides.carrierId ?? "carrier-1",
     customerId: overrides.customerId ?? "customer-1",
     itemDescription: overrides.itemDescription ?? "Desk",
