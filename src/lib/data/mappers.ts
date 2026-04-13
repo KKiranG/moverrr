@@ -1,4 +1,5 @@
 import { DEFAULT_DEDICATED_ESTIMATES } from "@/lib/constants";
+import { calculateBookingBreakdown } from "@/lib/pricing/breakdown";
 import type { Booking, BookingEvent, BookingPriceBreakdown } from "@/types/booking";
 import type { BookingRequest } from "@/types/booking-request";
 import type { CarrierProfile, Vehicle } from "@/types/carrier";
@@ -162,6 +163,14 @@ export function toTrip(record: ListingJoinedRecord): Trip {
     remainingCapacityPct: record.remaining_capacity_pct,
     isReturnTrip: record.is_return_trip,
     status: record.status,
+    checkin24hConfirmed: "checkin_24h_confirmed" in record ? record.checkin_24h_confirmed : undefined,
+    checkin24hRequestedAt:
+      "checkin_24h_requested_at" in record ? record.checkin_24h_requested_at : undefined,
+    checkin2hConfirmed: "checkin_2h_confirmed" in record ? record.checkin_2h_confirmed : undefined,
+    checkin2hRequestedAt:
+      "checkin_2h_requested_at" in record ? record.checkin_2h_requested_at : undefined,
+    freshnessSuspendedAt:
+      "freshness_suspended_at" in record ? record.freshness_suspended_at : undefined,
     publishAt: record.publish_at,
     rules: {
       accepts: [
@@ -203,14 +212,24 @@ export function toTripSearchResult(
 export function toBookingPriceBreakdown(
   row: BookingRow,
 ): BookingPriceBreakdown {
+  const derived = calculateBookingBreakdown({
+    basePriceCents: row.base_price_cents,
+    needsStairs: row.stairs_fee_cents > 0,
+    stairsExtraCents: row.stairs_fee_cents,
+    needsHelper: row.helper_fee_cents > 0,
+    helperExtraCents: row.helper_fee_cents,
+  });
+
   return {
     basePriceCents: row.base_price_cents,
     stairsFeeCents: row.stairs_fee_cents,
     helperFeeCents: row.helper_fee_cents,
-    bookingFeeCents: row.booking_fee_cents,
+    platformFeeCents: row.platform_commission_cents,
+    gstCents: "gst_cents" in row && typeof row.gst_cents === "number" ? row.gst_cents : derived.gstCents,
     totalPriceCents: row.total_price_cents,
     carrierPayoutCents: row.carrier_payout_cents,
     platformCommissionCents: row.platform_commission_cents,
+    bookingFeeCents: row.booking_fee_cents,
   };
 }
 
@@ -325,9 +344,13 @@ export function toMoveRequest(row: MoveRequestRow): MoveRequest {
 }
 
 export function toOffer(row: OfferRow): Offer {
-  const platformCommissionCents = Math.round(row.base_price_cents * 0.15);
-  const carrierPayoutCents =
-    row.base_price_cents + row.stairs_fee_cents + row.helper_fee_cents - platformCommissionCents;
+  const derived = calculateBookingBreakdown({
+    basePriceCents: row.base_price_cents,
+    needsStairs: row.stairs_fee_cents > 0,
+    stairsExtraCents: row.stairs_fee_cents,
+    needsHelper: row.helper_fee_cents > 0,
+    helperExtraCents: row.helper_fee_cents,
+  });
 
   return {
     id: row.id,
@@ -346,10 +369,18 @@ export function toOffer(row: OfferRow): Offer {
       basePriceCents: row.base_price_cents,
       stairsFeeCents: row.stairs_fee_cents,
       helperFeeCents: row.helper_fee_cents,
-      bookingFeeCents: row.booking_fee_cents,
+      platformFeeCents:
+        "platform_fee_cents" in row && typeof row.platform_fee_cents === "number"
+          ? row.platform_fee_cents
+          : derived.platformFeeCents,
+      gstCents:
+        "gst_cents" in row && typeof row.gst_cents === "number"
+          ? row.gst_cents
+          : derived.gstCents,
       totalPriceCents: row.total_price_cents,
-      carrierPayoutCents,
-      platformCommissionCents,
+      carrierPayoutCents: derived.carrierPayoutCents,
+      platformCommissionCents: derived.platformCommissionCents,
+      bookingFeeCents: row.booking_fee_cents,
     },
     expiresAt: row.expires_at,
     createdAt: row.created_at,

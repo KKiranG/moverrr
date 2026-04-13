@@ -67,6 +67,7 @@ test("warns on manual handling risk without helper or access notes", () => {
     [
       "manual_handling_access_notes_missing",
       "manual_handling_helper_recommended",
+      "manual_handling_photo_required",
     ],
   );
 
@@ -75,8 +76,11 @@ test("warns on manual handling risk without helper or access notes", () => {
     itemDescription: "Single-door fridge",
     itemWeightKg: 92,
     needsHelper: false,
+    itemPhotoUrls: ["proofs/fridge.jpg"],
+    pickupAccessNotes: "Loading bay out front.",
+    dropoffAccessNotes: "Ground-floor entry.",
   });
-  assert.equal(result.success, true);
+  assert.equal(result.success, false);
 });
 
 test("clears manual handling warnings when helper and access detail are provided", () => {
@@ -85,8 +89,11 @@ test("clears manual handling warnings when helper and access detail are provided
     itemDescription: "Single-door fridge",
     itemWeightKg: 92,
     needsHelper: true,
+    itemPhotoCount: 1,
     pickupAccessNotes: "One short stair at pickup.",
     dropoffAccessNotes: "Lift access with loading bay.",
+    itemSizeClass: "L",
+    itemWeightBand: "50_to_100kg",
   });
 
   assert.equal(issues.length, 0);

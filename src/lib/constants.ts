@@ -194,13 +194,13 @@ export const BOOKING_CANCELLATION_REASONS: Array<{
 ];
 
 export const BOOKING_PAYMENT_LABELS: Record<BookingPaymentStatus, string> = {
-  pending: "Payment pending",
+  pending: "Authorization pending",
   authorized: "Funds held",
-  captured: "Paid through moverrr",
+  captured: "Paid",
   capture_failed: "Capture failed",
   refunded: "Refunded",
   failed: "Payment failed",
-  authorization_cancelled: "Authorization cancelled",
+  authorization_cancelled: "Hold cancelled",
 };
 
 export const DISPUTE_CATEGORY_GUIDANCE = {

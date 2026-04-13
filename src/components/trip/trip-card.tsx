@@ -9,7 +9,7 @@ import {
   SPACE_SIZE_DESCRIPTIONS,
 } from "@/lib/constants";
 import {
-  getBaseCustomerPriceCents,
+  getTripAllInPriceSummary,
   getTripFitConfidenceLabel,
   getTripFitReviewExplanation,
   getTripNearbyDateExplanation,
@@ -175,13 +175,13 @@ export function TripCard({ trip, href, preferredDate }: TripCardProps) {
         <div className="text-right">
           <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">Customer total</p>
           <p className="text-2xl font-medium text-text">
-            {formatCurrency(getBaseCustomerPriceCents(trip))}
+            {formatCurrency(getTripAllInPriceSummary(trip.priceCents).totalPriceCents)}
           </p>
           <p className="mt-1 text-sm text-text-secondary">
-            Includes moverrr charges before any selected add-ons.
+            Includes platform fee and GST before any selected add-ons.
           </p>
           <p className="mt-1 text-xs text-text-secondary">
-            Optional stairs or helper add-ons only if you select them.
+            Optional stairs or helper add-ons are shown clearly before you send the request.
           </p>
           {trip.savingsPct > 5 ? (
             <>

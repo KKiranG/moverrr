@@ -174,9 +174,9 @@ export default async function CarrierPayoutsPage() {
                 </p>
               </div>
               <div className="mt-3 grid gap-1 text-sm text-text-secondary sm:grid-cols-2">
-                <p>Base earnings: {formatCurrency(entry.basePriceCents)}</p>
-                <p>Booking fee: {formatCurrency(entry.bookingFeeCents)}</p>
-                <p>15% commission: -{formatCurrency(entry.platformCommissionCents)}</p>
+                <p>Base route earnings: {formatCurrency(entry.basePriceCents)}</p>
+                <p>Platform fee paid by customer: {formatCurrency(entry.platformFeeCents)}</p>
+                <p>GST paid by customer: {formatCurrency(entry.gstCents)}</p>
                 <p className="font-medium text-text">Net payout: {formatCurrency(entry.carrierPayoutCents)}</p>
               </div>
             </div>

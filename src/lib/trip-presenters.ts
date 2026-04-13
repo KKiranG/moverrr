@@ -25,6 +25,16 @@ export function getBaseCustomerPriceCents(trip: Pick<Trip, "priceCents"> | numbe
   return getTripCustomerPricePreview(basePriceCents).totalPriceCents;
 }
 
+export function getTripAllInPriceSummary(basePriceCents: number) {
+  const preview = getTripCustomerPricePreview(basePriceCents);
+
+  return {
+    totalPriceCents: preview.totalPriceCents,
+    platformFeeCents: preview.platformFeeCents,
+    gstCents: preview.gstCents,
+  };
+}
+
 export function getTripTimingBadges(
   trip: Pick<Trip, "tripDate" | "timeWindow" | "isReturnTrip">,
 ) {

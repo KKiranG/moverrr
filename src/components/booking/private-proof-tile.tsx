@@ -8,11 +8,17 @@ export async function PrivateProofTile({
   path,
   title,
   subtitle,
+  metadata,
 }: {
   bucket: PrivateBucketName;
   path: string | null | undefined;
   title: string;
   subtitle?: string;
+  metadata?: {
+    capturedAt?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+  };
 }) {
   if (!path) {
     return null;
@@ -46,6 +52,16 @@ export async function PrivateProofTile({
         <div>
           <p className="text-sm font-medium text-text">{title}</p>
           {subtitle ? <p className="text-sm text-text-secondary">{subtitle}</p> : null}
+          {metadata?.capturedAt ? (
+            <p className="text-xs text-text-secondary">
+              Proof captured {new Date(metadata.capturedAt).toLocaleString("en-AU")}
+            </p>
+          ) : null}
+          {typeof metadata?.latitude === "number" && typeof metadata?.longitude === "number" ? (
+            <p className="text-xs text-text-secondary">
+              GPS {metadata.latitude.toFixed(5)}, {metadata.longitude.toFixed(5)}
+            </p>
+          ) : null}
         </div>
         <p className="text-xs text-text-secondary">
           {asset.isHeicLike

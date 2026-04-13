@@ -10,8 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { BOOKING_CANCELLATION_REASONS } from "@/lib/constants";
 import { ALLOWED_BOOKING_TRANSITIONS } from "@/lib/status-machine";
 import type {
+  BookingDeliveryProof,
   BookingExceptionCode,
   BookingProofCondition,
+  BookingPickupProof,
   BookingStatus,
 } from "@/types/booking";
 
@@ -91,6 +93,28 @@ export function StatusUpdateActions({
     return uploadFile(proofFile);
   }
 
+  async function captureProofLocation() {
+    if (!("geolocation" in navigator)) {
+      throw new Error("Location is required for proof capture on this device.");
+    }
+
+    return new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) =>
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          }),
+        () => reject(new Error("Allow location access so moverrr can timestamp and verify proof.")),
+        {
+          enableHighAccuracy: true,
+          timeout: 10_000,
+          maximumAge: 0,
+        },
+      );
+    });
+  }
+
   async function uploadExceptionFiles() {
     if (exceptionFiles.length === 0) {
       return [] as string[];
@@ -122,22 +146,8 @@ export function StatusUpdateActions({
         throw new Error("Add a short cancellation reason for audit history.");
       }
 
-      let pickupProof:
-        | {
-            photoUrl: string;
-            itemCount: number;
-            condition: BookingProofCondition;
-            handoffConfirmed: true;
-          }
-        | undefined;
-      let deliveryProof:
-        | {
-            photoUrl: string;
-            recipientConfirmed: true;
-            exceptionCode?: BookingExceptionCode;
-            exceptionNote?: string;
-          }
-        | undefined;
+      let pickupProof: BookingPickupProof | undefined;
+      let deliveryProof: BookingDeliveryProof | undefined;
 
       if (nextStatus === "picked_up") {
         if (!pickupHandoffConfirmed) {
@@ -145,12 +155,16 @@ export function StatusUpdateActions({
         }
 
         const uploadedProof = await uploadProofIfNeeded();
+        const location = await captureProofLocation();
 
         pickupProof = {
           photoUrl: uploadedProof ?? "",
           itemCount: Number(pickupItemCount),
           condition: pickupCondition,
           handoffConfirmed: true,
+          capturedAt: new Date().toISOString(),
+          latitude: location.latitude,
+          longitude: location.longitude,
         };
       }
 
@@ -164,6 +178,7 @@ export function StatusUpdateActions({
         }
 
         const uploadedProof = await uploadProofIfNeeded();
+        const location = await captureProofLocation();
 
         deliveryProof = {
           photoUrl: uploadedProof ?? "",
@@ -171,6 +186,9 @@ export function StatusUpdateActions({
           exceptionCode: deliveryExceptionCode,
           exceptionNote:
             deliveryExceptionCode !== "none" ? deliveryExceptionNote.trim() : undefined,
+          capturedAt: new Date().toISOString(),
+          latitude: location.latitude,
+          longitude: location.longitude,
         };
       }
 

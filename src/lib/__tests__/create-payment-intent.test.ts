@@ -14,7 +14,7 @@ test("createPaymentIntentForBooking recovers from 'no such payment_intent' error
     bookingReference: "REF-123",
     listingId: "listing-789",
     stripePaymentIntentId: "pi_invalid_123",
-    pricing: { totalPriceCents: 10000, basePriceCents: 10000, platformFeeCents: 0 }
+    pricing: { totalPriceCents: 10000, basePriceCents: 10000, platformFeeCents: 0, gstCents: 0, carrierPayoutCents: 10000, platformCommissionCents: 0 }
   };
 
   const mockStripe = {
@@ -92,7 +92,7 @@ test("createPaymentIntentForBooking throws error if stripe.paymentIntents.retrie
     bookingReference: "REF-123",
     listingId: "listing-789",
     stripePaymentIntentId: "pi_valid_123",
-    pricing: { totalPriceCents: 10000, basePriceCents: 10000, platformFeeCents: 0 }
+    pricing: { totalPriceCents: 10000, basePriceCents: 10000, platformFeeCents: 0, gstCents: 0, carrierPayoutCents: 10000, platformCommissionCents: 0 }
   };
 
   const mockStripe = {

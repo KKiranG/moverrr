@@ -3,16 +3,15 @@
 ## Model
 
 - Carrier sets base price per accepted item category/tier during trip posting
-- Customer pays base + applicable add-ons (stairs, helper) + detour adjustment (if applicable) + platform fee + GST
-- Platform keeps platform fee (15% of base) + booking fee; GST is collected and remitted separately
+- Customer pays base + applicable add-ons (stairs, helper) + platform fee + GST
+- Platform keeps the platform fee (15% of base); GST is collected and remitted separately
 
 ## Pricing formula
 
 ```
 base         = carrier_pricing_table[item_category] × quantity
 add_ons      = stairs_surcharge + helper_surcharge (if applicable)
-detour_adj   = carrier_detour_rate × max(0, detour_km - included_tolerance) (if detour rate is set)
-subtotal     = base + add_ons + detour_adj
+subtotal     = base + add_ons
 platform_fee = base × 15%   (applied to base only — see invariant below)
 gst          = (subtotal + platform_fee) × 0.10
 total        = subtotal + platform_fee + gst
@@ -22,20 +21,19 @@ carrier_payout = subtotal  (platform fee and GST never included in payout)
 ## Critical invariant
 
 **Commission (platform fee) applies to `basePriceCents` only.**
-It does not apply to stairs fees, helper fees, or detour adjustments.
+It does not apply to stairs fees or helper fees.
 
 Primary files:
 - `src/lib/pricing/breakdown.ts`
 - `src/lib/__tests__/breakdown.test.ts`
 
-> **Pending clarification:** The governing blueprint describes `platform_fee = subtotal × 15%` (i.e., including add-ons). The existing codebase applies 15% to `basePriceCents` only. Do not change the existing invariant without an explicit decision. The formula above preserves the current code behaviour.
+> **Detour pricing guard:** Matching may estimate detour fit, but automatic detour-cost pricing is blocked until the founder makes an explicit decision. Do not silently roll detour charges into the customer total.
 
 ## Add-on rates
 
 Carrier-set, predefined amounts (not free text):
-- Stairs surcharge (per flight, e.g., $10/flight at pickup, $10/flight at drop-off)
-- Helper/2-person surcharge (flat rate, e.g., $30)
-- Detour rate (per km beyond included corridor tolerance, e.g., $3/km — optional; used by pricing engine)
+- Stairs surcharge (predefined structured amount)
+- Helper/2-person surcharge (predefined flat amount)
 
 ## Customer-visible rules
 
@@ -51,7 +49,7 @@ Total all-in price must appear on every result card. No "starting from." No pric
 
 ## Price updates during booking
 
-If the customer changes access conditions during booking confirmation (e.g., corrects from "no stairs" to "2 flights"), the price updates in real time before final submission. The customer always sees the final total before authorising payment.
+If the customer changes access conditions during booking confirmation, the price updates in real time before final submission. The customer always sees the final total before authorising payment.
 
 ## Condition Adjustment (Structured Exception Path)
 
@@ -80,6 +78,7 @@ The platform shows suggested pricing ranges based on route distance and item cat
 - surge pricing
 - opaque algorithmic pricing
 - hidden fees
+- automatic detour-cost rollout without an explicit founder decision
 - hourly rates displayed alongside flat rates (ambiguity creator)
 - freeform pricing text fields
 - customer budget bidding

@@ -158,32 +158,7 @@
   - **Why:** The blueprint allows realism for misdescribed conditions without opening counterproposal loops.
   - **Done when:** The product blocks a second adjustment round and only allows platform-defined adjustment reasons and amounts.
 
-- [ ] **A11** — Reshape payment lifecycle around authorization, capture, hold, release, and paid states
-  - **File(s):** `src/lib/data/bookings.ts`, `src/lib/stripe/payment-actions.ts`, `src/types/booking.ts`
-  - **What:** Replace the simplified payment model with blueprint-aligned request authorization, capture on accept, held funds, pending confirmation, release, and paid states.
-  - **Why:** The current payment state model is too shallow to express the trust and payout mechanics the blueprint depends on.
-  - **Done when:** Payment state transitions map cleanly to the request, proof, dispute, and payout lifecycle in code and persisted records.
-
-
 ### Pricing / Negotiation / Quoting
-
-- [ ] **A13** — Replace the flat booking-fee pricing invariant with the blueprint pricing contract
-  - **File(s):** `src/lib/pricing/breakdown.ts`, `src/lib/__tests__/breakdown.test.ts`, `.agent-skills/PRICING.md`
-  - **What:** Rewrite pricing helpers and tests so customer totals are built from base price, structured add-ons, platform fee, and GST instead of a flat `$5` fee.
-  - **Why:** The governing blueprint supersedes the older booking-fee model and the backlog must treat that as a hard correction.
-  - **Done when:** Pricing code, tests, and local guidance all describe the same blueprint-aligned customer total and carrier payout math.
-
-- [ ] **A14** — Flag detour-pricing ambiguity and block automatic detour-cost implementation pending founder decision
-  - **File(s):** `src/lib/pricing/breakdown.ts`, `.agent-skills/PRICING.md`, `README.md`
-  - **What:** Add an explicit backlog and code-contract guard that allows detour estimation for matching but prevents silent rollout of automatic detour pricing.
-  - **Why:** The blueprint is internally inconsistent on detour pricing and this needs an explicit decision instead of accidental implementation drift.
-  - **Done when:** Pricing code paths and docs treat detour pricing as blocked behind an explicit founder decision rather than assumed behavior.
-
-- [ ] **A15** — Enforce total all-in pricing on every offer card
-  - **File(s):** `src/components/trip/trip-card.tsx`, `src/components/trip/trip-detail-summary.tsx`, `src/components/booking/price-breakdown.tsx`
-  - **What:** Make offer cards, detail pages, and request confirmation surfaces render the same total customer price contract, including required fees and GST.
-  - **Why:** Price transparency on first impression is a non-negotiable product rule in the blueprint.
-  - **Done when:** Offer cards, detail pages, and confirmation steps all render the same total price without "starting from" or base-only shortcuts.
 
 - [ ] **A16** — Separate hard activation gates from optional trust boosters in trust displays
   - **File(s):** `src/app/(carrier)/carrier/onboarding/page.tsx`, `src/components/carrier/carrier-trust-panel.tsx`, `src/types/carrier.ts`
@@ -788,19 +763,6 @@
   - **What:** Block any path that would drop a customer into a dead-end empty state or legacy waitlist behavior during the transition.
   - **Why:** Zero-match continuation is one of the most important product corrections in the realignment.
   - **Done when:** Search fallback always routes into near matches, nearby dates, or alert capture even during mixed-model rollout.
-
-- [ ] **A62** — Validate proof records for GPS and timestamp before payout-pending state
-  - **File(s):** `src/lib/data/bookings.ts`, `src/types/booking.ts`, `src/components/booking/private-proof-tile.tsx`
-  - **What:** Enforce proof metadata requirements before the system can move into payout-pending confirmation.
-  - **Why:** The blueprint’s trust model depends on valid proof, not just uploaded images.
-  - **Done when:** Proof uploads must contain required metadata before they can unlock the payout-pending state.
-
-
-- [ ] **A64** — Add 24-hour and 2-hour trip-freshness schedulers
-  - **File(s):** `new file: src/app/api/cron/trip-freshness-checks/route.ts`, `src/lib/data/trips.ts`, `vercel.json`
-  - **What:** Schedule freshness reminders, deprioritisation, and suspension actions around the blueprint check-in rules.
-  - **Why:** Freshness enforcement is mandatory and cannot depend on page loads or manual review alone.
-  - **Done when:** The platform sends check-ins and applies deprioritisation or suspension based on missed responses.
 
 ### Technical Debt / Cleanup
 

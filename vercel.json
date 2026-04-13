@@ -2,6 +2,10 @@
   "framework": "nextjs",
   "crons": [
     {
+      "path": "/api/cron/trip-freshness-checks",
+      "schedule": "0 * * * *"
+    },
+    {
       "path": "/api/cron/payout-auto-release",
       "schedule": "0 * * * *"
     }
