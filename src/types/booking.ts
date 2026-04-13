@@ -21,6 +21,7 @@ export interface BookingPriceBreakdown {
   basePriceCents: number;
   stairsFeeCents: number;
   helperFeeCents: number;
+  adjustmentFeeCents: number;
   platformFeeCents: number;
   gstCents: number;
   totalPriceCents: number;
@@ -53,7 +54,8 @@ export type BookingCancellationReasonCode =
   | "customer_changed_plans"
   | "payment_failed"
   | "no_response"
-  | "safety_concern";
+  | "safety_concern"
+  | "misdescription";
 
 export type BookingFlowSource = "legacy_booking" | "booking_request";
 
@@ -133,7 +135,6 @@ export interface Booking {
   carrierId: string;
   customerId: string;
   carrierBusinessName?: string;
-  carrierPhone?: string;
   itemDescription: string;
   itemCategory: ItemCategory;
   itemSizeClass?: BookingItemSizeClass | null;

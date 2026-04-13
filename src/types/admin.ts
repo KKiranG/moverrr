@@ -52,7 +52,8 @@ export interface ConciergeOfferRecord {
 
 export interface AdminActionEvent {
   id: string;
-  adminUserId: string;
+  adminUserId?: string | null;
+  actorRole?: "admin" | "system";
   entityType:
     | "unmatched_request"
     | "listing"
@@ -60,7 +61,10 @@ export interface AdminActionEvent {
     | "dispute"
     | "carrier"
     | "concierge_offer"
-    | "operator_task";
+    | "operator_task"
+    | "booking_request"
+    | "request_group"
+    | "condition_adjustment";
   entityId: string;
   actionType: string;
   reason?: string | null;

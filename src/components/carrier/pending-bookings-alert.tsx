@@ -10,6 +10,14 @@ import { StatusBadge } from "@/components/ui/badge";
 import type { CarrierRequestCard } from "@/types/carrier";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 
+const declineOptions = [
+  { value: "route_not_viable", label: "Route no longer viable" },
+  { value: "item_not_supported", label: "Item not supported" },
+  { value: "access_too_complex", label: "Access too complex" },
+  { value: "timing_not_workable", label: "Timing not workable" },
+  { value: "capacity_no_longer_available", label: "Capacity no longer available" },
+] as const;
+
 function formatRemainingTime(value: string | null | undefined, now: number) {
   if (!value) {
     return "No expiry time set";
@@ -47,6 +55,7 @@ export function PendingBookingsAlert({
   const [now, setNow] = useState(() => Date.now());
   const [busyId, setBusyId] = useState<string | null>(null);
   const [clarifyingRequestId, setClarifyingRequestId] = useState<string | null>(null);
+  const [declineReasons, setDeclineReasons] = useState<Record<string, string>>({});
   const openRequests = useMemo(
     () => requests.filter((request) => ["pending", "clarification_requested"].includes(request.status)),
     [requests],
@@ -70,6 +79,10 @@ export function PendingBookingsAlert({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action,
+          declineReason:
+            action === "decline"
+              ? declineReasons[request.id] ?? declineOptions[0].value
+              : undefined,
           clarificationReason: clarification?.clarificationReason,
           clarificationMessage: clarification?.clarificationMessage,
         }),
@@ -126,6 +139,11 @@ export function PendingBookingsAlert({
                     Respond in {formatRemainingTime(request.responseDeadlineAt, now)} · Deadline{" "}
                     {formatDateTime(request.responseDeadlineAt)}
                   </p>
+                  {request.urgencyLabel ? (
+                    <p className="text-xs uppercase tracking-[0.16em] text-warning">
+                      {request.urgencyLabel}
+                    </p>
+                  ) : null}
                   <p className="text-xs text-text-secondary">{request.fitExplanation}</p>
                   <p className="text-xs text-text-secondary">
                     {request.accessSummary} · {request.photoCount} photo{request.photoCount === 1 ? "" : "s"}
@@ -187,6 +205,27 @@ export function PendingBookingsAlert({
                   >
                     Request clarification
                   </Button>
+                  <label className="grid gap-1">
+                    <span className="text-xs uppercase tracking-[0.16em] text-text-secondary">
+                      Decline reason
+                    </span>
+                    <select
+                      className="h-11 rounded-xl border border-border bg-surface px-3 text-sm text-text"
+                      value={declineReasons[request.id] ?? declineOptions[0].value}
+                      onChange={(event) =>
+                        setDeclineReasons((current) => ({
+                          ...current,
+                          [request.id]: event.target.value,
+                        }))
+                      }
+                    >
+                      {declineOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <Button
                     type="button"
                     variant="ghost"

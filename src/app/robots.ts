@@ -22,7 +22,7 @@ export default function robots(): MetadataRoute.Robots {
           "/carrier/stats",
           "/carrier/templates",
           "/carrier/trips",
-          "/saved-searches/",
+          "/alerts/",
         ],
       },
     ],

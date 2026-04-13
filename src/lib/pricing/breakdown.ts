@@ -9,6 +9,7 @@ export function calculateBookingBreakdown(params: {
   stairsExtraCents: number;
   needsHelper: boolean;
   helperExtraCents: number;
+  adjustmentFeeCents?: number;
   detourAdjustmentCents?: number;
 }): BookingPriceBreakdown {
   if ((params.detourAdjustmentCents ?? 0) > 0) {
@@ -19,7 +20,9 @@ export function calculateBookingBreakdown(params: {
 
   const stairsFeeCents = params.needsStairs ? params.stairsExtraCents : 0;
   const helperFeeCents = params.needsHelper ? params.helperExtraCents : 0;
-  const subtotalCents = params.basePriceCents + stairsFeeCents + helperFeeCents;
+  const adjustmentFeeCents = Math.max(0, params.adjustmentFeeCents ?? 0);
+  const subtotalCents =
+    params.basePriceCents + stairsFeeCents + helperFeeCents + adjustmentFeeCents;
   const platformFeeCents = Math.round(
     params.basePriceCents * PLATFORM_COMMISSION_RATE,
   );
@@ -29,6 +32,7 @@ export function calculateBookingBreakdown(params: {
     basePriceCents: params.basePriceCents,
     stairsFeeCents,
     helperFeeCents,
+    adjustmentFeeCents,
     platformFeeCents,
     gstCents,
     totalPriceCents: subtotalCents + platformFeeCents + gstCents,

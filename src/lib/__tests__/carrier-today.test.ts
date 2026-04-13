@@ -81,6 +81,7 @@ function createBooking(overrides: Partial<Booking> = {}): Booking {
         basePriceCents: 10000,
         stairsFeeCents: 0,
         helperFeeCents: 0,
+        adjustmentFeeCents: 0,
         platformFeeCents: 1500,
         gstCents: 1150,
         bookingFeeCents: 0,

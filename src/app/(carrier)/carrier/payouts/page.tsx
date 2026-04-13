@@ -6,6 +6,7 @@ import { ConnectPayoutButton } from "@/components/carrier/connect-payout-button"
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { requirePageSessionUser } from "@/lib/auth";
+import { getBookingPaymentLifecycleLabelFromState } from "@/lib/booking-presenters";
 import { getCarrierPayoutDashboard } from "@/lib/data/bookings";
 import { formatCurrency } from "@/lib/utils";
 
@@ -170,11 +171,20 @@ export default async function CarrierPayoutsPage() {
                   </p>
                 </div>
                 <p className="text-sm text-text-secondary capitalize">
-                  {entry.payoutStatus.replaceAll("_", " ")}
+                  {getBookingPaymentLifecycleLabelFromState({
+                    bookingStatus:
+                      entry.payoutStatus === "captured" || entry.payoutStatus === "refunded"
+                        ? "completed"
+                        : "delivered",
+                    paymentStatus: entry.payoutStatus,
+                  })}
                 </p>
               </div>
               <div className="mt-3 grid gap-1 text-sm text-text-secondary sm:grid-cols-2">
                 <p>Base route earnings: {formatCurrency(entry.basePriceCents)}</p>
+                {entry.adjustmentFeeCents > 0 ? (
+                  <p>Condition adjustment accepted: {formatCurrency(entry.adjustmentFeeCents)}</p>
+                ) : null}
                 <p>Platform fee paid by customer: {formatCurrency(entry.platformFeeCents)}</p>
                 <p>GST paid by customer: {formatCurrency(entry.gstCents)}</p>
                 <p className="font-medium text-text">Net payout: {formatCurrency(entry.carrierPayoutCents)}</p>

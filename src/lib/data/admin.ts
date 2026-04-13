@@ -12,6 +12,9 @@ import { ensureUnmatchedRequestSlaTasks } from "@/lib/data/unmatched-requests";
 import { sanitizeText } from "@/lib/utils";
 import { getTripPublishReadiness } from "@/lib/validation/trip";
 import type { ConciergeOfferRecord, MatchedAlertNotificationRecord, OperatorTask, ValidationMetric } from "@/types/admin";
+import type { Database } from "@/types/database";
+
+type AdminActionEventRow = Database["public"]["Tables"]["admin_action_events"]["Row"];
 
 export async function getCorridorDemandSnapshot(params: {
   pickupSuburb: string;
@@ -544,7 +547,7 @@ export async function getFounderOpsCockpitData() {
       {
         key: "weak-listings",
         title: "Weak live listings",
-        description: "Routes that are live but still read as low-confidence inventory.",
+        description: "Routes that are live but still read as low-confidence match supply.",
         count: weakListings.length,
         items: weakListings.slice(0, 5),
       },
@@ -599,6 +602,12 @@ export async function listAdminAlertQueueData() {
         routeLabel: string;
         tripDate: string;
         blocker: string;
+        bookingCount: number;
+        freshnessMissCount: number;
+        suspensionReason: string | null;
+        lastActionAt: string | null;
+        lastActionLabel: string | null;
+        status: "watch" | "suspended";
       }>,
     };
   }
@@ -607,7 +616,7 @@ export async function listAdminAlertQueueData() {
 
   const supabase = createAdminClient();
   const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const [{ data: unmatchedRequests }, operatorTasks, { data: notificationRows }, { data: staleListings }] =
+  const [{ data: unmatchedRequests }, operatorTasks, { data: notificationRows }, { data: staleListingRows }] =
     await Promise.all([
       supabase
         .from("unmatched_requests")
@@ -622,12 +631,56 @@ export async function listAdminAlertQueueData() {
         .limit(50),
       supabase
         .from("capacity_listings")
-        .select("id, origin_suburb, destination_suburb, trip_date, status")
-        .in("status", ["active", "booked_partial"])
+        .select("id, carrier_id, origin_suburb, destination_suburb, trip_date, status, checkin_24h_requested_at, checkin_24h_confirmed, checkin_2h_requested_at, checkin_2h_confirmed, freshness_suspended_at, freshness_miss_count, freshness_suspension_reason")
+        .in("status", ["active", "booked_partial", "suspended"])
         .lte("trip_date", tomorrow)
         .order("trip_date", { ascending: true })
         .limit(30),
     ]);
+
+  const staleListings = (staleListingRows ?? []).filter((listing) => {
+    if (listing.status === "suspended") {
+      return true;
+    }
+
+    return (
+      (listing.checkin_24h_requested_at && !listing.checkin_24h_confirmed) ||
+      (listing.checkin_2h_requested_at && !listing.checkin_2h_confirmed)
+    );
+  });
+  const staleListingIds = staleListings.map((listing) => listing.id);
+  const [{ data: impactedBookingRows }, { data: listingActionRows }] = staleListingIds.length
+    ? await Promise.all([
+        supabase
+          .from("bookings")
+          .select("id, listing_id, booking_reference, status")
+          .in("listing_id", staleListingIds)
+          .in("status", ["pending", "confirmed", "picked_up", "in_transit", "delivered"]),
+        supabase
+          .from("admin_action_events")
+          .select("*")
+          .eq("entity_type", "listing")
+          .in("entity_id", staleListingIds)
+          .order("created_at", { ascending: false })
+          .limit(100),
+      ])
+    : [{ data: [] }, { data: [] }];
+  const impactedBookingCountByListing = (impactedBookingRows ?? []).reduce(
+    (map, booking) => {
+      map.set(booking.listing_id, (map.get(booking.listing_id) ?? 0) + 1);
+      return map;
+    },
+    new Map<string, number>(),
+  );
+  const listingActionsById = (listingActionRows ?? []).reduce(
+    (map, row) => {
+      if (!map.has(row.entity_id)) {
+        map.set(row.entity_id, row);
+      }
+      return map;
+    },
+    new Map<string, AdminActionEventRow>(),
+  );
 
   const items = await Promise.all(
     (unmatchedRequests ?? []).map(async (row) => {
@@ -677,7 +730,16 @@ export async function listAdminAlertQueueData() {
 
   return {
     sections,
-    operatorTasks,
+    operatorTasks: operatorTasks
+      .filter((task) => ["open", "in_progress"].includes(task.status))
+      .sort((left, right) => {
+        const priorityOrder = { urgent: 0, high: 1, normal: 2, low: 3 };
+        return (
+          priorityOrder[left.priority] - priorityOrder[right.priority] ||
+          (left.dueAt ?? "").localeCompare(right.dueAt ?? "") ||
+          left.createdAt.localeCompare(right.createdAt)
+        );
+      }),
     notificationLogs: (notificationRows ?? []).map((row) => ({
       id: row.id,
       unmatchedRequestId: row.unmatched_request_id,
@@ -694,12 +756,37 @@ export async function listAdminAlertQueueData() {
           : {},
       createdAt: row.created_at,
     })),
-    staleTrips: (staleListings ?? []).map((listing) => ({
-      listingId: listing.id,
-      routeLabel: `${listing.origin_suburb} to ${listing.destination_suburb}`,
-      tripDate: listing.trip_date,
-      blocker:
-        "Trip is inside the freshness window and needs a human follow-up check until the explicit freshness scheduler lands.",
-    })),
+    staleTrips: staleListings
+      .map((listing) => {
+        const lastAction = listingActionsById.get(listing.id);
+        const bookingCount = impactedBookingCountByListing.get(listing.id) ?? 0;
+
+        return {
+          listingId: listing.id,
+          routeLabel: `${listing.origin_suburb} to ${listing.destination_suburb}`,
+          tripDate: listing.trip_date,
+          bookingCount,
+          freshnessMissCount: Number(listing.freshness_miss_count ?? 0),
+          suspensionReason: listing.freshness_suspension_reason ?? null,
+          status: listing.status === "suspended" ? ("suspended" as const) : ("watch" as const),
+          lastActionAt: lastAction?.created_at ?? null,
+          lastActionLabel: lastAction?.action_type ?? null,
+          blocker:
+            listing.status === "suspended"
+              ? bookingCount > 0
+                ? "Trip is suspended and live customer bookings need an ops decision now."
+                : "Trip is suspended after a missed freshness check-in and still needs manual reconfirmation."
+              : "Trip is inside a freshness window and still waiting on confirmation.",
+        };
+      })
+      .sort((left, right) => {
+        const statusOrder = { suspended: 0, watch: 1 };
+        return (
+          statusOrder[left.status] - statusOrder[right.status] ||
+          right.bookingCount - left.bookingCount ||
+          right.freshnessMissCount - left.freshnessMissCount ||
+          left.tripDate.localeCompare(right.tripDate)
+        );
+      }),
   };
 }

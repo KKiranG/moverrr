@@ -20,7 +20,7 @@ export default function NotFound() {
             href="/search"
             className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-medium text-white active:bg-[#0047b3]"
           >
-            Browse trips
+            Start a move request
           </Link>
           <Link
             href="/"

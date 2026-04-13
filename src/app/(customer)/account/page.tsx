@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { requirePageSessionUser } from "@/lib/auth";
 import { getCustomerPaymentProfileForUser } from "@/lib/data/customer-payments";
+import { listUnmatchedRequestsForCustomer } from "@/lib/data/unmatched-requests";
 import { hasResendEnv } from "@/lib/env";
+import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Account",
@@ -31,11 +33,22 @@ export default async function CustomerAccountPage({
   const checkoutSessionId = getSearchValue(params.session_id);
   const focusPayments = focus === "payments";
   const supportEmail = "hello@moverrr.com.au";
+  const supabase = createServerSupabaseClient();
+  const { data: customer } = await supabase
+    .from("customers")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
   const paymentProfile = await getCustomerPaymentProfileForUser({
     userId: user.id,
     checkoutSessionId:
       paymentSetup === "success" && checkoutSessionId ? checkoutSessionId : undefined,
   });
+  const matchedAlertCount = customer?.id
+    ? (await listUnmatchedRequestsForCustomer(customer.id)).filter(
+        (request) => request.status === "matched",
+      ).length
+    : 0;
   const paymentUpdatedAt = paymentProfile.defaultPaymentMethod?.updatedAt
     ? new Date(paymentProfile.defaultPaymentMethod.updatedAt).toLocaleString("en-AU")
     : null;
@@ -137,7 +150,7 @@ export default async function CustomerAccountPage({
               href="/alerts"
               className="inline-flex min-h-[44px] items-center rounded-xl border border-border px-4 py-3 text-sm text-text active:bg-black/[0.04] dark:active:bg-white/[0.08]"
             >
-              Open alerts
+              Open alerts{matchedAlertCount > 0 ? ` (${matchedAlertCount})` : ""}
             </Link>
             <Link
               href="/"

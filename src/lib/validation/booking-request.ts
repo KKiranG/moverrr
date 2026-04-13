@@ -77,6 +77,15 @@ export const fastMatchBookingRequestSchema = z.object({
 export const bookingRequestActionSchema = z
   .object({
     action: z.enum(["accept", "decline", "clarify"]),
+    declineReason: z
+      .enum([
+        "route_not_viable",
+        "item_not_supported",
+        "access_too_complex",
+        "timing_not_workable",
+        "capacity_no_longer_available",
+      ])
+      .optional(),
     clarificationReason: z
       .enum(["item_details", "access_details", "timing", "photos", "other"])
       .optional(),
@@ -98,11 +107,27 @@ export const bookingRequestActionSchema = z
         path: ["clarificationMessage"],
       });
     }
+
+    if (value.action === "decline" && !value.declineReason) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Choose a decline reason so the request can recover cleanly.",
+        path: ["declineReason"],
+      });
+    }
   });
 
 export type BookingRequestCreateInput = z.infer<typeof bookingRequestCreateSchema>;
 export type FastMatchBookingRequestInput = z.infer<typeof fastMatchBookingRequestSchema>;
 export type BookingRequestActionInput = z.infer<typeof bookingRequestActionSchema>;
+
+export const bookingRequestCustomerActionSchema = z.object({
+  action: z.enum(["cancel"]),
+});
+
+export type BookingRequestCustomerActionInput = z.infer<
+  typeof bookingRequestCustomerActionSchema
+>;
 
 export const bookingRequestCustomerResponseSchema = z.object({
   customerResponse: optionalSanitizedString(280).refine(

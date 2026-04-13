@@ -16,7 +16,7 @@ The best validation question right now is:
 
 Can moverrr convert a messy object-move problem into a confident yes/no decision fast enough that customers do not abandon — even when supply is sparse? And will carriers reliably post repeat corridors if quick-repost takes under 30 seconds?
 
-These two questions matter more than pixel polish. If customers abandon during the need-declaration flow or carriers will not post repeat inventory, the model breaks.
+These two questions matter more than pixel polish. If customers abandon during the need-declaration flow or carriers will not post repeat routes, the model breaks.
 
 ## Stack
 
@@ -86,11 +86,11 @@ supabase             Config, migrations, edge function stubs, seed data
 
 - Need-first landing page and matched-results search entry
 - Search results backed by Supabase listings and PostGIS matching when Maps geocoding is available
-- Trip detail with live booking creation, item photo upload, and payment-intent creation
+- Trip detail with request submission, item photo upload, and request-to-book or Fast Match choice
 - Customer booking list/detail with confirmation, review submission, and dispute intake
 - Carrier onboarding with document uploads, trip posting wizard, live listing editing, and proof-backed booking status controls
-- Admin dashboard with validation metrics, carrier verification, dispute resolution, and smoke-dataset bootstrap controls
-- Saved-search capture for no-result searches and analytics event logging
+- Admin command-centre surfaces for alert queues, carrier verification, dispute resolution, payments, and smoke-dataset bootstrap controls
+- Alert-backed unmatched-demand capture for no-result searches and follow-up recovery flows
 - Supabase schema, RLS, indexes, matching function, private storage buckets, and audit/event tables
 
 ## What Still Needs Live Wiring

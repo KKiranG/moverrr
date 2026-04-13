@@ -3,7 +3,7 @@ import { z } from "zod";
 import { hasSupabaseEnv } from "@/lib/env";
 import { AppError } from "@/lib/errors";
 import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
-import type { SavedSearch } from "@/types/customer";
+import type { RouteAlert } from "@/types/customer";
 import type { Database } from "@/types/database";
 
 const savedSearchSchema = z.object({
@@ -19,7 +19,7 @@ const savedSearchSchema = z.object({
 
 type SavedSearchRow = Database["public"]["Tables"]["saved_searches"]["Row"];
 
-function toSavedSearch(row: SavedSearchRow): SavedSearch {
+function toSavedSearch(row: SavedSearchRow): RouteAlert {
   return {
     id: row.id,
     userId: row.user_id,
@@ -59,7 +59,7 @@ export async function createSavedSearch(
   const parsed = savedSearchSchema.safeParse(params);
 
   if (!parsed.success) {
-    throw new AppError("Saved search payload is invalid.", 400, "invalid_saved_search");
+    throw new AppError("Alert payload is invalid.", 400, "invalid_alert");
   }
 
   const supabase = createServerSupabaseClient();
@@ -97,7 +97,7 @@ export async function listUserSavedSearchesWithOptions(
   options?: { includeInactive?: boolean },
 ) {
   if (!hasSupabaseEnv()) {
-    return [] as SavedSearch[];
+    return [] as RouteAlert[];
   }
 
   const supabase = createServerSupabaseClient();

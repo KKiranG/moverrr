@@ -243,7 +243,14 @@ export async function getAdminCarrierDetail(carrierId: string) {
   }
 
   const supabase = createAdminClient();
-  const [{ data: carrier, error: carrierError }, { data: vehicle }, { data: bookings }, { data: reviews }, { data: riskSignals }] =
+  const [
+    { data: carrier, error: carrierError },
+    { data: vehicle },
+    { data: bookings },
+    { data: reviews },
+    { data: riskSignals },
+    { data: freshnessTrips },
+  ] =
     await Promise.all([
       supabase.from("carriers").select("*").eq("id", carrierId).maybeSingle(),
       supabase
@@ -275,6 +282,12 @@ export async function getAdminCarrierDetail(carrierId: string) {
         .contains("metadata", { carrierId })
         .order("created_at", { ascending: false })
         .limit(10),
+      supabase
+        .from("capacity_listings")
+        .select("id, status, trip_date, freshness_miss_count, freshness_suspended_at")
+        .eq("carrier_id", carrierId)
+        .order("trip_date", { ascending: false })
+        .limit(20),
     ]);
 
   if (carrierError) {
@@ -351,6 +364,22 @@ export async function getAdminCarrierDetail(carrierId: string) {
             ? ((signal.metadata as Record<string, unknown>).specialInstructions as string)
             : null,
       })) ?? [],
+    freshnessReliability: {
+      suspendedTrips: freshnessTrips?.filter((trip) => trip.status === "suspended").length ?? 0,
+      totalMisses:
+        freshnessTrips?.reduce(
+          (sum, trip) => sum + Number(trip.freshness_miss_count ?? 0),
+          0,
+        ) ?? 0,
+      recentFreshnessTrips:
+        freshnessTrips?.map((trip) => ({
+          id: trip.id,
+          tripDate: trip.trip_date,
+          status: trip.status,
+          freshnessMissCount: Number(trip.freshness_miss_count ?? 0),
+          suspendedAt: trip.freshness_suspended_at,
+        })) ?? [],
+    },
   };
 }
 

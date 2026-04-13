@@ -4,12 +4,14 @@ import { requireSessionUser } from "@/lib/auth";
 import { trackAnalyticsEvent } from "@/lib/analytics";
 import {
   applyCarrierBookingRequestAction,
+  cancelBookingRequestByCustomer,
   getBookingRequestByIdForCustomer,
   respondToBookingRequestClarification,
 } from "@/lib/data/booking-requests";
 import { toErrorResponse } from "@/lib/errors";
 import {
   bookingRequestActionSchema,
+  bookingRequestCustomerActionSchema,
   bookingRequestCustomerResponseSchema,
 } from "@/lib/validation/booking-request";
 
@@ -47,6 +49,29 @@ export async function PATCH(
     const body = await request.json();
 
     if ("action" in body) {
+      if (body.action === "cancel") {
+        const payload = bookingRequestCustomerActionSchema.parse(body);
+        const bookingRequest = await cancelBookingRequestByCustomer(
+          user.id,
+          context.params.id,
+          payload,
+        );
+
+        await trackAnalyticsEvent({
+          eventName: "booking_request_customer_cancelled",
+          userId: user.id,
+          pathname: `/api/booking-requests/${context.params.id}`,
+          dedupeKey: `booking_request_cancel:${bookingRequest.id}:${bookingRequest.updatedAt}`,
+          metadata: {
+            bookingRequestId: bookingRequest.id,
+            moveRequestId: bookingRequest.moveRequestId,
+            requestGroupId: bookingRequest.requestGroupId ?? null,
+          },
+        });
+
+        return NextResponse.json({ bookingRequest });
+      }
+
       const payload = bookingRequestActionSchema.parse(body);
       const result = await applyCarrierBookingRequestAction(user.id, context.params.id, payload);
 

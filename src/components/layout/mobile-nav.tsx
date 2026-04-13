@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 type NavItem = {
   href: string;
   label: string;
+  badgeCount?: number;
 };
 
 export function MobileNav({
@@ -54,9 +55,14 @@ export function MobileNav({
               key={item.href}
               href={item.href}
               onClick={closeMenu}
-              className="flex min-h-[44px] items-center rounded-xl px-3 py-3 text-sm text-text-secondary transition-colors hover:bg-black/[0.02] hover:text-text active:bg-black/[0.05] active:text-text dark:hover:bg-white/[0.04] dark:active:bg-white/[0.08]"
+              className="flex min-h-[44px] items-center justify-between rounded-xl px-3 py-3 text-sm text-text-secondary transition-colors hover:bg-black/[0.02] hover:text-text active:bg-black/[0.05] active:text-text dark:hover:bg-white/[0.04] dark:active:bg-white/[0.08]"
             >
-              {item.label}
+              <span>{item.label}</span>
+              {item.badgeCount ? (
+                <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground">
+                  {item.badgeCount}
+                </span>
+              ) : null}
             </Link>
           ))}
         </div>

@@ -618,8 +618,8 @@ export function CarrierTripWizard({
             <div className="rounded-xl border border-warning/20 bg-warning/10 p-3">
               <p className="text-sm font-medium text-warning">Flexible windows need one extra note</p>
               <p className="mt-1 text-sm text-text-secondary">
-                Customers browse timing certainty first. A short note like after 2pm or call ahead
-                keeps flexible runs trustworthy without turning them into quote requests.
+                Customers look for timing certainty first. A short note like after 2pm or call
+                ahead keeps flexible runs trustworthy without turning them into quote requests.
               </p>
             </div>
           ) : null}
@@ -735,7 +735,7 @@ export function CarrierTripWizard({
               </div>
             ) : (
               <p className="mt-3 text-sm text-text-secondary">
-                Route, capacity, rules, and accepted item types are aligned well enough for browse.
+                Route, capacity, rules, and accepted item types are aligned well enough for matching.
               </p>
             )}
           </div>
@@ -883,7 +883,7 @@ export function CarrierTripWizard({
               <option value="draft">Save as draft</option>
             </select>
             <p className="text-sm text-text-secondary">
-              Quality warnings do not block publishing. Only hard inventory contradictions force a
+              Quality warnings do not block publishing. Only hard route-fit contradictions force a
               draft-first save.
             </p>
           </label>

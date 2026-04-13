@@ -30,7 +30,7 @@ export function SaveAlertForm({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/saved-searches", {
+      const response = await fetch("/api/alerts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

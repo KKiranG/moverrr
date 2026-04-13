@@ -42,23 +42,11 @@
 
 ### Data Model and Backend Logic
 
-- [ ] **D04** — Add `ConditionAdjustment` as a one-round structured exception entity
-  - **File(s):** `new file: supabase/migrations/019_condition_adjustments.sql`, `src/types/database.ts`, `new file: src/types/condition-adjustment.ts`
-  - **What:** Model one structured post-arrival adjustment with predefined reason, amount, and customer response state.
-  - **Why:** The blueprint permits one structured adjustment path while rejecting open negotiation.
-  - **Done when:** The schema and types support a single condition adjustment per booking with a clear accepted or rejected outcome.
-
 - [ ] **D06** — Add `ConciergeOffer` to keep founder fulfilment on-platform
   - **File(s):** `new file: supabase/migrations/021_concierge_offers.sql`, `src/types/database.ts`, `src/lib/data/admin.ts`
   - **What:** Introduce a concierge-offer entity that links an unmatched request to an operator-sourced carrier and proposed price.
   - **Why:** The blueprint allows manual founder fulfilment only if it still flows through system entities and booking states.
   - **Done when:** Concierge offers can be created, tracked, and routed into the normal acceptance flow without off-platform bookkeeping.
-
-- [ ] **D07** — Add `OperatorTask` for unmatched demand and stale-supply follow-up
-  - **File(s):** `new file: supabase/migrations/022_operator_tasks.sql`, `src/types/database.ts`, `src/lib/data/admin.ts`
-  - **What:** Create an operator-task model for unmatched requests, stale trip follow-up, and dispute/payout intervention work.
-  - **Why:** The blueprint depends on a founder/operator queue to keep sparse supply and disputes alive.
-  - **Done when:** Operator tasks can be generated, assigned, and resolved against unmatched requests and trust-critical incidents.
 
 - [ ] **D08** — Reshape `Trip` for waypoints, route polyline, detour tolerance, recurrence, and freshness
   - **File(s):** `new file: supabase/migrations/023_trip_realignment.sql`, `src/types/trip.ts`, `src/lib/data/mappers.ts`
@@ -89,12 +77,6 @@
   - **What:** Add stored preferences for push, email, and in-app notifications tied to alerts, requests, and fulfilment events.
   - **Why:** Alert the Network and request-state flows rely on notification delivery as a core product behavior.
   - **Done when:** Preferences exist in schema and types and can gate downstream notification sends.
-
-- [ ] **D14** — Add trip freshness fields and suspension reasons
-  - **File(s):** `new file: supabase/migrations/030_trip_freshness.sql`, `src/types/trip.ts`, `src/lib/data/trips.ts`
-  - **What:** Add 24-hour and 2-hour check-in state, timestamps, and suspension reason storage to trips.
-  - **Why:** The blueprint makes freshness enforcement mandatory to avoid stale supply poisoning trust.
-  - **Done when:** Trip records support deprioritised and suspended freshness states with auditable reasons.
 
 - [ ] **D15** — Add carrier-home mode derivation fields or presenters
   - **File(s):** `src/types/carrier.ts`, `src/lib/data/carriers.ts`, `src/app/(carrier)/carrier/dashboard/page.tsx`
@@ -152,12 +134,6 @@
   - **Why:** Founder concierge is allowed only if it does not create shadow ops or off-platform transaction paths.
   - **Done when:** Concierge offers can be created, accepted, and fulfilled without bypassing core payment, proof, or payout logic.
 
-- [ ] **A10** — Enforce one-round condition adjustments with predefined reason codes and amounts
-  - **File(s):** `src/lib/data/bookings.ts`, `src/lib/status-machine.ts`, `src/types/condition-adjustment.ts`
-  - **What:** Limit condition adjustments to one structured round with controlled reasons and allowed amounts.
-  - **Why:** The blueprint allows realism for misdescribed conditions without opening counterproposal loops.
-  - **Done when:** The product blocks a second adjustment round and only allows platform-defined adjustment reasons and amounts.
-
 ### Pricing / Negotiation / Quoting
 
 - [ ] **A16** — Separate hard activation gates from optional trust boosters in trust displays
@@ -174,31 +150,13 @@
 
 ### Carrier Experience
 
-- [ ] **B12** — Remove the carrier stats page from primary MVP IA
-  - **File(s):** `src/components/layout/site-header.tsx`, `src/components/layout/mobile-nav.tsx`, `src/app/(carrier)/carrier/stats/page.tsx`
-  - **What:** Remove Stats from primary carrier navigation and demote the page behind deferred or admin-only access.
-  - **Why:** The blueprint explicitly rejects analytics-first carrier navigation in MVP.
-  - **Done when:** Carrier primary navigation no longer includes Stats and the page is not used as a core workflow.
-
 - [ ] **B13** — Rebuild carrier home hero priority around urgent action states
   - **File(s):** `src/app/(carrier)/carrier/dashboard/page.tsx`, `src/lib/data/bookings.ts`, `src/components/carrier/live-bookings-list.tsx`
   - **What:** Restructure carrier home so the hero always chooses between pending request, today work, proof needed, or payout blocked in that order.
   - **Why:** The governing blueprint defines the carrier home as a work queue disguised as a dashboard.
   - **Done when:** Carrier home surfaces the highest-priority action item first and de-emphasizes summary analytics.
 
-- [ ] **B14** — Add a customer Alerts route to replace Saved searches
-  - **File(s):** `new file: src/app/(customer)/alerts/page.tsx`, `src/components/layout/site-header.tsx`, `src/components/layout/mobile-nav.tsx`
-  - **What:** Create an Alerts page for unmatched demand, matched alerts, and expired alert history.
-  - **Why:** The blueprint’s no-match model is alert-driven and needs a first-class customer destination.
-  - **Done when:** Customers have an Alerts page in primary navigation and no primary nav item says Saved searches.
-
 ### Admin / Operator Tooling
-
-- [ ] **A19** — Enforce trip freshness suspension in matching eligibility
-  - **File(s):** `src/lib/data/trips.ts`, `src/lib/matching/filter.ts`, `src/app/api/search/route.ts`
-  - **What:** Exclude or deprioritise trips that miss freshness check-ins based on the 24-hour and 2-hour blueprint rules.
-  - **Why:** Stale supply is a trust-breaking failure mode that the product must handle upstream.
-  - **Done when:** Unconfirmed trips are deprioritised and 2-hour no-response trips are suspended before they can surface in results.
 
 ---
 
@@ -283,12 +241,6 @@
   - **What:** Turn the current save-search panel into an explicit alert capture flow tied to unmatched demand and rematch notifications.
   - **Why:** The blueprint defines zero-match capture as an alert system, not a passive saved query.
   - **Done when:** The no-match panel creates or updates an alert-backed unmatched request instead of a saved search.
-
-- [ ] **B32** — Remove direct carrier-contact panels from customer booking detail
-  - **File(s):** `src/app/(customer)/bookings/[id]/page.tsx`, `src/lib/data/bookings.ts`, `src/types/booking.ts`
-  - **What:** Remove or replace the direct carrier contact panel with structured coordination history and on-platform status tools.
-  - **Why:** The blueprint keeps communication on-platform at MVP to protect trust, disputes, and payment integrity.
-  - **Done when:** Customer booking detail no longer renders direct carrier contact as a standard fulfilment tool.
 
 ### Carrier Experience
 
@@ -380,18 +332,6 @@
 
 ### Frontend Architecture and State
 
-- [ ] **B51** — Split customer navigation state around Home, Bookings, Alerts, and Account
-  - **File(s):** `src/components/layout/site-header.tsx`, `src/components/layout/mobile-nav.tsx`, `src/app/layout.tsx`
-  - **What:** Refactor the customer nav state and routes so they reflect the governing information architecture instead of browse and saved-search concepts.
-  - **Why:** The wrong top-level IA keeps dragging the experience back toward the wrong product shape.
-  - **Done when:** Customer nav state, badges, and route highlighting align to the four blueprint destinations.
-
-- [ ] **B52** — Split carrier navigation state around Home, Requests, Trips, Payouts, and Account
-  - **File(s):** `src/components/layout/site-header.tsx`, `src/components/layout/mobile-nav.tsx`, `src/app/layout.tsx`
-  - **What:** Update carrier nav state to support the five blueprint destinations and remove stat/dashboard bias.
-  - **Why:** Carrier IA is a core product decision, not a secondary polish issue.
-  - **Done when:** Carrier nav renders the five blueprint destinations with correct active state and badge behavior.
-
 - [ ] **B56** — Stop linking homepage and search results into public carrier storefront loops
   - **File(s):** `src/app/page.tsx`, `src/app/(customer)/search/page.tsx`, `src/app/(customer)/carrier/[id]/page.tsx`
   - **What:** Remove or demote carrier-profile deep links that take customers out of the need-first selection flow too early.
@@ -406,12 +346,6 @@
   - **Why:** Founder manual fulfilment must stay visible and on-platform during MVP.
   - **Done when:** Operators can create concierge offers through a dedicated admin API backed by explicit schema and audit writes.
 
-- [ ] **A27** — Add `PATCH /api/condition-adjustments/[id]` for customer accept or reject
-  - **File(s):** `new file: src/app/api/condition-adjustments/[id]/route.ts`, `src/lib/data/bookings.ts`, `src/types/condition-adjustment.ts`
-  - **What:** Create the customer response API for structured adjustments so the flow remains bounded and audited.
-  - **Why:** Condition adjustments are a controlled exception path and need explicit state transitions.
-  - **Done when:** Customers can accept or reject one adjustment through a dedicated API and the booking updates correctly.
-
 - [ ] **A30** — Notify non-winning Fast Match carriers when another carrier accepts first
   - **File(s):** `src/lib/notifications.ts`, `src/lib/data/bookings.ts`, `new file: src/app/api/booking-requests/fast-match/route.ts`
   - **What:** Send explicit revocation outcomes to sibling Fast Match carriers when another carrier wins the request.
@@ -419,30 +353,6 @@
   - **Done when:** Losing Fast Match carriers receive revocation notices tied to the winning acceptance event.
 
 ### Simplification / Removals
-
-- [ ] **B58** — Remove Waitlist form usage from customer zero-match flows
-  - **File(s):** `src/components/customer/waitlist-form.tsx`, `src/app/(customer)/search/page.tsx`, `src/app/api/search/route.ts`
-  - **What:** Retire the waitlist form from customer recovery surfaces so it cannot be mistaken for the active marketplace demand flow.
-  - **Why:** Waitlist semantics conflict with Alert the Network and founder concierge language.
-  - **Done when:** No customer-facing no-match path renders or posts the waitlist form.
-
-- [ ] **B64** — Add Alerts page sections for Active, Matched, and Expired demand
-  - **File(s):** `new file: src/app/(customer)/alerts/page.tsx`, `new file: src/components/search/alerts-manager.tsx`, `new file: src/lib/data/unmatched-requests.ts`
-  - **What:** Organize customer alerts into operational states so demand capture feels alive and understandable.
-  - **Why:** Alert history needs explicit states if it is going to replace saved searches cleanly.
-  - **Done when:** Customers can view active, matched, and expired alert items from a dedicated alerts manager.
-
-- [ ] **B65** — Add Requests badge count to carrier nav and home
-  - **File(s):** `src/components/layout/site-header.tsx`, `src/components/layout/mobile-nav.tsx`, `src/app/(carrier)/carrier/dashboard/page.tsx`
-  - **What:** Surface pending-request counts where carriers decide their next action, not only inside deep pages.
-  - **Why:** Requests are the highest-urgency carrier workflow and need explicit nav visibility.
-  - **Done when:** Pending request counts render in carrier nav and home states with correct live or refreshed values.
-
-- [ ] **B66** — Split live-bookings copy into pending requests versus active bookings
-  - **File(s):** `src/components/carrier/live-bookings-list.tsx`, `src/app/(carrier)/carrier/dashboard/page.tsx`, `src/lib/data/bookings.ts`
-  - **What:** Separate pending requests from accepted fulfilment work instead of calling both "incoming jobs" or bookings.
-  - **Why:** The blueprint draws a clean line between booking requests and accepted bookings.
-  - **Done when:** Carrier surfaces label pending decisions and active fulfilment work separately and correctly.
 
 ---
 
@@ -584,12 +494,6 @@
   - **Why:** The blueprint values operational clarity and low typing burden over message-heavy decline explanations.
   - **Done when:** Carrier declines can capture bounded reasons without requiring long-form text entry.
 
-- [ ] **A45** — Notify affected customers when a trip auto-suspends on failed freshness check
-  - **File(s):** `src/lib/notifications.ts`, `src/lib/data/trips.ts`, `src/lib/data/bookings.ts`
-  - **What:** Send customer-facing suspension notifications and next actions when a trip misses the 2-hour check-in and is removed from fulfilment.
-  - **Why:** Auto-suspension protects trust only if customers learn about the change quickly and clearly.
-  - **Done when:** Affected customers receive suspension notifications with the correct recovery path when their trip loses freshness.
-
 - [ ] **A46** — Invalidate stale offers when a trip changes after results were shown
   - **File(s):** `src/lib/data/trips.ts`, `new file: src/lib/data/offers.ts`, `src/app/(customer)/search/page.tsx`
   - **What:** Expire or regenerate offers when the underlying trip route, pricing, capacity, or constraints change materially.
@@ -611,10 +515,10 @@
   - **Done when:** Core presenter and constant names prefer trip, offer, move request, and alert language over inventory language.
 
 - [ ] **A49** — Replace saved-search-specific notification naming with alert naming
-  - **File(s):** `src/lib/notifications.ts`, `src/lib/data/saved-searches.ts`, `src/lib/email/index.ts`
-  - **What:** Rename notification templates, event names, and helpers so alert capture replaces saved-search semantics in the codebase.
+  - **File(s):** `src/lib/data/alerts.ts`, `src/lib/data/saved-searches.ts`, `src/app/api/alerts/route.ts`, `src/app/api/saved-searches/route.ts`
+  - **What:** Finish retiring saved-search compatibility naming from the remaining internal data and API boundaries now that customer-facing alert surfaces are already live.
   - **Why:** Notification naming should describe the active no-match loop the product actually uses.
-  - **Done when:** Notification helpers and template names reference alerts and unmatched demand instead of saved searches.
+  - **Done when:** The live alert flow no longer depends on saved-search-named API payloads or data helpers outside temporary compatibility wrappers.
 
 - [ ] **A50** — Remove browse-first analytics events that no longer map to the product model
   - **File(s):** `src/lib/analytics.ts`, `src/app/api/search/route.ts`, `src/app/api/bookings/route.ts`
@@ -639,18 +543,6 @@
 ## 🟢 P3 — Enhancements
 
 ### Frontend Architecture and State
-
-- [ ] **B93** — Add recent move-request summaries to Home for returning customers
-  - **File(s):** `src/app/page.tsx`, `new file: src/components/customer/recent-move-requests.tsx`, `new file: src/lib/data/move-requests.ts`
-  - **What:** Show recent move requests and their latest state on Home after the customer has used the flow before.
-  - **Why:** Home should become a lightweight command surface for repeat customers rather than a fixed first-time-only page.
-  - **Done when:** Returning customers can see their recent move requests and start a new one from Home.
-
-- [ ] **B94** — Add matched-alert badges to customer nav and account surfaces
-  - **File(s):** `src/components/layout/site-header.tsx`, `src/components/layout/mobile-nav.tsx`, `src/app/(customer)/account/page.tsx`
-  - **What:** Surface matched-alert counts in navigation and account views so recovered demand is hard to miss.
-  - **Why:** Alert recovery only works if customers notice when a match becomes available later.
-  - **Done when:** Customers can see matched-alert counts from nav and account without opening the Alerts page first.
 
 - [ ] **B95** — Add differentiated carrier-home empty states for no templates versus no live trips
   - **File(s):** `src/app/(carrier)/carrier/dashboard/page.tsx`, `src/components/carrier/quick-post-templates.tsx`, `src/lib/data/templates.ts`
@@ -783,12 +675,6 @@
   - **What:** Delete helper names, presenter logic, and UI copy that depend on the flat booking-fee model once the new pricing model lands.
   - **Why:** Leaving the old pricing primitives in place will cause drift and accidental reintroduction later.
   - **Done when:** The codebase no longer carries flat booking-fee helper names or customer-facing references.
-
-- [ ] **A68** — Remove direct customer-to-carrier phone fields from customer presenters
-  - **File(s):** `src/lib/data/bookings.ts`, `src/types/booking.ts`, `src/app/(customer)/bookings/[id]/page.tsx`
-  - **What:** Stop mapping carrier phone fields into customer-facing presenter data for MVP flows.
-  - **Why:** The blueprint’s on-platform communication rule should be reflected in data-presenter boundaries too.
-  - **Done when:** Customer presenter payloads no longer include carrier phone data by default.
 
 - [ ] **A69** — Remove public carrier listing shelves that bypass need-first entry
   - **File(s):** `src/app/(customer)/carrier/[id]/page.tsx`, `src/app/page.tsx`, `src/lib/data/trips.ts`

@@ -191,7 +191,37 @@ export const BOOKING_CANCELLATION_REASONS: Array<{
     label: "Safety concern",
     description: "The booking was cancelled for trust, conduct, or site-safety reasons.",
   },
+  {
+    value: "misdescription",
+    label: "Material misdescription",
+    description: "The job no longer matches the declared stairs, access, parking, or item details.",
+  },
 ];
+
+export const CONDITION_ADJUSTMENT_REASONS = [
+  {
+    value: "stairs_mismatch",
+    label: "Stairs mismatch",
+    description: "The real stair access is materially more complex than what was declared.",
+  },
+  {
+    value: "helper_required",
+    label: "Helper required",
+    description: "The job needs a second set of hands to stay safe and workable.",
+  },
+  {
+    value: "item_materially_different",
+    label: "Item materially different",
+    description: "The actual item is heavier, larger, or more difficult than described.",
+  },
+  {
+    value: "extreme_parking",
+    label: "Extreme parking",
+    description: "Access or parking conditions are materially worse than declared.",
+  },
+] as const;
+
+export const CONDITION_ADJUSTMENT_AMOUNTS = [1500, 3000, 4500, 6000, 9000] as const;
 
 export const BOOKING_PAYMENT_LABELS: Record<BookingPaymentStatus, string> = {
   pending: "Authorization pending",

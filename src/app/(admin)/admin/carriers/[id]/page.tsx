@@ -106,6 +106,13 @@ export default async function AdminCarrierDetailPage({
           </p>
           <p className="mt-2 text-sm text-text-secondary">{detail.reviews.length} review(s)</p>
         </Card>
+        <Card className="p-4">
+          <p className="section-label">Freshness reliability</p>
+          <p className="mt-2 text-2xl text-text">{detail.freshnessReliability.totalMisses}</p>
+          <p className="mt-2 text-sm text-text-secondary">
+            {detail.freshnessReliability.suspendedTrips} currently suspended trip(s)
+          </p>
+        </Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
@@ -222,6 +229,35 @@ export default async function AdminCarrierDetailPage({
                 ))}
                 {detail.bookings.length === 0 ? (
                   <p className="text-sm text-text-secondary">No bookings tied to this carrier yet.</p>
+                ) : null}
+              </div>
+            </Card>
+
+            <Card className="p-4">
+              <p className="section-label">Freshness history</p>
+              <div className="mt-4 grid gap-3">
+                {detail.freshnessReliability.recentFreshnessTrips.map((trip) => (
+                  <div key={trip.id} className="rounded-xl border border-border p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-medium text-text">{trip.tripDate}</p>
+                      <p className="text-xs uppercase tracking-[0.16em] text-text-secondary">
+                        {trip.status}
+                      </p>
+                    </div>
+                    <p className="mt-1 text-sm text-text-secondary">
+                      Freshness misses {trip.freshnessMissCount}
+                    </p>
+                    {trip.suspendedAt ? (
+                      <p className="mt-1 text-xs text-text-secondary">
+                        Suspended {formatDateTime(trip.suspendedAt)}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+                {detail.freshnessReliability.recentFreshnessTrips.length === 0 ? (
+                  <p className="text-sm text-text-secondary">
+                    No recent freshness-tracked trips for this carrier yet.
+                  </p>
                 ) : null}
               </div>
             </Card>

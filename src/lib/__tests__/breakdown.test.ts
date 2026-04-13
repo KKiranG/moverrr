@@ -44,6 +44,24 @@ test("booking breakdown only commissions the base price", () => {
   assert.equal(breakdown.totalPriceCents, 10_753);
 });
 
+test("booking breakdown carries a structured adjustment without changing base commission", () => {
+  const breakdown = calculateBookingBreakdown({
+    basePriceCents: 10_000,
+    needsStairs: true,
+    stairsExtraCents: 1_500,
+    needsHelper: false,
+    helperExtraCents: 0,
+    adjustmentFeeCents: 3_000,
+  });
+
+  assert.equal(breakdown.adjustmentFeeCents, 3_000);
+  assert.equal(breakdown.platformFeeCents, 1_500);
+  assert.equal(breakdown.platformCommissionCents, 1_500);
+  assert.equal(breakdown.carrierPayoutCents, 14_500);
+  assert.equal(breakdown.gstCents, 1_600);
+  assert.equal(breakdown.totalPriceCents, 17_600);
+});
+
 test("automatic detour pricing stays blocked pending a founder decision", () => {
   assert.throws(
     () =>

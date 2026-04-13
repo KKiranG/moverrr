@@ -4,6 +4,7 @@ import { SEARCH_PAGE_SIZE, SEARCH_REVALIDATE_SECONDS } from "@/lib/constants";
 import { buildBookingEmail } from "@/lib/email";
 import { hasMapsEnv, hasSupabaseAdminEnv, hasSupabaseEnv } from "@/lib/env";
 import { AppError } from "@/lib/errors";
+import { getListingStatusFromCapacity } from "@/lib/booking-capacity";
 import { getDistanceKmBetweenPoints } from "@/lib/maps/haversine";
 import { getSydneySuburbCoords } from "@/lib/maps/sydney-suburb-coords";
 import { geocodeAddress } from "@/lib/maps/geocode";
@@ -12,6 +13,12 @@ import { sendBookingTransactionalEmail, sendTripFreshnessNotification } from "@/
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 import { toGeographyPoint, toTrip, toTripSearchResult, type ListingJoinedRecord } from "@/lib/data/mappers";
+import {
+  ensureOperatorTask,
+  listOperatorTasks,
+  recordAdminActionEvent,
+  updateOperatorTask,
+} from "@/lib/data/operator-tasks";
 import { tripSchema, tripUpdateSchema, type TripInput, type TripUpdateInput } from "@/lib/validation/trip";
 import { getDateOffsetIso, getTodayIsoDate } from "@/lib/utils";
 import type { Trip, TripSearchInput, TripSearchResponse, TripSearchResult } from "@/types/trip";
@@ -63,6 +70,10 @@ function sortTripsByFreshnessPriority(results: TripSearchResult[]) {
 
     return right.matchScore - left.matchScore;
   });
+}
+
+function isTripPubliclyMatchable(trip: Pick<Trip, "status">) {
+  return trip.status !== "suspended" && trip.status !== "cancelled" && trip.status !== "expired";
 }
 
 function buildSearchBreakdown(params: {
@@ -345,6 +356,10 @@ async function cachedSuburbCoordinateSearch(
       const matches = ((data ?? []) as unknown as ListingJoinedRecord[])
         .map((record) => toTrip(record))
         .map((trip) => {
+          if (!isTripPubliclyMatchable(trip)) {
+            return null;
+          }
+
           if (
             trip.route.originLatitude === undefined ||
             trip.route.originLongitude === undefined ||
@@ -553,6 +568,10 @@ export async function searchTrips(input: TripSearchInput) {
       const trip = tripMap.get(match.listing_id);
 
       if (!trip) {
+        return null;
+      }
+
+      if (!isTripPubliclyMatchable(trip)) {
         return null;
       }
 
@@ -940,7 +959,9 @@ async function notifyCustomersAboutSuspendedTrip(params: {
     .in("status", ["pending", "confirmed", "picked_up"]);
 
   if (error || !data) {
-    return;
+    return {
+      affectedBookingCount: 0,
+    };
   }
 
   await Promise.all(
@@ -973,6 +994,10 @@ async function notifyCustomersAboutSuspendedTrip(params: {
       }),
     ),
   );
+
+  return {
+    affectedBookingCount: data.length,
+  };
 }
 
 export async function confirmTripFreshnessCheckinForCarrier(params: {
@@ -1001,11 +1026,18 @@ export async function confirmTripFreshnessCheckinForCarrier(params: {
 
   const patch =
     params.window === "24h"
-      ? { checkin_24h_confirmed: true }
+      ? {
+          checkin_24h_confirmed: true,
+          freshness_last_action: "confirmed_24h" as const,
+          last_freshness_confirmed_at: new Date().toISOString(),
+        }
       : {
           checkin_2h_confirmed: true,
           status: "active" as const,
           freshness_suspended_at: null,
+          freshness_suspension_reason: null,
+          freshness_last_action: "confirmed_2h" as const,
+          last_freshness_confirmed_at: new Date().toISOString(),
         };
 
   const { error } = await supabase
@@ -1017,6 +1049,107 @@ export async function confirmTripFreshnessCheckinForCarrier(params: {
   if (error) {
     throw new AppError(error.message, 500, "trip_freshness_confirm_failed");
   }
+}
+
+export async function unsuspendTripForAdmin(params: {
+  adminUserId: string;
+  tripId: string;
+  reason: string;
+}) {
+  if (!hasSupabaseAdminEnv()) {
+    throw new AppError("Supabase admin is not configured.", 503, "supabase_admin_unavailable");
+  }
+
+  const reason = params.reason.trim();
+
+  if (reason.length < 12) {
+    throw new AppError(
+      "Add a short ops reason before unsuspending this trip.",
+      400,
+      "trip_unsuspend_reason_required",
+    );
+  }
+
+  const supabase = createAdminClient();
+  const { data: tripRow, error: tripError } = await supabase
+    .from("capacity_listings")
+    .select("id, carrier_id, origin_suburb, destination_suburb, remaining_capacity_pct, status")
+    .eq("id", params.tripId)
+    .maybeSingle();
+
+  if (tripError) {
+    throw new AppError(tripError.message, 500, "trip_lookup_failed");
+  }
+
+  if (!tripRow) {
+    throw new AppError("Trip not found.", 404, "trip_not_found");
+  }
+
+  if (tripRow.status !== "suspended") {
+    throw new AppError("Only suspended trips can be unsuspended.", 409, "trip_not_suspended");
+  }
+
+  const { count: activeBookingCount, error: bookingError } = await supabase
+    .from("bookings")
+    .select("id", { count: "exact", head: true })
+    .eq("listing_id", params.tripId)
+    .neq("status", "cancelled");
+
+  if (bookingError) {
+    throw new AppError(bookingError.message, 500, "trip_unsuspend_booking_count_failed");
+  }
+
+  const nextStatus = getListingStatusFromCapacity(
+    activeBookingCount ?? 0,
+    Number(tripRow.remaining_capacity_pct ?? 100),
+  );
+  const nowIso = new Date().toISOString();
+  const { error: updateError } = await supabase
+    .from("capacity_listings")
+    .update({
+      status: nextStatus,
+      checkin_2h_confirmed: true,
+      freshness_suspended_at: null,
+      freshness_suspension_reason: null,
+      freshness_last_action: "unsuspended",
+      last_freshness_unsuspended_at: nowIso,
+      last_freshness_confirmed_at: nowIso,
+    })
+    .eq("id", params.tripId);
+
+  if (updateError) {
+    throw new AppError(updateError.message, 500, "trip_unsuspend_failed");
+  }
+
+  const staleTasks = await listOperatorTasks({
+    status: "open",
+    taskType: "stale_trip_followup",
+    limit: 50,
+  });
+  const matchingTask = staleTasks.find((task) => task.listingId === params.tripId);
+
+  if (matchingTask) {
+    await updateOperatorTask({
+      taskId: matchingTask.id,
+      status: "resolved",
+      blocker: "Trip was manually reconfirmed and unsuspended.",
+      nextAction: "Monitor the route for any further freshness misses.",
+      assignedAdminUserId: null,
+    });
+  }
+
+  await recordAdminActionEvent({
+    adminUserId: params.adminUserId,
+    entityType: "listing",
+    entityId: params.tripId,
+    actionType: "trip_unsuspended",
+    reason,
+    metadata: {
+      routeLabel: `${tripRow.origin_suburb} to ${tripRow.destination_suburb}`,
+      nextStatus,
+      carrierId: tripRow.carrier_id,
+    },
+  });
 }
 
 export async function runTripFreshnessChecks(params?: {
@@ -1036,7 +1169,7 @@ export async function runTripFreshnessChecks(params?: {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("capacity_listings")
-    .select("id, carrier_id, origin_suburb, destination_suburb, trip_date, time_window, status, checkin_24h_confirmed, checkin_24h_requested_at, checkin_2h_confirmed, checkin_2h_requested_at, carriers!inner(email)")
+    .select("id, carrier_id, origin_suburb, destination_suburb, trip_date, time_window, status, checkin_24h_confirmed, checkin_24h_requested_at, checkin_2h_confirmed, checkin_2h_requested_at, freshness_miss_count, carriers!inner(email)")
     .in("status", ["active", "booked_partial"]);
 
   if (error) {
@@ -1066,6 +1199,7 @@ export async function runTripFreshnessChecks(params?: {
           .update({
             checkin_24h_requested_at: nowIso,
             checkin_24h_confirmed: false,
+            freshness_last_action: "requested_24h",
           })
           .eq("id", row.id);
 
@@ -1093,6 +1227,7 @@ export async function runTripFreshnessChecks(params?: {
           .update({
             checkin_2h_requested_at: nowIso,
             checkin_2h_confirmed: false,
+            freshness_last_action: "requested_2h",
           })
           .eq("id", row.id);
 
@@ -1116,13 +1251,52 @@ export async function runTripFreshnessChecks(params?: {
           .update({
             status: "suspended",
             freshness_suspended_at: nowIso,
+            freshness_last_action: "suspended",
+            freshness_suspension_reason: "missed_2h_checkin",
+            freshness_miss_count: Number(row.freshness_miss_count ?? 0) + 1,
           })
           .eq("id", row.id);
 
         suspendedTripIds.push(row.id);
-        await notifyCustomersAboutSuspendedTrip({
+        const suspensionNotification = await notifyCustomersAboutSuspendedTrip({
           listingId: row.id,
           routeLabel,
+        });
+        await ensureOperatorTask({
+          taskType: "stale_trip_followup",
+          title: `Review suspended trip: ${routeLabel}`,
+          blocker:
+            suspensionNotification.affectedBookingCount > 0
+              ? "Customers already depend on this trip and need a reconfirmation outcome."
+              : "Trip missed the 2-hour check-in and needs manual review before it can re-enter matching.",
+          nextAction:
+            suspensionNotification.affectedBookingCount > 0
+              ? "Contact the carrier, reconfirm whether the trip is still running, and either unsuspend it or move affected customers into recovery."
+              : "Contact the carrier and decide whether to unsuspend or leave the route suspended.",
+          priority:
+            suspensionNotification.affectedBookingCount > 0 ? "urgent" : "high",
+          listingId: row.id,
+          carrierId: row.carrier_id,
+          dueAt: nowIso,
+          metadata: {
+            routeLabel,
+            freshnessMissCount: Number(row.freshness_miss_count ?? 0) + 1,
+            affectedBookingCount: suspensionNotification.affectedBookingCount,
+            suspensionReason: "missed_2h_checkin",
+          },
+        });
+        await recordAdminActionEvent({
+          actorRole: "system",
+          entityType: "listing",
+          entityId: row.id,
+          actionType: "trip_auto_suspended",
+          reason: "Trip missed the 2-hour freshness check-in and was auto-suspended.",
+          metadata: {
+            routeLabel,
+            carrierId: row.carrier_id,
+            affectedBookingCount: suspensionNotification.affectedBookingCount,
+            freshnessMissCount: Number(row.freshness_miss_count ?? 0) + 1,
+          },
         });
       }
     }

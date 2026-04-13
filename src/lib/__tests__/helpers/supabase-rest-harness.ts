@@ -426,6 +426,7 @@ export function createBookingRow(
     base_price_cents: 12_000,
     stairs_fee_cents: 0,
     helper_fee_cents: 0,
+    adjustment_fee_cents: 0,
     booking_fee_cents: 0,
     gst_cents: 1_518,
     total_price_cents: 15_318,

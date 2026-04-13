@@ -218,12 +218,20 @@ export function toBookingPriceBreakdown(
     stairsExtraCents: row.stairs_fee_cents,
     needsHelper: row.helper_fee_cents > 0,
     helperExtraCents: row.helper_fee_cents,
+    adjustmentFeeCents:
+      "adjustment_fee_cents" in row && typeof row.adjustment_fee_cents === "number"
+        ? row.adjustment_fee_cents
+        : 0,
   });
 
   return {
     basePriceCents: row.base_price_cents,
     stairsFeeCents: row.stairs_fee_cents,
     helperFeeCents: row.helper_fee_cents,
+    adjustmentFeeCents:
+      "adjustment_fee_cents" in row && typeof row.adjustment_fee_cents === "number"
+        ? row.adjustment_fee_cents
+        : 0,
     platformFeeCents: row.platform_commission_cents,
     gstCents: "gst_cents" in row && typeof row.gst_cents === "number" ? row.gst_cents : derived.gstCents,
     totalPriceCents: row.total_price_cents,
@@ -369,6 +377,7 @@ export function toOffer(row: OfferRow): Offer {
       basePriceCents: row.base_price_cents,
       stairsFeeCents: row.stairs_fee_cents,
       helperFeeCents: row.helper_fee_cents,
+      adjustmentFeeCents: 0,
       platformFeeCents:
         "platform_fee_cents" in row && typeof row.platform_fee_cents === "number"
           ? row.platform_fee_cents

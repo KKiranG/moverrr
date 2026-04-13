@@ -158,6 +158,18 @@ export interface Database {
           checkin_2h_confirmed: boolean;
           checkin_2h_requested_at: string | null;
           freshness_suspended_at: string | null;
+          freshness_miss_count: number;
+          freshness_last_action:
+            | "none"
+            | "requested_24h"
+            | "confirmed_24h"
+            | "requested_2h"
+            | "confirmed_2h"
+            | "suspended"
+            | "unsuspended";
+          freshness_suspension_reason: "missed_2h_checkin" | "manual_ops" | "other" | null;
+          last_freshness_confirmed_at: string | null;
+          last_freshness_unsuspended_at: string | null;
           created_at: string;
           updated_at: string;
           expires_at: string | null;
@@ -203,6 +215,18 @@ export interface Database {
           checkin_2h_confirmed?: boolean;
           checkin_2h_requested_at?: string | null;
           freshness_suspended_at?: string | null;
+          freshness_miss_count?: number;
+          freshness_last_action?:
+            | "none"
+            | "requested_24h"
+            | "confirmed_24h"
+            | "requested_2h"
+            | "confirmed_2h"
+            | "suspended"
+            | "unsuspended";
+          freshness_suspension_reason?: "missed_2h_checkin" | "manual_ops" | "other" | null;
+          last_freshness_confirmed_at?: string | null;
+          last_freshness_unsuspended_at?: string | null;
           created_at?: string;
           updated_at?: string;
           expires_at?: string | null;
@@ -486,6 +510,7 @@ export interface Database {
           base_price_cents: number;
           stairs_fee_cents: number;
           helper_fee_cents: number;
+          adjustment_fee_cents: number;
           booking_fee_cents: number;
           gst_cents: number;
           total_price_cents: number;
@@ -505,7 +530,7 @@ export interface Database {
           customer_confirmed_at: string | null;
           cancelled_at: string | null;
           cancellation_reason: string | null;
-          cancellation_reason_code: "carrier_unavailable" | "customer_changed_plans" | "payment_failed" | "no_response" | "safety_concern" | null;
+          cancellation_reason_code: "carrier_unavailable" | "customer_changed_plans" | "payment_failed" | "no_response" | "safety_concern" | "misdescription" | null;
           pending_expires_at: string;
           created_at: string;
           updated_at: string;
@@ -542,6 +567,7 @@ export interface Database {
           base_price_cents: number;
           stairs_fee_cents?: number;
           helper_fee_cents?: number;
+          adjustment_fee_cents?: number;
           booking_fee_cents?: number;
           gst_cents?: number;
           total_price_cents: number;
@@ -561,7 +587,7 @@ export interface Database {
           customer_confirmed_at?: string | null;
           cancelled_at?: string | null;
           cancellation_reason?: string | null;
-          cancellation_reason_code?: "carrier_unavailable" | "customer_changed_plans" | "payment_failed" | "no_response" | "safety_concern" | null;
+          cancellation_reason_code?: "carrier_unavailable" | "customer_changed_plans" | "payment_failed" | "no_response" | "safety_concern" | "misdescription" | null;
           pending_expires_at?: string;
           created_at?: string;
           updated_at?: string;
@@ -639,6 +665,72 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["booking_events"]["Insert"]>;
+      };
+      booking_request_events: {
+        Row: {
+          id: string;
+          booking_request_id: string;
+          move_request_id: string;
+          request_group_id: string | null;
+          actor_role: "customer" | "carrier" | "admin" | "system";
+          actor_user_id: string | null;
+          event_type: string;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          booking_request_id: string;
+          move_request_id: string;
+          request_group_id?: string | null;
+          actor_role: "customer" | "carrier" | "admin" | "system";
+          actor_user_id?: string | null;
+          event_type: string;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["booking_request_events"]["Insert"]>;
+      };
+      condition_adjustments: {
+        Row: {
+          id: string;
+          booking_id: string;
+          carrier_id: string;
+          customer_id: string;
+          reason_code:
+            | "stairs_mismatch"
+            | "helper_required"
+            | "item_materially_different"
+            | "extreme_parking";
+          amount_cents: number;
+          status: "pending" | "accepted" | "rejected" | "expired" | "cancelled";
+          note: string | null;
+          customer_response_note: string | null;
+          response_deadline_at: string;
+          responded_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          booking_id: string;
+          carrier_id: string;
+          customer_id: string;
+          reason_code:
+            | "stairs_mismatch"
+            | "helper_required"
+            | "item_materially_different"
+            | "extreme_parking";
+          amount_cents: number;
+          status?: "pending" | "accepted" | "rejected" | "expired" | "cancelled";
+          note?: string | null;
+          customer_response_note?: string | null;
+          response_deadline_at?: string;
+          responded_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["condition_adjustments"]["Insert"]>;
       };
       booking_idempotency_keys: {
         Row: {
@@ -997,7 +1089,8 @@ export interface Database {
       admin_action_events: {
         Row: {
           id: string;
-          admin_user_id: string;
+          admin_user_id: string | null;
+          actor_role: "admin" | "system";
           entity_type:
             | "unmatched_request"
             | "listing"
@@ -1005,7 +1098,10 @@ export interface Database {
             | "dispute"
             | "carrier"
             | "concierge_offer"
-            | "operator_task";
+            | "operator_task"
+            | "booking_request"
+            | "request_group"
+            | "condition_adjustment";
           entity_id: string;
           action_type: string;
           reason: string | null;
@@ -1014,7 +1110,8 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          admin_user_id: string;
+          admin_user_id?: string | null;
+          actor_role?: "admin" | "system";
           entity_type:
             | "unmatched_request"
             | "listing"
@@ -1022,7 +1119,10 @@ export interface Database {
             | "dispute"
             | "carrier"
             | "concierge_offer"
-            | "operator_task";
+            | "operator_task"
+            | "booking_request"
+            | "request_group"
+            | "condition_adjustment";
           entity_id: string;
           action_type: string;
           reason?: string | null;
