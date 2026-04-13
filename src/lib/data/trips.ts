@@ -1,12 +1,15 @@
 import { unstable_cache } from "next/cache";
 
 import { SEARCH_PAGE_SIZE, SEARCH_REVALIDATE_SECONDS } from "@/lib/constants";
-import { hasMapsEnv, hasSupabaseEnv } from "@/lib/env";
+import { buildBookingEmail } from "@/lib/email";
+import { hasMapsEnv, hasSupabaseAdminEnv, hasSupabaseEnv } from "@/lib/env";
 import { AppError } from "@/lib/errors";
 import { getDistanceKmBetweenPoints } from "@/lib/maps/haversine";
 import { getSydneySuburbCoords } from "@/lib/maps/sydney-suburb-coords";
 import { geocodeAddress } from "@/lib/maps/geocode";
 import { getMinimumTripBasePriceCents, getRouteDistanceKm } from "@/lib/pricing/guardrails";
+import { sendBookingTransactionalEmail, sendTripFreshnessNotification } from "@/lib/notifications";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 import { toGeographyPoint, toTrip, toTripSearchResult, type ListingJoinedRecord } from "@/lib/data/mappers";
 import { tripSchema, tripUpdateSchema, type TripInput, type TripUpdateInput } from "@/lib/validation/trip";
@@ -20,6 +23,47 @@ type SearchRpcRow = {
   dropoff_distance_km: number;
   total_count?: number;
 };
+
+function getTripStartDateTimeIso(trip: Pick<Trip, "tripDate" | "timeWindow">) {
+  const timeByWindow: Record<Trip["timeWindow"], string> = {
+    morning: "09:00:00",
+    afternoon: "13:00:00",
+    evening: "18:00:00",
+    flexible: "09:00:00",
+  };
+
+  return `${trip.tripDate}T${timeByWindow[trip.timeWindow]}.000Z`;
+}
+
+function isTripFreshnessDeprioritized(
+  trip: Pick<Trip, "tripDate" | "timeWindow" | "checkin24hRequestedAt" | "checkin24hConfirmed" | "status">,
+  nowIso = new Date().toISOString(),
+) {
+  if (trip.status === "suspended") {
+    return true;
+  }
+
+  if (!trip.checkin24hRequestedAt || trip.checkin24hConfirmed) {
+    return false;
+  }
+
+  const tripStart = new Date(getTripStartDateTimeIso(trip)).getTime();
+  const now = new Date(nowIso).getTime();
+  return tripStart - now <= 24 * 60 * 60 * 1000;
+}
+
+function sortTripsByFreshnessPriority(results: TripSearchResult[]) {
+  return [...results].sort((left, right) => {
+    const leftPenalty = isTripFreshnessDeprioritized(left) ? 1 : 0;
+    const rightPenalty = isTripFreshnessDeprioritized(right) ? 1 : 0;
+
+    if (leftPenalty !== rightPenalty) {
+      return leftPenalty - rightPenalty;
+    }
+
+    return right.matchScore - left.matchScore;
+  });
+}
 
 function buildSearchBreakdown(params: {
   trip: Trip;
@@ -147,7 +191,7 @@ async function queryTripsByDateWindow(params: {
   const trips = await queryTripsByIds(matches.map((match) => match.listing_id));
   const tripMap = new Map(trips.map((trip) => [trip.id, trip]));
   return {
-    results: matches
+    results: sortTripsByFreshnessPriority(matches
       .map((match) => {
         const trip = tripMap.get(match.listing_id);
 
@@ -166,7 +210,7 @@ async function queryTripsByDateWindow(params: {
           }),
         );
       })
-      .filter((trip): trip is TripSearchResult => Boolean(trip)),
+      .filter((trip): trip is TripSearchResult => Boolean(trip))),
     totalCount: Number(matches[0]?.total_count ?? 0),
   };
 }
@@ -707,6 +751,11 @@ export async function createTripForCarrier(userId: string, input: TripInput) {
     is_return_trip: parsed.data.isReturnTrip,
     status: parsed.data.status,
     publish_at: parsed.data.publishAt ?? null,
+    checkin_24h_confirmed: false,
+    checkin_24h_requested_at: null,
+    checkin_2h_confirmed: false,
+    checkin_2h_requested_at: null,
+    freshness_suspended_at: null,
   };
 
   const { data, error } = await supabase
@@ -863,6 +912,11 @@ export async function updateTripForCarrier(
       status: parsed.data.status,
       publish_at: parsed.data.publishAt ?? null,
       special_notes: parsed.data.specialNotes?.trim() ? parsed.data.specialNotes.trim() : null,
+      checkin_24h_confirmed: false,
+      checkin_24h_requested_at: null,
+      checkin_2h_confirmed: false,
+      checkin_2h_requested_at: null,
+      freshness_suspended_at: null,
     })
     .eq("id", tripId)
     .eq("carrier_id", carrier.id);
@@ -872,4 +926,212 @@ export async function updateTripForCarrier(
   }
 
   return getTripById(tripId);
+}
+
+async function notifyCustomersAboutSuspendedTrip(params: {
+  listingId: string;
+  routeLabel: string;
+}) {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("id, booking_reference, total_price_cents, pickup_suburb, dropoff_suburb, customers!inner(email)")
+    .eq("listing_id", params.listingId)
+    .in("status", ["pending", "confirmed", "picked_up"]);
+
+  if (error || !data) {
+    return;
+  }
+
+  await Promise.all(
+    data.map((row) =>
+      sendBookingTransactionalEmail({
+        bookingId: row.id,
+        bookingStatus: null,
+        emailType: "trip_freshness_suspended",
+        to: ((row.customers as { email?: string } | null)?.email ?? "").trim(),
+        subject: `Trip needs reconfirmation: ${row.booking_reference}`,
+        html: buildBookingEmail({
+          eyebrow: "Trip freshness",
+          title: "This route needs carrier reconfirmation",
+          intro:
+            "The carrier has not confirmed that the trip is still running inside the required freshness window, so moverrr temporarily suspended the route while ops reviews it.",
+          bookingReference: row.booking_reference,
+          routeLabel: params.routeLabel,
+          priceLabel: new Intl.NumberFormat("en-AU", {
+            style: "currency",
+            currency: "AUD",
+            maximumFractionDigits: 0,
+          }).format(row.total_price_cents / 100),
+          ctaPath: `/bookings/${row.id}`,
+          ctaLabel: "Open booking",
+          bodyLines: [
+            "Do not move coordination off-platform while this route is being rechecked.",
+            "moverrr will keep the booking record updated if the route is reconfirmed or a recovery path is needed.",
+          ],
+        }),
+      }),
+    ),
+  );
+}
+
+export async function confirmTripFreshnessCheckinForCarrier(params: {
+  userId: string;
+  tripId: string;
+  window: "24h" | "2h";
+}) {
+  if (!hasSupabaseEnv()) {
+    throw new AppError("Supabase is not configured.", 503, "supabase_unavailable");
+  }
+
+  const supabase = createServerSupabaseClient();
+  const { data: carrier, error: carrierError } = await supabase
+    .from("carriers")
+    .select("id")
+    .eq("user_id", params.userId)
+    .maybeSingle();
+
+  if (carrierError) {
+    throw new AppError(carrierError.message, 500, "carrier_lookup_failed");
+  }
+
+  if (!carrier) {
+    throw new AppError("Carrier profile not found.", 404, "carrier_not_found");
+  }
+
+  const patch =
+    params.window === "24h"
+      ? { checkin_24h_confirmed: true }
+      : {
+          checkin_2h_confirmed: true,
+          status: "active" as const,
+          freshness_suspended_at: null,
+        };
+
+  const { error } = await supabase
+    .from("capacity_listings")
+    .update(patch)
+    .eq("id", params.tripId)
+    .eq("carrier_id", carrier.id);
+
+  if (error) {
+    throw new AppError(error.message, 500, "trip_freshness_confirm_failed");
+  }
+}
+
+export async function runTripFreshnessChecks(params?: {
+  now?: string;
+}) {
+  if (!hasSupabaseAdminEnv()) {
+    return {
+      checkinsRequested24h: 0,
+      checkinsRequested2h: 0,
+      deprioritizedTripIds: [] as string[],
+      suspendedTripIds: [] as string[],
+    };
+  }
+
+  const nowIso = params?.now ?? new Date().toISOString();
+  const now = new Date(nowIso);
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("capacity_listings")
+    .select("id, carrier_id, origin_suburb, destination_suburb, trip_date, time_window, status, checkin_24h_confirmed, checkin_24h_requested_at, checkin_2h_confirmed, checkin_2h_requested_at, carriers!inner(email)")
+    .in("status", ["active", "booked_partial"]);
+
+  if (error) {
+    throw new AppError(error.message, 500, "trip_freshness_query_failed");
+  }
+
+  let checkinsRequested24h = 0;
+  let checkinsRequested2h = 0;
+  const deprioritizedTripIds: string[] = [];
+  const suspendedTripIds: string[] = [];
+
+  for (const row of data ?? []) {
+    const routeLabel = `${row.origin_suburb} to ${row.destination_suburb}`;
+    const tripStart = new Date(getTripStartDateTimeIso({
+      tripDate: row.trip_date,
+      timeWindow: row.time_window,
+    }));
+    const msUntilTrip = tripStart.getTime() - now.getTime();
+    const carrierEmail = ((row.carriers as { email?: string } | null)?.email ?? "").trim();
+
+    if (msUntilTrip <= 24 * 60 * 60 * 1000 && msUntilTrip > 2 * 60 * 60 * 1000) {
+      deprioritizedTripIds.push(row.id);
+
+      if (!row.checkin_24h_requested_at) {
+        await supabase
+          .from("capacity_listings")
+          .update({
+            checkin_24h_requested_at: nowIso,
+            checkin_24h_confirmed: false,
+          })
+          .eq("id", row.id);
+
+        if (carrierEmail) {
+          await sendTripFreshnessNotification({
+            to: carrierEmail,
+            subject: `Confirm tomorrow's trip: ${routeLabel}`,
+            title: "Please confirm tomorrow's trip still has space",
+            intro:
+              "This route is inside the 24-hour freshness window. Confirm it so moverrr can keep matching it normally.",
+            routeLabel,
+            ctaPath: `/carrier/trips/${row.id}/freshness-confirm?window=24h`,
+            ctaLabel: "Confirm tomorrow's trip",
+          });
+        }
+
+        checkinsRequested24h += 1;
+      }
+    }
+
+    if (msUntilTrip <= 2 * 60 * 60 * 1000) {
+      if (!row.checkin_2h_requested_at) {
+        await supabase
+          .from("capacity_listings")
+          .update({
+            checkin_2h_requested_at: nowIso,
+            checkin_2h_confirmed: false,
+          })
+          .eq("id", row.id);
+
+        if (carrierEmail) {
+          await sendTripFreshnessNotification({
+            to: carrierEmail,
+            subject: `Confirm your trip is still on: ${routeLabel}`,
+            title: "Confirm your trip is still on",
+            intro:
+              "This route is inside the 2-hour freshness window. Confirm now or moverrr will suspend it until ops reviews it.",
+            routeLabel,
+            ctaPath: `/carrier/trips/${row.id}/freshness-confirm?window=2h`,
+            ctaLabel: "Confirm trip is still on",
+          });
+        }
+
+        checkinsRequested2h += 1;
+      } else if (!row.checkin_2h_confirmed) {
+        await supabase
+          .from("capacity_listings")
+          .update({
+            status: "suspended",
+            freshness_suspended_at: nowIso,
+          })
+          .eq("id", row.id);
+
+        suspendedTripIds.push(row.id);
+        await notifyCustomersAboutSuspendedTrip({
+          listingId: row.id,
+          routeLabel,
+        });
+      }
+    }
+  }
+
+  return {
+    checkinsRequested24h,
+    checkinsRequested2h,
+    deprioritizedTripIds,
+    suspendedTripIds,
+  };
 }

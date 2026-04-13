@@ -68,7 +68,12 @@ export interface Trip {
   savingsPct: number;
   remainingCapacityPct: number;
   isReturnTrip: boolean;
-  status?: "draft" | "active" | "paused" | "booked_partial" | "booked_full" | "expired" | "cancelled";
+  status?: "draft" | "active" | "paused" | "booked_partial" | "booked_full" | "expired" | "cancelled" | "suspended";
+  checkin24hConfirmed?: boolean;
+  checkin24hRequestedAt?: string | null;
+  checkin2hConfirmed?: boolean;
+  checkin2hRequestedAt?: string | null;
+  freshnessSuspendedAt?: string | null;
   publishAt?: string | null;
   rules: TripRules;
 }

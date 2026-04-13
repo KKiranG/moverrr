@@ -21,10 +21,12 @@ export interface BookingPriceBreakdown {
   basePriceCents: number;
   stairsFeeCents: number;
   helperFeeCents: number;
-  bookingFeeCents: number;
+  platformFeeCents: number;
+  gstCents: number;
   totalPriceCents: number;
   carrierPayoutCents: number;
   platformCommissionCents: number;
+  bookingFeeCents?: number;
 }
 
 export type BookingPaymentStatus =
@@ -35,6 +37,16 @@ export type BookingPaymentStatus =
   | "refunded"
   | "failed"
   | "authorization_cancelled";
+
+export type BookingPaymentLifecyclePhase =
+  | "authorization_pending"
+  | "funds_held"
+  | "release_pending"
+  | "paid"
+  | "manual_review"
+  | "refunded"
+  | "authorization_failed"
+  | "hold_released";
 
 export type BookingCancellationReasonCode =
   | "carrier_unavailable"
@@ -82,6 +94,9 @@ export interface BookingPickupProof {
   itemCount: number;
   condition: BookingProofCondition;
   handoffConfirmed: boolean;
+  capturedAt: string;
+  latitude: number;
+  longitude: number;
 }
 
 export interface BookingDeliveryProof {
@@ -89,6 +104,9 @@ export interface BookingDeliveryProof {
   recipientConfirmed: boolean;
   exceptionCode?: BookingExceptionCode;
   exceptionNote?: string;
+  capturedAt: string;
+  latitude: number;
+  longitude: number;
 }
 
 export interface BookingExceptionReport {

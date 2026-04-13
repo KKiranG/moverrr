@@ -32,6 +32,23 @@ function getBookingEventTimestamp(booking: { events?: Array<{ eventType: string;
   return booking.events?.find((event) => event.eventType === eventType)?.createdAt ?? null;
 }
 
+function getProofMetadata(
+  booking: Booking,
+  proofType: "pickupProof" | "deliveryProof",
+) {
+  const event = booking.events?.find((entry) => entry.eventType === (proofType === "pickupProof" ? "status_picked_up" : "status_delivered"));
+  const proof =
+    event?.metadata?.[proofType] && typeof event.metadata[proofType] === "object"
+      ? (event.metadata[proofType] as Partial<BookingPickupProof & BookingDeliveryProof>)
+      : null;
+
+  return {
+    capturedAt: typeof proof?.capturedAt === "string" ? proof.capturedAt : event?.createdAt ?? null,
+    latitude: typeof proof?.latitude === "number" ? proof.latitude : null,
+    longitude: typeof proof?.longitude === "number" ? proof.longitude : null,
+  };
+}
+
 function getEventSummaryLines(event: {
   eventType: string;
   metadata: Record<string, unknown>;
@@ -309,6 +326,7 @@ function BookingDetailPageContent({
   const paymentSummary = getBookingPaymentStateSummary(booking);
   const checklist = getConfirmedBookingChecklist();
   const pickupProofAt = getBookingEventTimestamp(booking, "status_picked_up");
+  const pickupProofMetadata = getProofMetadata(booking, "pickupProof");
   const deliveredAt = getBookingEventTimestamp(booking, "status_delivered");
   const bookSimilarHref = `/search?${new URLSearchParams({
     from: booking.pickupSuburb ?? "",
@@ -461,12 +479,14 @@ function BookingDetailPageContent({
                 path={booking.pickupProofPhotoUrl}
                 title="Pickup proof"
                 subtitle={pickupProofAt ? `Uploaded at ${formatDateTime(pickupProofAt)}` : undefined}
+                metadata={pickupProofMetadata}
               />
               <PrivateProofTile
                 bucket={PRIVATE_BUCKETS.proofPhotos}
                 path={booking.deliveryProofPhotoUrl}
                 title="Delivery proof"
                 subtitle={deliveredAt ? `Uploaded at ${formatDateTime(deliveredAt)}` : undefined}
+                metadata={getProofMetadata(booking, "deliveryProof")}
               />
             </div>
           </div>

@@ -4,6 +4,7 @@ import { toOffer } from "@/lib/data/mappers";
 import { searchTrips } from "@/lib/data/trips";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
+import { calculateBookingBreakdown } from "@/lib/pricing/breakdown";
 import type { Database } from "@/types/database";
 import type { MoveRequest, Offer, OfferFitConfidence, OfferMatchClass } from "@/types/move-request";
 import type { TripSearchResult } from "@/types/trip";
@@ -112,27 +113,13 @@ export async function getOfferByListingForMoveRequest(moveRequestId: string, lis
 
 function getDerivedOfferPricing(moveRequest: MoveRequest, trip: TripSearchResult) {
   const basePriceCents = trip.priceCents;
-  const stairsFeeCents = moveRequest.needsStairs && trip.rules.stairsOk
-    ? trip.rules.stairsExtraCents
-    : 0;
-  const helperFeeCents = moveRequest.needsHelper && trip.rules.helperAvailable
-    ? trip.rules.helperExtraCents
-    : 0;
-  const bookingFeeCents = 500;
-  const totalPriceCents = basePriceCents + stairsFeeCents + helperFeeCents + bookingFeeCents;
-  const platformCommissionCents = Math.round(basePriceCents * 0.15);
-  const carrierPayoutCents =
-    basePriceCents + stairsFeeCents + helperFeeCents - platformCommissionCents;
-
-  return {
+  return calculateBookingBreakdown({
     basePriceCents,
-    stairsFeeCents,
-    helperFeeCents,
-    bookingFeeCents,
-    totalPriceCents,
-    carrierPayoutCents,
-    platformCommissionCents,
-  };
+    needsStairs: moveRequest.needsStairs && trip.rules.stairsOk,
+    stairsExtraCents: trip.rules.stairsExtraCents,
+    needsHelper: moveRequest.needsHelper && trip.rules.helperAvailable,
+    helperExtraCents: trip.rules.helperExtraCents,
+  });
 }
 
 function getDerivedMatchClass(moveRequest: MoveRequest, trip: TripSearchResult): OfferMatchClass {
@@ -270,6 +257,8 @@ export async function ensureOfferForMoveRequestSelection(params: {
     stairs_fee_cents: derivedOffer.pricing.stairsFeeCents,
     helper_fee_cents: derivedOffer.pricing.helperFeeCents,
     booking_fee_cents: derivedOffer.pricing.bookingFeeCents,
+    platform_fee_cents: derivedOffer.pricing.platformFeeCents,
+    gst_cents: derivedOffer.pricing.gstCents,
     total_price_cents: derivedOffer.pricing.totalPriceCents,
     expires_at: derivedOffer.expiresAt ?? null,
   });

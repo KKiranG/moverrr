@@ -72,12 +72,21 @@ export function PriceBreakdown({
           </div>
           <div className="flex items-center justify-between gap-4">
             <dt>
-              <span className="text-text">moverrr charges</span>
+              <span className="text-text">Platform fee</span>
               <span className="mt-1 block text-xs text-text-secondary">
-                Covers secure payment handling, support, and proof capture.
+                moverrr service fee applied to the route base price only.
               </span>
             </dt>
-            <dd className="text-text">{formatCurrency(pricing.bookingFeeCents)}</dd>
+            <dd className="text-text">{formatCurrency(pricing.platformFeeCents)}</dd>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <dt>
+              <span className="text-text">GST</span>
+              <span className="mt-1 block text-xs text-text-secondary">
+                Calculated on the route subtotal plus the platform fee.
+              </span>
+            </dt>
+            <dd className="text-text">{formatCurrency(pricing.gstCents)}</dd>
           </div>
           <div className="flex items-center justify-between gap-4 border-t border-border pt-2">
             <dt className="font-medium text-text">Customer total</dt>
@@ -93,7 +102,7 @@ export function PriceBreakdown({
           </p>
         ) : null}
         <p className="text-xs text-text-secondary">
-          moverrr commission comes from the base price only, never from stairs or helper add-ons.
+          The platform fee comes from the base route price only, never from stairs or helper add-ons.
         </p>
         {!needsStairs && stairsExtraCents > 0 ? (
           <p className="text-sm text-text-secondary">

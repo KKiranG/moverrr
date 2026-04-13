@@ -8,6 +8,69 @@
 
 ## 2026-04-13 — Vocabulary-layer alignment for alerts, fit labels, privacy, and customer-facing copy
 
+### `COMP-2026-04-13-16` — Pricing contract migration, proof metadata gating, payment lifecycle mapping, and trip freshness automation
+- Moved from active backlog:
+  - `A11`
+  - `A13`
+  - `A14`
+  - `A15`
+  - `A62`
+  - `A64`
+- When: `2026-04-13`
+- Where:
+  - `supabase/migrations/030_pricing_freshness_and_proof_metadata.sql`
+  - `src/types/booking.ts`
+  - `src/types/database.ts`
+  - `src/types/trip.ts`
+  - `src/lib/pricing/breakdown.ts`
+  - `src/lib/__tests__/breakdown.test.ts`
+  - `.agent-skills/PRICING.md`
+  - `src/lib/trip-presenters.ts`
+  - `src/components/trip/trip-card.tsx`
+  - `src/components/trip/trip-detail-summary.tsx`
+  - `src/components/booking/price-breakdown.tsx`
+  - `src/components/booking/booking-form.tsx`
+  - `src/lib/data/offers.ts`
+  - `src/lib/data/mappers.ts`
+  - `src/lib/data/bootstrap.ts`
+  - `src/lib/demo-data.ts`
+  - `src/lib/constants.ts`
+  - `src/lib/status-machine.ts`
+  - `src/lib/booking-presenters.ts`
+  - `src/lib/data/bookings.ts`
+  - `src/app/api/bookings/[id]/route.ts`
+  - `src/components/booking/status-update-actions.tsx`
+  - `src/components/booking/private-proof-tile.tsx`
+  - `src/app/(customer)/bookings/[id]/page.tsx`
+  - `src/lib/data/trips.ts`
+  - `src/app/api/cron/trip-freshness-checks/route.ts`
+  - `src/app/(carrier)/carrier/trips/[id]/freshness-confirm/route.ts`
+  - `src/app/(carrier)/carrier/payouts/page.tsx`
+  - `src/lib/__tests__/booking-proof-flow.test.ts`
+  - `src/lib/__tests__/booking-validation.test.ts`
+  - `src/lib/__tests__/carrier-today.test.ts`
+  - `src/lib/__tests__/create-payment-intent.test.ts`
+  - `vercel.json`
+  - `todolist.md`
+  - `completed.md`
+- Why:
+  - The shared pricing helper still used the superseded flat booking-fee model, proof acceptance still trusted images without structured metadata, and trip freshness enforcement still depended on manual review rather than actual scheduled checks.
+  - Payment messaging also still exposed raw Stripe states instead of the marketplace phases the blueprint depends on: authorization pending, held funds, release pending, and paid.
+- What changed:
+  - Replaced the old flat booking-fee helper with a blueprint-aligned all-in contract built from base price, structured add-ons, platform fee, and GST, while keeping the base-only commission invariant intact.
+  - Added an explicit detour-pricing guard so matching can still estimate corridor fit without silently rolling out automatic detour-cost pricing.
+  - Updated trip cards, trip detail, price breakdown, request review, payout ledger copy, and mapping helpers so customer and carrier surfaces show the same all-in pricing contract.
+  - Added explicit payment-lifecycle phase mapping on top of the persisted Stripe states so the product now consistently describes authorization pending, funds held, release pending, paid, refunded, and manual-review states.
+  - Required timestamp and GPS metadata on pickup and delivery proof before those status transitions can succeed, then surfaced that metadata back in the customer proof gallery.
+  - Added persisted trip freshness check-in fields, a freshness cron route, trip deprioritisation logic, 2-hour suspension logic, carrier confirmation links, and customer notification fallback when a live route is suspended for missing reconfirmation.
+- Verification:
+  - `npm run check`
+  - `node --import tsx --test src/lib/__tests__/booking-validation.test.ts src/lib/__tests__/breakdown.test.ts src/lib/__tests__/booking-proof-flow.test.ts src/lib/__tests__/create-payment-intent.test.ts src/lib/__tests__/webhook-events.test.ts`
+  - `node --import tsx --input-type=module -e "import { getBookingPaymentLifecyclePhase } from './src/lib/status-machine.ts'; console.log(JSON.stringify({ held: getBookingPaymentLifecyclePhase({ bookingStatus: 'confirmed', paymentStatus: 'authorized' }), release: getBookingPaymentLifecyclePhase({ bookingStatus: 'delivered', paymentStatus: 'authorized' }), paid: getBookingPaymentLifecyclePhase({ bookingStatus: 'completed', paymentStatus: 'captured' }), cancelled: getBookingPaymentLifecyclePhase({ bookingStatus: 'cancelled', paymentStatus: 'authorization_cancelled' }) }, null, 2));"`
+  - `node --import tsx --input-type=module -e "import { runTripFreshnessChecks } from './src/lib/data/trips.ts'; const result = await runTripFreshnessChecks({ now: '2026-04-13T08:00:00.000Z' }); console.log(JSON.stringify(result, null, 2));"`
+  - `node --import tsx --input-type=module -e "import { GET } from './src/app/api/cron/trip-freshness-checks/route.ts'; const response = await GET(new Request('http://localhost/api/cron/trip-freshness-checks')); console.log(response.status, await response.text());"`
+  - Note: live freshness emails, carrier reconfirmation over persisted trips, and the SQL migration itself still need a configured Supabase/Resend deployment environment to be exercised against real records.
+
 ### `COMP-2026-04-13-15` — Customer saved-card flow, wizard progress, operator queue, and payout auto-release
 - Moved from active backlog:
   - `B71`

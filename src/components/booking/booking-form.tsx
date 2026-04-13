@@ -1114,8 +1114,12 @@ export function BookingForm({
                 <span className="text-text">{formatCurrency(pricing.helperFeeCents)}</span>
               </div>
               <div className="flex items-center justify-between gap-4">
-                <span>moverrr charges</span>
-                <span className="text-text">{formatCurrency(pricing.bookingFeeCents)}</span>
+                <span>Platform fee</span>
+                <span className="text-text">{formatCurrency(pricing.platformFeeCents)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span>GST</span>
+                <span className="text-text">{formatCurrency(pricing.gstCents)}</span>
               </div>
               <div className="flex items-center justify-between gap-4 border-t border-border pt-2">
                 <span className="font-medium text-text">Customer total</span>

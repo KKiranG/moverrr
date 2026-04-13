@@ -72,6 +72,9 @@ const pickupProofSchema = z.object({
   itemCount: z.number().int().min(1),
   condition: z.enum(bookingProofConditionValues),
   handoffConfirmed: z.literal(true),
+  capturedAt: z.string().datetime(),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
 });
 
 const deliveryProofSchema = z
@@ -80,6 +83,9 @@ const deliveryProofSchema = z
     recipientConfirmed: z.literal(true),
     exceptionCode: z.enum(bookingExceptionCodeValues).optional(),
     exceptionNote: z.string().trim().min(1).optional(),
+    capturedAt: z.string().datetime(),
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
   })
   .superRefine((value, ctx) => {
     if (value.exceptionCode && value.exceptionCode !== "none" && !value.exceptionNote) {
@@ -109,7 +115,7 @@ function parsePickupProofForStatus(
 
   if (!parsed.success) {
     throw new AppError(
-      "Pickup proof needs a photo, item count, condition note, and handoff confirmation before pickup is marked complete.",
+      "Pickup proof needs a photo, item count, condition note, handoff confirmation, timestamp, and GPS metadata before pickup is marked complete.",
       400,
       "pickup_proof_required",
     );
@@ -130,7 +136,7 @@ function parseDeliveryProofForStatus(
 
   if (!parsed.success) {
     throw new AppError(
-      "Delivery proof needs a photo, recipient confirmation, and any matching exception note before delivery is marked complete.",
+      "Delivery proof needs a photo, recipient confirmation, timestamp, GPS metadata, and any matching exception note before delivery is marked complete.",
       400,
       "delivery_proof_required",
     );
@@ -990,6 +996,9 @@ export async function updateBookingStatusForActor(params: {
               itemCount: pickupProof.itemCount,
               condition: pickupProof.condition,
               handoffConfirmed: pickupProof.handoffConfirmed,
+              capturedAt: pickupProof.capturedAt,
+              latitude: pickupProof.latitude,
+              longitude: pickupProof.longitude,
             },
           }
         : {}),
@@ -999,6 +1008,9 @@ export async function updateBookingStatusForActor(params: {
               photoUrl: deliveryProof.photoUrl,
               recipientConfirmed: deliveryProof.recipientConfirmed,
               exceptionCode: deliveryProof.exceptionCode ?? "none",
+              capturedAt: deliveryProof.capturedAt,
+              latitude: deliveryProof.latitude,
+              longitude: deliveryProof.longitude,
               ...(deliveryProof.exceptionNote
                 ? {
                     exceptionNote: deliveryProof.exceptionNote,
@@ -1646,6 +1658,8 @@ export async function getCarrierPayoutDashboard(
         routeLabel: trip?.route.label ?? `${booking.pickupSuburb ?? "Pickup"} → ${booking.dropoffSuburb ?? "Dropoff"}`,
         basePriceCents: booking.pricing.basePriceCents,
         platformCommissionCents: booking.pricing.platformCommissionCents,
+        platformFeeCents: booking.pricing.platformFeeCents,
+        gstCents: booking.pricing.gstCents,
         bookingFeeCents: booking.pricing.bookingFeeCents,
         carrierPayoutCents: booking.pricing.carrierPayoutCents,
         payoutStatus: booking.paymentStatus ?? "pending",
@@ -1679,8 +1693,8 @@ export async function getCarrierPayoutLedgerCsv(userId: string) {
       "trip_date",
       "route",
       "base_price_cents",
-      "booking_fee_cents",
-      "platform_commission_cents",
+      "platform_fee_cents",
+      "gst_cents",
       "carrier_payout_cents",
       "payout_status",
     ].join(","),
@@ -1691,8 +1705,8 @@ export async function getCarrierPayoutLedgerCsv(userId: string) {
         entry.tripDate ?? "",
         `"${entry.routeLabel.replaceAll('"', '""')}"`,
         entry.basePriceCents,
-        entry.bookingFeeCents,
-        entry.platformCommissionCents,
+        entry.platformFeeCents,
+        entry.gstCents,
         entry.carrierPayoutCents,
         entry.payoutStatus,
       ].join(","),

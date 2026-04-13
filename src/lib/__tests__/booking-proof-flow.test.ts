@@ -38,6 +38,9 @@ test("rejects picked_up without the full pickup proof pack", async () => {
           itemCount: 1,
           condition: "no_visible_damage",
           handoffConfirmed: false,
+          capturedAt: "2026-04-02T10:00:00.000Z",
+          latitude: -33.8688,
+          longitude: 151.2093,
         } as never,
         skipStatusEmails: true,
       }),
@@ -78,6 +81,9 @@ test("rejects delivered without the full delivery proof pack", async () => {
           photoUrl: "proofs/delivery.jpg",
           recipientConfirmed: true,
           exceptionCode: "damage",
+          capturedAt: "2026-04-02T10:00:00.000Z",
+          latitude: -33.8688,
+          longitude: 151.2093,
         },
         skipStatusEmails: true,
       }),
@@ -123,6 +129,9 @@ test("accepts valid pickup and delivery proof packs and persists metadata to boo
         itemCount: 2,
         condition: "wear_noted",
         handoffConfirmed: true,
+        capturedAt: "2026-04-02T10:00:00.000Z",
+        latitude: -33.8688,
+        longitude: 151.2093,
       },
       skipStatusEmails: true,
     });
@@ -137,6 +146,9 @@ test("accepts valid pickup and delivery proof packs and persists metadata to boo
         recipientConfirmed: true,
         exceptionCode: "damage",
         exceptionNote: "Small chip noted on the front edge at handoff.",
+        capturedAt: "2026-04-02T11:15:00.000Z",
+        latitude: -33.889,
+        longitude: 151.225,
       },
       skipStatusEmails: true,
     });
@@ -168,6 +180,9 @@ test("accepts valid pickup and delivery proof packs and persists metadata to boo
         itemCount: 2,
         condition: "wear_noted",
         handoffConfirmed: true,
+        capturedAt: "2026-04-02T10:00:00.000Z",
+        latitude: -33.8688,
+        longitude: 151.2093,
       },
     });
     assert.deepEqual(deliveryEvent?.metadata, {
@@ -177,6 +192,9 @@ test("accepts valid pickup and delivery proof packs and persists metadata to boo
         recipientConfirmed: true,
         exceptionCode: "damage",
         exceptionNote: "Small chip noted on the front edge at handoff.",
+        capturedAt: "2026-04-02T11:15:00.000Z",
+        latitude: -33.889,
+        longitude: 151.225,
       },
     });
   } finally {

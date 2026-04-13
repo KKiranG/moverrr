@@ -4,10 +4,10 @@ import {
   DELIVERY_AUTO_RELEASE_HOURS,
   PENDING_BOOKING_HOLD_MS,
 } from "@/lib/constants";
+import { getBookingPaymentLifecyclePhase } from "@/lib/status-machine";
 import type {
   Booking,
   BookingCancellationReasonCode,
-  BookingPaymentStatus,
 } from "@/types/booking";
 
 export function getCancellationReasonLabel(
@@ -31,9 +31,13 @@ export function getPendingExpiryTimestamp(booking: Booking) {
 }
 
 export function getBookingPaymentStateSummary(booking: Booking) {
-  const paymentStatus: BookingPaymentStatus = booking.paymentStatus ?? "pending";
+  const paymentStatus = booking.paymentStatus ?? "pending";
+  const lifecyclePhase = getBookingPaymentLifecyclePhase({
+    bookingStatus: booking.status,
+    paymentStatus,
+  });
 
-  if (paymentStatus === "failed") {
+  if (lifecyclePhase === "authorization_failed") {
     return {
       badge: BOOKING_PAYMENT_LABELS.failed,
       tone: "error" as const,
@@ -45,7 +49,7 @@ export function getBookingPaymentStateSummary(booking: Booking) {
     };
   }
 
-  if (paymentStatus === "authorization_cancelled") {
+  if (lifecyclePhase === "hold_released") {
     return {
       badge: BOOKING_PAYMENT_LABELS.authorization_cancelled,
       tone: "warning" as const,
@@ -56,33 +60,33 @@ export function getBookingPaymentStateSummary(booking: Booking) {
     };
   }
 
-  if (paymentStatus === "authorized") {
-    if (booking.status === "delivered") {
+  if (lifecyclePhase === "release_pending") {
       return {
         badge: BOOKING_PAYMENT_LABELS.authorized,
         tone: "warning" as const,
-        title: "Funds are held while the delivery window closes",
+        title: "Release pending while proof and the dispute window close",
         description: `moverrr is holding the authorized amount while proof is reviewed and the ${DELIVERY_AUTO_RELEASE_HOURS}-hour dispute window runs.`,
         retryable: false,
       };
-    }
+  }
 
+  if (lifecyclePhase === "funds_held") {
     return {
       badge: BOOKING_PAYMENT_LABELS.authorized,
       tone: "success" as const,
-      title: "Funds are held in moverrr",
+      title: "Authorization hold is active",
       description:
-        "The card hold is active. moverrr only finalizes the charge when the booking reaches the release path.",
+        "The card hold is active. moverrr only finalizes the charge after delivery proof and the release path are complete.",
       retryable: false,
     };
   }
 
-  if (paymentStatus === "captured") {
+  if (lifecyclePhase === "paid") {
     if (booking.status === "completed") {
       return {
         badge: BOOKING_PAYMENT_LABELS.captured,
         tone: "success" as const,
-        title: "Payment finalized after the release window",
+        title: "Paid after the release window closed",
         description: "The job is complete, the release window closed, and moverrr finalized the booking payment.",
         retryable: false,
       };
@@ -91,13 +95,13 @@ export function getBookingPaymentStateSummary(booking: Booking) {
     return {
       badge: BOOKING_PAYMENT_LABELS.captured,
       tone: "success" as const,
-      title: "Payment finalized in moverrr",
-      description: "The booking charge has been captured and is now attached to the proof and payout trail.",
+      title: "Paid through moverrr",
+      description: "The booking charge is finalized and attached to the proof and payout trail.",
       retryable: false,
     };
   }
 
-  if (paymentStatus === "refunded") {
+  if (lifecyclePhase === "refunded") {
     return {
       badge: BOOKING_PAYMENT_LABELS.refunded,
       tone: "neutral" as const,
@@ -107,10 +111,22 @@ export function getBookingPaymentStateSummary(booking: Booking) {
     };
   }
 
+  if (lifecyclePhase === "manual_review") {
+    return {
+      badge: BOOKING_PAYMENT_LABELS.capture_failed,
+      tone: "warning" as const,
+      title: "Manual payment review required",
+      description:
+        booking.paymentFailureReason ??
+        "The release path hit a capture problem, so moverrr is holding payout until ops reviews it.",
+      retryable: false,
+    };
+  }
+
   return {
     badge: BOOKING_PAYMENT_LABELS.pending,
     tone: "neutral" as const,
-    title: "Payment still pending",
+    title: "Authorization still pending",
     description:
       "Stripe has not confirmed the authorization yet. Keep this page open or retry payment setup if needed.",
     retryable: booking.status === "pending",

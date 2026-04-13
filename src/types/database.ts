@@ -151,8 +151,13 @@ export interface Database {
           special_notes: string | null;
           is_return_trip: boolean;
           source_template_id: string | null;
-          status: "draft" | "active" | "paused" | "booked_partial" | "booked_full" | "expired" | "cancelled";
+          status: "draft" | "active" | "paused" | "booked_partial" | "booked_full" | "expired" | "cancelled" | "suspended";
           remaining_capacity_pct: number;
+          checkin_24h_confirmed: boolean;
+          checkin_24h_requested_at: string | null;
+          checkin_2h_confirmed: boolean;
+          checkin_2h_requested_at: string | null;
+          freshness_suspended_at: string | null;
           created_at: string;
           updated_at: string;
           expires_at: string | null;
@@ -191,8 +196,13 @@ export interface Database {
           special_notes?: string | null;
           is_return_trip?: boolean;
           source_template_id?: string | null;
-          status?: "draft" | "active" | "paused" | "booked_partial" | "booked_full" | "expired" | "cancelled";
+          status?: "draft" | "active" | "paused" | "booked_partial" | "booked_full" | "expired" | "cancelled" | "suspended";
           remaining_capacity_pct?: number;
+          checkin_24h_confirmed?: boolean;
+          checkin_24h_requested_at?: string | null;
+          checkin_2h_confirmed?: boolean;
+          checkin_2h_requested_at?: string | null;
+          freshness_suspended_at?: string | null;
           created_at?: string;
           updated_at?: string;
           expires_at?: string | null;
@@ -379,6 +389,8 @@ export interface Database {
           stairs_fee_cents: number;
           helper_fee_cents: number;
           booking_fee_cents: number;
+          platform_fee_cents: number;
+          gst_cents: number;
           total_price_cents: number;
           expires_at: string | null;
           created_at: string;
@@ -400,6 +412,8 @@ export interface Database {
           stairs_fee_cents?: number;
           helper_fee_cents?: number;
           booking_fee_cents?: number;
+          platform_fee_cents?: number;
+          gst_cents?: number;
           total_price_cents: number;
           expires_at?: string | null;
           created_at?: string;
@@ -473,6 +487,7 @@ export interface Database {
           stairs_fee_cents: number;
           helper_fee_cents: number;
           booking_fee_cents: number;
+          gst_cents: number;
           total_price_cents: number;
           carrier_payout_cents: number;
           platform_commission_cents: number;
@@ -528,6 +543,7 @@ export interface Database {
           stairs_fee_cents?: number;
           helper_fee_cents?: number;
           booking_fee_cents?: number;
+          gst_cents?: number;
           total_price_cents: number;
           carrier_payout_cents: number;
           platform_commission_cents: number;

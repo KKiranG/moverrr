@@ -112,7 +112,7 @@ export function TripDetailSummary({ trip, preferredDate }: TripDetailSummaryProp
               {formatCurrency(pricingPreview.totalPriceCents)}
             </p>
             <p className="mt-1 text-sm text-text-secondary">
-              Route price, moverrr charges, and any selected add-ons are included in this total.
+              Route price, platform fee, GST, and any selected add-ons are included in this total.
             </p>
             <p className="text-sm text-savings">{trip.savingsPct}% cheaper before optional add-ons</p>
           </div>

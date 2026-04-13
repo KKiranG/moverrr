@@ -31,6 +31,9 @@ const pickupProofSchema = z.object({
   itemCount: z.number().int().min(1),
   condition: z.enum(bookingProofConditionValues),
   handoffConfirmed: z.literal(true),
+  capturedAt: z.string().datetime(),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
 });
 
 const deliveryProofSchema = z
@@ -39,6 +42,9 @@ const deliveryProofSchema = z
     recipientConfirmed: z.literal(true),
     exceptionCode: z.enum(bookingExceptionCodeValues).optional(),
     exceptionNote: z.string().trim().min(1).optional(),
+    capturedAt: z.string().datetime(),
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
   })
   .superRefine((value, ctx) => {
     if (value.exceptionCode && value.exceptionCode !== "none" && !value.exceptionNote) {
