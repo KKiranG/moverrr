@@ -5,20 +5,25 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex min-w-[44px] items-center justify-center rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-md)] text-[15px] font-medium leading-[22px] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] disabled:cursor-not-allowed disabled:opacity-40",
   {
     variants: {
       variant: {
         primary:
-          "bg-accent px-4 py-3 text-white hover:bg-[#0052cc] active:bg-[#0047b3]",
+          "bg-[var(--accent)] px-4 py-3 text-[var(--text-on-accent)] hover:bg-[var(--accent-hover)] active:bg-[var(--accent-pressed)]",
         secondary:
-          "border border-border bg-surface px-4 py-3 text-text hover:bg-black/[0.02] active:bg-black/[0.05] dark:hover:bg-white/[0.04] dark:active:bg-white/[0.08]",
+          "bg-[var(--bg-elevated-2)] px-4 py-3 text-[var(--text-primary)] hover:bg-[var(--bg-elevated-3)] active:bg-[var(--bg-elevated-3)]",
         ghost:
-          "px-3 py-2 text-text-secondary hover:text-text active:bg-black/[0.04] active:text-text dark:hover:text-text dark:active:bg-white/[0.08]",
+          "bg-transparent px-3 py-2 text-[var(--text-secondary)] hover:bg-[var(--bg-elevated-2)] hover:text-[var(--text-primary)] active:bg-[var(--bg-elevated-3)] active:text-[var(--text-primary)]",
+        destructive:
+          "bg-[var(--danger)] px-4 py-3 text-[var(--text-primary)] hover:brightness-110 active:brightness-90",
+        icon: "h-10 w-10 rounded-[var(--radius-sm)] bg-[var(--bg-elevated-1)] p-2 text-[var(--text-primary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]",
+        chip: "rounded-[var(--radius-pill)] bg-[var(--bg-elevated-2)] px-3 py-1.5 text-[13px] leading-[18px] text-[var(--text-primary)] hover:bg-[var(--bg-elevated-3)] active:bg-[var(--bg-elevated-3)]",
       },
       size: {
-        default: "min-h-11",
-        sm: "min-h-11 px-3 text-sm",
+        default: "min-h-[52px]",
+        sm: "min-h-10 px-3 text-[13px]",
+        compact: "min-h-8 px-3 text-[13px]",
       },
     },
     defaultVariants: {

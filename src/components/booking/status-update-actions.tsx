@@ -312,6 +312,7 @@ export function StatusUpdateActions({
               <input
                 type="file"
                 accept="image/*,image/heic,image/heif"
+                capture="environment"
                 className="sr-only"
                 onChange={(event) => setProofFile(event.target.files?.[0] ?? null)}
               />

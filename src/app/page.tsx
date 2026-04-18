@@ -1,182 +1,73 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 
-import { RecentMoveRequests } from "@/components/customer/recent-move-requests";
-import { ConfigBanner } from "@/components/shared/config-banner";
-import { SearchBar } from "@/components/search/search-bar";
-import { getOptionalSessionUser } from "@/lib/auth";
-import { listRecentMoveRequestsForUser } from "@/lib/data/move-requests";
-import { hasSupabaseEnv } from "@/lib/env";
-import { getTodayIsoDate } from "@/lib/utils";
+import { AmbientMap } from "@/components/spec/chrome";
+import { Button } from "@/components/ui/button";
 
-export const metadata: Metadata = {
-  title: "Need-first spare-capacity moves in Sydney",
-  description:
-    "Tell moverrr what needs moving and get ranked spare-capacity matches with clear pricing, fit notes, and trust signals.",
-};
-
-const useCases = [
-  {
-    title: "Marketplace pickup",
-    description:
-      "Bought a sofa in Penrith and need it in Bondi without paying for a full dedicated truck.",
-  },
-  {
-    title: "Student move",
-    description:
-      "A desk, bookshelf, and a few boxes that sit awkwardly between courier pricing and a full removalist job.",
-  },
-  {
-    title: "Business overflow",
-    description:
-      "Overflow stock, produce, or equipment when you need a real vehicle but not a dedicated fleet run.",
-  },
+const presets = [
+  "Sofa pickup from FB",
+  "Fridge Bondi -> Parramatta",
+  "Bed pickup Marrickville",
 ];
 
-const trustPoints = [
-  {
-    title: "Ranked matches, not a dead-end directory",
-    description:
-      "You start with the move need. moverrr ranks the strongest spare-capacity options instead of making you sift through an archive.",
-  },
-  {
-    title: "Clear pricing before you commit",
-    description:
-      "Every match shows the customer total, route fit, and what is included so the decision stays simple and explainable.",
-  },
-  {
-    title: "Proof-backed fulfilment",
-    description:
-      "Carrier verification, on-platform booking flow, and delivery proof all stay inside moverrr’s trust boundary.",
-  },
-];
-
-export default async function HomePage() {
-  const sampleDate = getTodayIsoDate();
-  const showDevBanner = process.env.NODE_ENV === "development" && !hasSupabaseEnv();
-  const user = await getOptionalSessionUser();
-  const recentMoveRequests = user ? await listRecentMoveRequestsForUser(user.id, 3) : [];
-  const hasRecentMoveRequests = recentMoveRequests.length > 0;
-
+export default function HomePage() {
   return (
-    <main id="main-content" className="page-shell">
-      <section className="grid gap-6 pt-4 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-        <div className="flex flex-col gap-4">
-          <p className="section-label">
-            {hasRecentMoveRequests
-              ? "Welcome back to your move queue"
-              : "Need-first spare-capacity marketplace"}
-          </p>
-          <h1 className="max-w-2xl text-4xl leading-tight text-text sm:text-5xl">
-            {hasRecentMoveRequests
-              ? "Start a new move or reopen a recent request"
-              : "Tell us the move. We&apos;ll rank the best spare-capacity matches."}
-          </h1>
-          <p className="max-w-2xl text-base leading-7 text-text-secondary sm:text-lg">
-            {hasRecentMoveRequests
-              ? "Your recent move requests are below. Start a fresh need declaration here when the next job is different."
-              : "moverrr is built for the awkward middle: furniture, appliances, boxes, and small business runs that are too big for parcel delivery and too small for a full dedicated truck."}
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="#homepage-search"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-medium text-white active:bg-[#0047b3]"
-            >
-              Start with your move
-            </Link>
-            <Link
-              href="/become-a-carrier"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-border px-4 py-3 text-sm font-medium text-text active:bg-black/[0.04] dark:active:bg-white/[0.08]"
-            >
-              Post your first trip
-            </Link>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <div className="surface-card flex flex-col gap-4 p-4">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="section-label">How moverrr works</p>
-                <h2 className="mt-1 text-xl text-text">Need first. Match second.</h2>
-              </div>
-              <span className="rounded-xl border border-success/20 bg-success/10 px-3 py-2 text-sm font-medium text-success">
-                Ranked for clarity
-              </span>
-            </div>
-            <p className="subtle-text">
-              Carriers post trips they are already taking. You declare the route,
-              timing, and move type. moverrr returns the strongest matches with a
-              clear price, fit notes, and trust signals before you request a spot.
-            </p>
-          </div>
-
-          <div id="homepage-search">
-            <SearchBar />
-          </div>
-        </div>
-      </section>
-
-      {showDevBanner ? (
-        <section>
-          <ConfigBanner message="Add Supabase, Maps, and Stripe environment variables to switch this shell into the live MVP. The UI is ready, but the backend services need credentials." />
-        </section>
-      ) : null}
-
-      {hasRecentMoveRequests ? <RecentMoveRequests requests={recentMoveRequests} /> : null}
-
-      <section className="flex flex-col gap-4">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="section-label">Built for the awkward middle</p>
-            <h2 className="mt-1 text-2xl text-text">Examples moverrr should solve fast</h2>
-          </div>
+    <main id="main-content" className="pb-8">
+      <div className="relative">
+        <AmbientMap />
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-[calc(12px+var(--safe-area-top))]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-primary)]">MOVERRR</p>
           <Link
-            href={`/search?from=Penrith&to=Bondi&when=${sampleDate}&what=furniture`}
-            className="inline-flex min-h-[44px] items-center rounded-lg px-2 text-sm font-medium text-accent active:bg-accent/10"
+            href="/auth/login"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-sm)] px-2 text-[13px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] active:text-[var(--text-primary)]"
           >
-            Try a sample move
+            Log in
           </Link>
         </div>
-        <div className="grid gap-3">
-          {useCases.map((useCase) => (
-            <div key={useCase.title} className="surface-card p-4">
-              <h3 className="text-lg text-text">{useCase.title}</h3>
-              <p className="mt-2 subtle-text">{useCase.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      </div>
 
-      <section className="grid gap-4 pb-10 md:grid-cols-3">
-        {trustPoints.map((point) => (
-          <div key={point.title} className="surface-card p-4">
-            <p className="section-label">Trust scaffold</p>
-            <h2 className="mt-1 text-xl text-text">{point.title}</h2>
-            <p className="mt-2 subtle-text">{point.description}</p>
-          </div>
-        ))}
-      </section>
-
-      <section className="surface-card flex flex-col gap-4 p-6">
-        <div>
-          <p className="section-label">For carriers</p>
-          <h2 className="mt-1 text-2xl text-text">
-            Post the trips you are already taking and fill spare room with better-fit jobs.
-          </h2>
-        </div>
-        <p className="subtle-text">
-          moverrr is not a quote board. Post your real run, set your rules, and
-          only review requests that fit the trip you were already doing.
+      <section className="screen screen-wide -mt-6 space-y-4">
+        <h1 className="text-[34px] font-semibold leading-10 text-[var(--text-primary)]">
+          Your stuff,
+          <br />
+          on a trip already happening.
+        </h1>
+        <p className="body text-[var(--text-secondary)]">
+          Cheaper moves across Sydney, on spare space going your way.
         </p>
-        <div>
-          <Link
-            href="/become-a-carrier"
-            className="inline-flex min-h-[44px] items-center rounded-xl bg-accent px-4 py-3 text-sm font-medium text-white active:bg-[#0047b3]"
-          >
-            Learn how carrier posting works
-          </Link>
+
+        <div className="rounded-[var(--radius-xl)] bg-[var(--bg-elevated-1)] p-5">
+          <div className="space-y-3">
+            <input className="ios-input" placeholder="Pickup suburb or address" aria-label="Pickup address" />
+            <input className="ios-input" placeholder="Drop-off suburb or address" aria-label="Drop-off address" />
+            <Button asChild className="w-full" size="default">
+              <Link href="/move/new/route">Find drivers</Link>
+            </Button>
+          </div>
         </div>
+
+        <div>
+          <p className="eyebrow">Popular moves</p>
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            {presets.map((item) => (
+              <button
+                key={item}
+                type="button"
+                className="min-h-[44px] min-w-[44px] shrink-0 rounded-[var(--radius-pill)] bg-[var(--bg-elevated-2)] px-3 py-2 text-left text-[13px] leading-[18px] text-[var(--text-secondary)] hover:bg-[var(--bg-elevated-3)] hover:text-[var(--text-primary)] active:bg-[var(--bg-elevated-3)] active:text-[var(--text-primary)]"
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="surface-1 space-y-2">
+          <p className="title">How it works</p>
+          <p className="caption">1. Tell us what you need moved</p>
+          <p className="caption">2. We find drivers going your way</p>
+          <p className="caption">3. Book, track, and relax</p>
+        </div>
+
+        <p className="caption">Verified drivers. Upfront prices. Payment protection.</p>
       </section>
     </main>
   );

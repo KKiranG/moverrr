@@ -1011,8 +1011,8 @@ export function CarrierTripWizard({
 
       {error ? <p className="text-sm text-error">{error}</p> : null}
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:px-6">
-        <div className="mx-auto flex w-full max-w-content gap-3 pb-[env(safe-area-inset-bottom)]">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 pt-3 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:px-6">
+        <div className="mx-auto flex w-full max-w-content gap-3">
           <Button
             type="button"
             variant="secondary"

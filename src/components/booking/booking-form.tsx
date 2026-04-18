@@ -835,6 +835,7 @@ export function BookingForm({
                   <input
                     type="file"
                     accept="image/*,image/heic,image/heif"
+                    capture="environment"
                     className="sr-only"
                     onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)}
                   />
