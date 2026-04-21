@@ -1,6 +1,6 @@
 ---
 name: implement-feature
-description: End-to-end implementation playbook for a bounded moverrr feature — schema through UI with invariant checks at each step.
+description: End-to-end implementation playbook for a bounded MoveMate feature — schema through UI with invariant checks at each step.
 when_to_use: Use when implementing a new feature after the scope is confirmed and a spec or clear task description exists. Do not use for exploratory or ambiguous tasks — run repo-explorer or spec first.
 argument-hint: [feature: short description]
 effort: high

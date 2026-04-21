@@ -12,7 +12,7 @@ Use `$ARGUMENTS` to specify the issue number (e.g. `#42`).
 
 ## Step 1 — Thesis Check
 
-Before touching code, confirm the issue fits moverrr's thesis:
+Before touching code, confirm the issue fits MoveMate's thesis:
 
 1. Does fixing this help carriers post real spare capacity, or improve customer trust/clarity?
 2. Does it keep the need-first, match-ranked model intact?
@@ -50,4 +50,4 @@ If verification did not happen, say so plainly.
 - PR title: references the issue number
 - PR body: root cause, change summary, verification evidence
 
-Move the matching backlog item from `docs/operations/todolist.md` to `docs/operations/completed.md` if one exists.
+Add `Closes #N` to the PR body so GitHub auto-closes the issue on merge. If related issues exist, link them with `Related to #N`.
