@@ -16,6 +16,7 @@
     "ops:labels": "node --import tsx scripts/setup-github-labels.ts",
     "ops:sync-backlog": "node --import tsx scripts/sync-backlog-from-github.ts",
     "ops:project": "node --import tsx scripts/setup-github-project.ts",
+    "ops:sync-fields": "node --import tsx scripts/sync-project-fields.ts",
     "supabase:start": "supabase start",
     "supabase:push": "supabase db push",
     "supabase:reset": "supabase db reset",
