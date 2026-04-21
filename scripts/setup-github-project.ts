@@ -11,8 +11,8 @@
  *
  * What this script does:
  *   1. Creates a "MoveMate Control Plane" project under the KKiranG org (if not present)
- *   2. Adds the required custom fields
- *   3. Adds all open repo issues to the project
+ *   2. Adds the required custom fields (skips fields that already exist)
+ *   3. Adds all open repo issues to the project (paginates until exhausted)
  *
  * Fields created:
  *   - Lane         (single-select: ux-builder, ui-builder, backend-builder,
@@ -29,33 +29,55 @@
  *   - Touches Shared Logic    (single-select: yes, no)
  *   - Founder Decision Needed (single-select: yes, no)
  *   - Verification Status     (single-select: pending, partial, complete, blocked)
+ *   - Current State           (single-select: inbox, shaping, ready, in-progress,
+ *                              pr-open, needs-review, needs-founder-decision, blocked, done)
  *
- * Views created (using saved filters, which are supported without extra scopes):
- *   Inbox, Shaping, Ready, In Progress, PR Open,
- *   Needs Review, Needs Founder Decision, Blocked, Done
+ * Views: GitHub's API does not expose a createProjectV2View mutation.
+ *   Create the 9 views manually in the GitHub UI after running this script.
+ *   See the "Next steps" output at the end of the script.
  */
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 
 const REPO = "KKiranG/moverrr";
 const ORG = "KKiranG";
 const PROJECT_TITLE = "MoveMate Control Plane";
 
-function gh(args: string): string {
-  return execSync(`gh ${args}`, { encoding: "utf8" }).trim();
+function gh(args: string[]): string {
+  return execFileSync("gh", args, {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  }).trim();
 }
 
-function ghJson<T>(args: string): T {
+function ghJson<T>(args: string[]): T {
   return JSON.parse(gh(args));
+}
+
+function isAlreadyExistsError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return (
+    msg.includes("Name has already been taken") ||
+    msg.includes("already exists") ||
+    msg.includes("already in project") ||
+    msg.includes("Could not resolve") === false && msg.includes("already")
+  );
 }
 
 // ── 1. Find or create project ──────────────────────────────────────────────
 
 console.log(`==> Checking for existing project "${PROJECT_TITLE}"...`);
 
-const existingProjects = ghJson<{ number: number; title: string }[]>(
-  `project list --owner ${ORG} --format json --jq ".projects"`
-);
+const existingProjects = ghJson<{ number: number; title: string }[]>([
+  "project",
+  "list",
+  "--owner",
+  ORG,
+  "--format",
+  "json",
+  "--jq",
+  ".projects",
+]);
 
 let projectNumber: number;
 const existing = existingProjects?.find((p) => p.title === PROJECT_TITLE);
@@ -65,9 +87,16 @@ if (existing) {
   console.log(`    Found existing project #${projectNumber}`);
 } else {
   console.log(`    Creating new project "${PROJECT_TITLE}"...`);
-  const result = ghJson<{ number: number }>(
-    `project create --owner ${ORG} --title "${PROJECT_TITLE}" --format json`
-  );
+  const result = ghJson<{ number: number }>([
+    "project",
+    "create",
+    "--owner",
+    ORG,
+    "--title",
+    PROJECT_TITLE,
+    "--format",
+    "json",
+  ]);
   projectNumber = result.number;
   console.log(`    Created project #${projectNumber}`);
 }
@@ -122,62 +151,116 @@ console.log("==> Creating custom fields...");
 
 for (const [name, options] of Object.entries(singleSelectFields)) {
   try {
-    const optionsList = options.join(",");
-    gh(
-      `project field-create ${projectNumber} --owner ${ORG} --name "${name}" --data-type SINGLE_SELECT --single-select-options "${optionsList}"`
-    );
+    gh([
+      "project",
+      "field-create",
+      String(projectNumber),
+      "--owner",
+      ORG,
+      "--name",
+      name,
+      "--data-type",
+      "SINGLE_SELECT",
+      "--single-select-options",
+      options.join(","),
+    ]);
     console.log(`    + ${name} (single-select, ${options.length} options)`);
-  } catch {
-    console.log(`    ~ ${name} may already exist — skipping`);
+  } catch (err) {
+    if (isAlreadyExistsError(err)) {
+      console.log(`    ~ ${name} already exists — skipping`);
+    } else {
+      console.error(`    ! ${name} failed to create:`);
+      throw err;
+    }
   }
 }
 
 for (const name of textFields) {
   try {
-    gh(
-      `project field-create ${projectNumber} --owner ${ORG} --name "${name}" --data-type TEXT`
-    );
+    gh([
+      "project",
+      "field-create",
+      String(projectNumber),
+      "--owner",
+      ORG,
+      "--name",
+      name,
+      "--data-type",
+      "TEXT",
+    ]);
     console.log(`    + ${name} (text)`);
-  } catch {
-    console.log(`    ~ ${name} may already exist — skipping`);
+  } catch (err) {
+    if (isAlreadyExistsError(err)) {
+      console.log(`    ~ ${name} already exists — skipping`);
+    } else {
+      console.error(`    ! ${name} failed to create:`);
+      throw err;
+    }
   }
 }
 
-// ── 3. Backfill open issues into project ───────────────────────────────────
+// ── 3. Backfill all open issues into project (paginated) ───────────────────
 
 console.log("==> Adding open issues to project...");
 
-const issues = ghJson<{ number: number; title: string }[]>(
-  `issue list --repo ${REPO} --state open --limit 100 --json number,title`
-);
+// gh issue list handles pagination internally when limit > page size (100).
+// Use a high limit that covers any realistic repo size. If you exceed this,
+// run the script again — it will skip already-added issues.
+const PAGE_LIMIT = 2000;
+
+const issues = ghJson<{ number: number; title: string }[]>([
+  "issue",
+  "list",
+  "--repo",
+  REPO,
+  "--state",
+  "open",
+  "--limit",
+  String(PAGE_LIMIT),
+  "--json",
+  "number,title",
+]);
+
+console.log(`    Found ${issues.length} open issues`);
 
 for (const issue of issues) {
   try {
-    gh(
-      `project item-add ${projectNumber} --owner ${ORG} --url "https://github.com/${REPO}/issues/${issue.number}"`
-    );
+    gh([
+      "project",
+      "item-add",
+      String(projectNumber),
+      "--owner",
+      ORG,
+      "--url",
+      `https://github.com/${REPO}/issues/${issue.number}`,
+    ]);
     console.log(`    + #${issue.number} ${issue.title}`);
-  } catch {
-    console.log(`    ~ #${issue.number} already in project — skipping`);
+  } catch (err) {
+    if (isAlreadyExistsError(err)) {
+      console.log(`    ~ #${issue.number} already in project — skipping`);
+    } else {
+      console.error(`    ! #${issue.number} failed to add:`);
+      throw err;
+    }
   }
 }
 
 // ── 4. Done ────────────────────────────────────────────────────────────────
 
 console.log(`
-Done. Project URL: https://github.com/orgs/${ORG}/projects/${projectNumber}
+Done. Project URL: https://github.com/users/${ORG}/projects/${projectNumber}
 
-Next steps:
-  1. Open the project URL and create views:
-     - Inbox       filter: state:inbox
-     - Shaping     filter: state:shaping
-     - Ready       filter: state:ready
-     - In Progress filter: state:in-progress
-     - PR Open     filter: state:pr-open
-     - Needs Review        filter: state:needs-review
-     - Needs Founder Decision  filter: state:needs-founder-decision
-     - Blocked     filter: state:blocked
-     - Done        filter: state:done
-  2. Sort "Ready" view by priority:p0 → p4
+Manual next steps (GitHub's API has no createProjectV2View mutation):
+  1. Open the project URL and create these 9 views using the Current State field:
+     - Inbox                  Current State = inbox
+     - Shaping                Current State = shaping
+     - Ready                  Current State = ready
+     - In Progress            Current State = in-progress
+     - PR Open                Current State = pr-open
+     - Needs Review           Current State = needs-review
+     - Needs Founder Decision Current State = needs-founder-decision
+     - Blocked                Current State = blocked
+     - Done                   Current State = done
+  2. Sort "Ready" view by Priority p0 → p4
   3. Set "Needs Founder Decision" as the escalation view the founder checks first
 `);
