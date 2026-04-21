@@ -249,7 +249,7 @@ async function BookingsListSection({ userId }: { userId: string }) {
               <h2 className="mt-1 text-lg text-[var(--text-primary)]">Start with a move need</h2>
             </div>
             <p className="caption">
-              moverrr ranks spare-capacity matches after you declare the route, timing, and move type.
+              MoveMate ranks spare-capacity matches after you declare the route, timing, and move type.
             </p>
             <Button asChild className="min-h-[44px] active:opacity-80">
               <Link href="/search">Find a match</Link>

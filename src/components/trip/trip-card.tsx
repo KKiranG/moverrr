@@ -198,7 +198,7 @@ export function TripCard({ trip, href, preferredDate }: TripCardProps) {
         </div>
       </div>
       <div className="mt-4 flex items-center justify-end">
-        <span className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-accent px-4 text-sm font-medium text-white transition-colors group-focus-visible:ring-2 group-focus-visible:ring-accent/25 active:bg-[#0047b3]">
+        <span className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-[var(--text-primary)] px-4 text-sm font-medium text-[var(--bg-base)] transition-opacity group-focus-visible:ring-2 group-focus-visible:ring-[var(--text-primary)]/25 hover:opacity-90 active:opacity-80">
           {isFullyBooked ? "Fully booked - see similar trips" : "Request this trip"}
           <ArrowRight className="h-4 w-4" />
         </span>

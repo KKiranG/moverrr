@@ -4,7 +4,15 @@ import { usePathname } from "next/navigation";
 
 import { BottomTabBar } from "@/components/spec/chrome";
 
-const customerTabRoots = new Set(["/", "/activity", "/inbox", "/account"]);
+const customerTabRoots = new Set([
+  "/",
+  "/activity",
+  "/inbox",
+  "/account",
+  "/bookings",
+  "/alerts",
+  "/saved-searches",
+]);
 
 function shouldShowCustomerTabs(pathname: string) {
   if (customerTabRoots.has(pathname)) {

@@ -32,7 +32,7 @@ export function StickyBookingCta({
             ) : null}
           </p>
           <p className="text-xs text-text-secondary">
-            Starting total incl. moverrr charges
+            Starting total incl. MoveMate charges
           </p>
           {savingsNote ? (
             <p className="truncate text-xs text-text-secondary">
