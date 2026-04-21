@@ -1,34 +1,38 @@
-import { Button } from "@/components/ui/button";
-import { Timeline } from "@/components/spec/cards";
-import { TopAppBar } from "@/components/spec/chrome";
-import { bookingTimeline } from "@/lib/spec-mocks";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
-export default function BookingLiveViewPage() {
-  return (
-    <main className="pb-8">
-      <TopAppBar title="Your move" backHref="/activity" rightHref="/inbox/booking-demo-booking" rightLabel="Inbox" />
-      <section className="screen space-y-4">
-        <div className="surface-1 space-y-2">
-          <p className="eyebrow">Status</p>
-          <h1 className="title">Daniel is on the way to you</h1>
-          <p className="caption">ETA 20 min · Toyota Hiace · proof required on delivery</p>
-        </div>
+import { CustomerBookingDetailView } from "@/components/booking/customer-booking-detail-view";
+import { CustomerBookingRequestDetailView } from "@/components/booking/customer-booking-request-detail-view";
+import { requirePageSessionUser } from "@/lib/auth";
+import {
+  getCustomerBookingDetailById,
+  getCustomerBookingRequestDetailById,
+} from "@/lib/data/customer-booking-detail";
 
-        <Timeline steps={bookingTimeline} />
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: "Booking detail",
+  };
+}
 
-        <div className="surface-1">
-          <p className="eyebrow">Booking summary</p>
-          <p className="mt-2 title">3-seater sofa · Newtown → Bondi</p>
-          <p className="mt-1 caption">Total all-in: <span className="tabular">$101.20</span></p>
-        </div>
+export default async function BookingLiveViewPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const user = await requirePageSessionUser();
+  const [bookingDetail, requestDetail] = await Promise.all([
+    getCustomerBookingDetailById(user.id, params.id),
+    getCustomerBookingRequestDetailById(user.id, params.id),
+  ]);
 
-        <Button variant="secondary" className="w-full">
-          Structured updates
-        </Button>
-        <Button variant="ghost" className="w-full text-[var(--danger)]">
-          Cancel booking
-        </Button>
-      </section>
-    </main>
-  );
+  if (bookingDetail) {
+    return <CustomerBookingDetailView detail={bookingDetail} />;
+  }
+
+  if (requestDetail) {
+    return <CustomerBookingRequestDetailView detail={requestDetail} />;
+  }
+
+  notFound();
 }
