@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Bell, Route } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { TripCard } from "@/components/trip/trip-card";
@@ -388,22 +389,67 @@ export function MoveResultsClient({
         ) : null}
 
         {offers.length === 0 ? (
-          <Card className="p-4">
-            <p className="section-label">No offers yet</p>
-            <h2 className="mt-1 text-lg text-text">Try widening the timing or route assumptions</h2>
-            <p className="mt-2 text-sm text-text-secondary">
-              Live corridor fits can open up quickly when the date is flexible or the access notes
-              are clearer.
-            </p>
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-              <Button asChild>
-                <Link href="/move/new#timing">Edit timing</Link>
-              </Button>
-              <Button asChild variant="secondary">
-                <Link href="/move/new#route">Edit route</Link>
-              </Button>
+          <>
+            <div className="space-y-5">
+              <div>
+                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bg-elevated-2)]">
+                  <Route className="h-5 w-5 text-[var(--text-primary)]" strokeWidth={1.7} />
+                </div>
+                <h2
+                  className="text-[34px] leading-[1.05] tracking-[-0.03em] text-[var(--text-primary)]"
+                  style={{ fontFamily: "var(--font-display)", fontWeight: 400 }}
+                >
+                  No drivers going<br />that way — yet.
+                </h2>
+                <p className="mt-3 text-[15px] leading-[1.5] text-[var(--text-secondary)]">
+                  {moveRequest.route.pickupSuburb} → {moveRequest.route.dropoffSuburb} is quiet right now.
+                  We&apos;ll alert drivers on similar corridors and let you know the moment one posts.
+                </p>
+              </div>
+
+              <Card className="p-4">
+                <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text-secondary)]">What happens</p>
+                <div className="space-y-4">
+                  {[
+                    ["We alert drivers now", "Usually a match within 24 hrs on popular weekends"],
+                    ["You get notified", "Push and email the moment someone posts your route"],
+                    ["If still nothing in 48 hrs", "Our team finds a driver for you manually — same price, no premium"],
+                  ].map(([title, note], i) => (
+                    <div key={title} className="flex items-start gap-3">
+                      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--text-primary)]">
+                        <span className="text-[11px] font-bold tabular-nums">{i + 1}</span>
+                      </div>
+                      <div>
+                        <p className="text-[14px] font-semibold text-[var(--text-primary)]">{title}</p>
+                        <p className="mt-0.5 text-[13px] leading-[1.45] text-[var(--text-secondary)]">{note}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              <div className="flex flex-wrap gap-2">
+                <Button asChild variant="secondary" size="sm">
+                  <Link href="/move/new#timing">Edit timing</Link>
+                </Button>
+                <Button asChild variant="secondary" size="sm">
+                  <Link href="/move/new#route">Edit route</Link>
+                </Button>
+              </div>
             </div>
-          </Card>
+
+            <div className="fixed bottom-0 left-0 right-0 border-t border-[var(--border-subtle)] bg-[var(--bg-base)] px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-3">
+              <Button asChild className="w-full">
+                <Link href={`/move/alert?moveRequestId=${moveRequest.id}`}>
+                  <Bell className="mr-2 h-4 w-4" />
+                  Alert the network
+                </Link>
+              </Button>
+              <p className="mt-2 text-center text-[12px] text-[var(--text-tertiary)]">
+                Nothing is charged until a driver accepts.
+              </p>
+            </div>
+          </>
         ) : (
           <>
             <OfferSection

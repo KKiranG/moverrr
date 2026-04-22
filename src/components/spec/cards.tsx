@@ -111,7 +111,7 @@ export function InfoCard({
       {href && ctaLabel ? (
         <Link
           href={href}
-          className="mt-4 inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-pill)] bg-[var(--accent)] px-4 text-[13px] font-semibold text-[var(--text-on-accent)] hover:bg-[var(--accent-hover)] active:bg-[var(--accent-pressed)]"
+          className="mt-4 inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-pill)] bg-[var(--text-primary)] px-4 text-[13px] font-semibold text-[var(--bg-base)] hover:opacity-90 active:opacity-80"
         >
           {ctaLabel}
         </Link>
@@ -191,7 +191,7 @@ export function EmptyStateCard({
       {ctaHref && ctaLabel ? (
         <Link
           href={ctaHref}
-          className="mt-4 inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-pill)] bg-[var(--accent)] px-4 text-[13px] font-semibold text-[var(--text-on-accent)] hover:bg-[var(--accent-hover)] active:bg-[var(--accent-pressed)]"
+          className="mt-4 inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-pill)] bg-[var(--text-primary)] px-4 text-[13px] font-semibold text-[var(--bg-base)] hover:opacity-90 active:opacity-80"
         >
           {ctaLabel}
         </Link>
