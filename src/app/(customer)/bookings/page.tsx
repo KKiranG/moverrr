@@ -9,6 +9,7 @@ import { getBookingPaymentStateSummary } from "@/lib/booking-presenters";
 import { listUserBookings } from "@/lib/data/bookings";
 import { listCustomerRequestCards } from "@/lib/data/booking-requests";
 import { listUnmatchedRequestsForCustomer } from "@/lib/data/unmatched-requests";
+import { getCustomerProfileForUser } from "@/lib/data/profiles";
 import { PageIntro } from "@/components/layout/page-intro";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -19,10 +20,14 @@ export const metadata: Metadata = {
 };
 
 async function BookingsListSection({ userId }: { userId: string }) {
+  // Resolve the marketplace customer ID separately — listUnmatchedRequestsForCustomer
+  // expects the marketplace customer ID, not the auth user ID.
+  const customerProfile = await getCustomerProfileForUser(userId);
+
   const [bookings, requestCards, unmatchedRequests] = await Promise.all([
     listUserBookings(userId),
     listCustomerRequestCards(userId),
-    listUnmatchedRequestsForCustomer(userId),
+    customerProfile ? listUnmatchedRequestsForCustomer(customerProfile.id) : Promise.resolve([]),
   ]);
   const clarificationRequests = requestCards.filter(
     (request) => request.status === "clarification_requested",
