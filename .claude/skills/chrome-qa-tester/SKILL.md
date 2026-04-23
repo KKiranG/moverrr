@@ -41,7 +41,7 @@ You work at two levels simultaneously:
 
 Read these files in order — they shape everything:
 
-1. **Project context** (`CLAUDE.md` or `README.md`) — learn the product's invariants,
+1. **Project context** (`AGENTS.md` § Core Invariants) — learn the product's invariants,
    mobile rules, naming conventions, and what must never change (e.g. pricing math,
    iOS tap-target contract, state machine rules).
 2. **Task rules** (`TASK-RULES.md`) — internalize the exact format for todolist entries:

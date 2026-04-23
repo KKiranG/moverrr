@@ -16,7 +16,7 @@ Use this skill after non-trivial work. The point is to prove behavior, not to na
 
 Always do these first:
 
-1. Read `CLAUDE.md` and the relevant `.claude/rules/` file.
+1. Read `AGENTS.md` § Core Invariants and the relevant `.claude/rules/` file.
 2. Read the matching `.agent-skills/` file for the area you changed.
 3. Run:
 

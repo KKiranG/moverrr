@@ -35,8 +35,9 @@ gh issue list --repo KKiranG/moverrr --label "state:ready" --json number,title,l
 ```
 
 Then read:
-4. `CLAUDE.md` — refresh product invariants
-5. The relevant `.claude/rules/` file for today's area
+4. `AGENTS.md` — universal invariants (product thesis, pricing, booking, matching, mobile, parallelism)
+5. `CLAUDE.md` — Claude workflow overlay (gstack skills, session-start pattern)
+6. The relevant `.claude/rules/` file for today's area
 
 ## Scope Confirmation
 

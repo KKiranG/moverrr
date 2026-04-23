@@ -14,7 +14,7 @@ This skill produces structured findings against MoveMate's invariants, not gener
 
 ## Read First
 
-1. `CLAUDE.md` pricing, booking, and iOS invariants
+1. `AGENTS.md` § Core Invariants — pricing, booking, matching, iOS contract
 2. `.claude/rules/` for the area changed
 3. Relevant `.agent-skills/` file
 

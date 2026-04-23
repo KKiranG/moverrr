@@ -17,7 +17,7 @@ Use `$ARGUMENTS` to name the feature being implemented.
 Confirm all of the following are true before writing a single line of code:
 
 1. The scope is confirmed (a spec, issue, or explicit user instruction exists).
-2. The feature does not contradict CLAUDE.md invariants (pricing, booking, iOS-first).
+2. The feature does not contradict `AGENTS.md` § Core Invariants (pricing, booking, iOS-first).
 3. The MVP-BOUNDARY.md does not exclude this work.
 4. You have read the relevant `.agent-skills/*.md` files for the affected domain.
 5. You have checked CODEBASE-MAP.md for the relevant files to touch.
@@ -136,6 +136,6 @@ Name one adversarial input in the report. If verification was blocked by environ
 ## What This Skill Does Not Cover
 
 - Pricing formula changes — require explicit founder discussion.
-- New booking states — follow the checklist in CLAUDE.md § Adding a new booking state.
+- New booking states — follow the checklist in `AGENTS.md` § Booking and dispute flow before adding a new state.
 - New admin capabilities — run `founder-scope-check` first.
 - Experiments — use `experiment-loop` skill instead.

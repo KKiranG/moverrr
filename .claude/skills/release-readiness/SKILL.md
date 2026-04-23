@@ -12,7 +12,7 @@ Invoke this skill explicitly before deploying — do not auto-trigger from casua
 
 See `examples/release-checklist.md` for a worked example.
 
-1. Read `CLAUDE.md` and the relevant scoped rules.
+1. Read `AGENTS.md` § Core Invariants and the relevant `.claude/rules/` file.
 2. Run `npm run check`.
 3. Verify the changed surface directly.
 4. Check docs and memory for drift.

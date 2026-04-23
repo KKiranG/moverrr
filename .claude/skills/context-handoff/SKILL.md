@@ -53,7 +53,7 @@ Run this at the start of a new session that continues prior work.
 
 Read in this sequence — stop when you have enough context to act:
 
-1. **`CLAUDE.md`** — invariants and non-goals (loaded automatically, review if task is near a boundary)
+1. **`AGENTS.md`** — universal invariants and non-goals (product thesis, pricing, booking, matching, mobile — the cross-tool contract)
 2. **`.claude/DECISION-LOG.md`** — settled decisions that may affect the current task
 3. **`.claude/MVP-BOUNDARY.md`** — confirm the work is in scope
 4. **`.claude/CODEBASE-MAP.md`** — file locations for the affected area

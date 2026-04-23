@@ -13,11 +13,12 @@ Use this workflow to produce a sharp docs and memory cleanup plan before editing
 
 ## Read First
 
-1. `CLAUDE.md`
-2. `.claude/operating-system.md`
-3. `.claude/capability-index.md`
-4. `TASK-RULES.md`
-5. The focus area requested in `$ARGUMENTS`
+1. `AGENTS.md` — universal contract (product thesis, invariants, parallelism)
+2. `CLAUDE.md` — Claude overlay (gstack skills, session-start, hooks)
+3. `.claude/operating-system.md` — Claude cheatsheet / pointer
+4. `.claude/capability-index.md`
+5. `TASK-RULES.md`
+6. The focus area requested in `$ARGUMENTS`
 
 Default focus: `all`
 

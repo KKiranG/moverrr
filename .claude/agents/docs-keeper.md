@@ -27,7 +27,9 @@ Your job is to keep the repo's instruction system clean, current, and usable.
 
 ## Where Truth Belongs
 
-- `CLAUDE.md` — repo-wide always-on invariants
+- `AGENTS.md` — universal, cross-tool, always-on invariants (product thesis, pricing, booking, matching, mobile, parallelism)
+- `CLAUDE.md` — Claude Code overlay only (additive, no invariant redeclaration)
+- `AUTHORITY.md` — meta-map: which file is authoritative
 - `.claude/rules/*.md` — scoped rules for one subsystem
 - `.agent-skills/*.md` — domain facts and flow context
 - `.claude/skills/*/SKILL.md` — repeatable workflows

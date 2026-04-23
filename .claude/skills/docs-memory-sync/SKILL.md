@@ -14,8 +14,10 @@ Use this skill when the repo's instruction system needs to be made sharper.
 
 ## First Decide Where The Truth Belongs
 
+- `AGENTS.md`
+  Universal, cross-tool, always-on truth (product thesis, invariants, parallelism, review model, verification bar). Every tool reads this.
 - `CLAUDE.md`
-  Only repo-wide truths that should load every session.
+  Claude overlay only — approved skills, `/browse`, hook path. Additive, never redeclares invariants.
 - `.claude/rules/*.md`
   Scoped detail that should only load for relevant files.
 - `.agent-skills/*.md`
