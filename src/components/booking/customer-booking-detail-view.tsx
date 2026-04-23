@@ -75,7 +75,7 @@ export async function CustomerBookingDetailView({
       <PageIntro
         eyebrow="Booking detail"
         title={booking.itemDescription}
-        description="Use this page as the source of truth for status, proof, payout-release context, and any dispute handling."
+        description={`${booking.pickupSuburb ?? booking.pickupAddress} to ${booking.dropoffSuburb ?? booking.dropoffAddress}`}
         actions={
           <Button asChild variant="secondary">
             <Link href="/bookings">Back to bookings</Link>
@@ -104,13 +104,33 @@ export async function CustomerBookingDetailView({
         </div>
       </Card>
 
+      {/* At a glance — shown above content on mobile only; desktop sees it in the sidebar */}
+      <Card className="p-4 lg:hidden">
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-xl border border-border p-3">
+            <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">Total</p>
+            <p className="mt-2 text-base font-medium text-text">
+              {formatCurrency(booking.pricing.totalPriceCents)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border p-3">
+            <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">Pickup proof</p>
+            <p className="mt-2 text-sm text-text">{proof.pickup ? "Recorded" : "Pending"}</p>
+          </div>
+          <div className="rounded-xl border border-border p-3">
+            <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">Delivery proof</p>
+            <p className="mt-2 text-sm text-text">{proof.delivery ? "Recorded" : "Pending"}</p>
+          </div>
+        </div>
+      </Card>
+
       <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
         <div className="space-y-4">
           <Card className="p-4">
             <div className="space-y-4">
               <div>
                 <p className="section-label">Status and next step</p>
-                <h2 className="mt-1 text-lg text-text">Keep the live handoff legible</h2>
+                <h2 className="mt-1 text-lg text-text">{hero.title}</h2>
               </div>
               <BookingStatusStepper status={booking.status} />
               {hero.showPendingExpiry && booking.pendingExpiresAt ? (
@@ -272,7 +292,12 @@ export async function CustomerBookingDetailView({
                       longitude: proof.pickup.longitude,
                     }}
                   />
-                ) : null}
+                ) : (
+                  <div className="rounded-xl border border-border p-3">
+                    <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">Pickup proof</p>
+                    <p className="mt-2 text-sm text-text-secondary">Not yet recorded — carrier captures on pickup day.</p>
+                  </div>
+                )}
                 {proof.delivery ? (
                   <PrivateProofTile
                     bucket={PRIVATE_BUCKETS.proofPhotos}
@@ -289,7 +314,12 @@ export async function CustomerBookingDetailView({
                       longitude: proof.delivery.longitude,
                     }}
                   />
-                ) : null}
+                ) : (
+                  <div className="rounded-xl border border-border p-3">
+                    <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">Delivery proof</p>
+                    <p className="mt-2 text-sm text-text-secondary">Not yet recorded — required before payout releases.</p>
+                  </div>
+                )}
               </div>
               {proof.delivery?.exceptionNote ? (
                 <div className="rounded-xl border border-warning/20 bg-warning/10 p-3">
@@ -371,7 +401,8 @@ export async function CustomerBookingDetailView({
           </Card>
         </div>
 
-        <div className="space-y-4">
+        {/* Desktop sidebar — hidden on mobile (see full-width card above) */}
+        <div className="hidden lg:block">
           <Card className="p-4">
             <div className="space-y-3">
               <p className="section-label">At a glance</p>
@@ -407,7 +438,7 @@ export async function CustomerBookingDetailView({
       </div>
 
       {hero.primaryAction.kind !== "none" ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 pb-[env(safe-area-inset-bottom)] pt-3 backdrop-blur lg:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-[var(--bg-base)]/95 px-4 pb-[env(safe-area-inset-bottom)] pt-3 backdrop-blur lg:hidden">
           <div className="mx-auto flex w-full max-w-content items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">{hero.eyebrow}</p>

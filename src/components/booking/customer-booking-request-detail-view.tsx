@@ -197,7 +197,7 @@ export function CustomerBookingRequestDetailView({
           </Card>
 
           {clarificationActive ? (
-            <Card className="p-4">
+            <Card id="clarification-card" className="p-4">
               <div className="space-y-4">
                 <div>
                   <p className="section-label">Clarification</p>
@@ -280,14 +280,14 @@ export function CustomerBookingRequestDetailView({
       </div>
 
       {clarificationActive ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 pb-[env(safe-area-inset-bottom)] pt-3 backdrop-blur lg:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-[var(--bg-base)]/95 px-4 pb-[env(safe-area-inset-bottom)] pt-3 backdrop-blur lg:hidden">
           <div className="mx-auto flex w-full max-w-content items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">Clarification needed</p>
               <p className="truncate text-sm font-medium text-text">Reply inside MoveMate</p>
             </div>
             <Button asChild size="sm">
-              <a href="#main-content">Reply now</a>
+              <a href="#clarification-card">Reply now</a>
             </Button>
           </div>
         </div>
