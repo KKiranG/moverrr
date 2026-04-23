@@ -8,7 +8,7 @@ import { requirePageSessionUser } from "@/lib/auth";
 import { getBookingRequestByIdForCarrier } from "@/lib/data/booking-requests";
 import { getCarrierByUserId } from "@/lib/data/carriers";
 import { getOfferByIdForMoveRequest } from "@/lib/data/offers";
-import { getMoveRequestByIdForAdmin } from "@/lib/data/move-requests";
+import { getMoveRequestByIdForCarrier } from "@/lib/data/move-requests";
 import { getTripById } from "@/lib/data/trips";
 import { getBookingRequestUrgencyLabel } from "@/lib/request-presenters";
 import type { BookingRequest } from "@/types/booking-request";
@@ -68,7 +68,7 @@ export default async function CarrierRequestDetailPage({
   }
 
   const [moveRequest, offer, trip] = await Promise.all([
-    getMoveRequestByIdForAdmin(bookingRequest.moveRequestId),
+    getMoveRequestByIdForCarrier(bookingRequest.moveRequestId),
     getOfferByIdForMoveRequest(bookingRequest.moveRequestId, bookingRequest.offerId),
     getTripById(bookingRequest.listingId),
   ]);
