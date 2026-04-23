@@ -176,9 +176,6 @@ function ReadyScreen({
 }: {
   routes: Array<{ id: string; label: string; lastPosted?: string }>;
 }) {
-  const demandSignals = [
-    { corridor: "Inner West → Beaches", count: 11, avgPayout: 89 },
-  ];
 
   return (
     <main className="flex min-h-screen flex-col bg-[var(--bg-base)] pb-[calc(88px+env(safe-area-inset-bottom))]">
@@ -245,30 +242,27 @@ function ReadyScreen({
           </div>
         )}
 
-        {/* Demand signal */}
+        {/* Demand signal — coming soon */}
         <div className="mt-6">
-          <p className="eyebrow mb-2.5">Demand this week</p>
-          {demandSignals.map((signal) => (
-            <div
-              key={signal.corridor}
-              className="rounded-[var(--radius-lg)] border p-4"
-              style={{
-                background: "rgba(201,82,28,0.08)",
-                borderColor: "rgba(201,82,28,0.25)",
-              }}
-            >
-              <div className="flex items-center gap-2.5">
-                <Sparkles size={14} color="var(--accent)" strokeWidth={2} />
-                <p className="text-[14px] font-[500] text-[var(--text-primary)]">
-                  {signal.corridor}
-                </p>
-              </div>
-              <p className="mt-1.5 text-[13px] text-[var(--text-secondary)]">
-                {signal.count} customers looking for moves this week. Average
-                payout ${signal.avgPayout}.
+          <p className="eyebrow mb-2.5">Demand signals</p>
+          <div
+            className="rounded-[var(--radius-lg)] border p-4"
+            style={{
+              background: "rgba(201,82,28,0.05)",
+              borderColor: "rgba(201,82,28,0.18)",
+            }}
+          >
+            <div className="flex items-center gap-2.5">
+              <Sparkles size={14} color="var(--accent)" strokeWidth={2} />
+              <p className="text-[14px] font-[500] text-[var(--text-primary)]">
+                Coming soon
               </p>
             </div>
-          ))}
+            <p className="mt-1.5 text-[13px] text-[var(--text-secondary)]">
+              Post your next route to be matched first when customers in your
+              corridor request a move.
+            </p>
+          </div>
         </div>
       </div>
 
