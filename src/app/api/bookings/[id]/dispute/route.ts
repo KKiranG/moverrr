@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { requireSessionUser } from "@/lib/auth";
 import { createDisputeForBooking } from "@/lib/data/feedback";
-import { toErrorResponse } from "@/lib/errors";
+import { toErrorResponse, AppError } from "@/lib/errors";
+import { isOwnedStoragePath } from "@/lib/storage";
 import { disputeSchema } from "@/lib/validation/dispute";
 
 export async function POST(
@@ -12,6 +13,11 @@ export async function POST(
   try {
     const user = await requireSessionUser();
     const payload = disputeSchema.parse(await request.json());
+
+    if ((payload.photoUrls ?? []).some((url) => !isOwnedStoragePath(user.id, url))) {
+      throw new AppError("Proof photo must be uploaded by the acting user.", 403, "proof_path_not_owned");
+    }
+
     const dispute = await createDisputeForBooking(user.id, params.id, {
       category: payload.category,
       description: payload.description,
