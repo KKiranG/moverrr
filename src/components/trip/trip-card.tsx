@@ -9,7 +9,14 @@ import {
   getTripTrustStack,
 } from "@/lib/trip-presenters";
 import { formatCurrency } from "@/lib/utils";
+import type { OfferFitConfidence } from "@/types/move-request";
 import type { Trip, TripSearchResult } from "@/types/trip";
+
+const FIT_CONFIDENCE_LABELS: Record<OfferFitConfidence, string | null> = {
+  likely_fits: null,
+  review_photos: "Photos help here",
+  needs_approval: "Carrier confirms fit",
+};
 
 interface TripCardProps {
   trip: Trip | TripSearchResult;
@@ -18,6 +25,10 @@ interface TripCardProps {
   selected?: boolean;
   /** Fires when the card is tapped in multi-select mode. */
   onSelect?: (id: string) => void;
+  /** Server-computed fit confidence from the offer — overrides default styling when provided. */
+  fitConfidence?: OfferFitConfidence | null;
+  /** Server-computed match explanation — overrides the formula-generated match line when provided. */
+  matchExplanation?: string | null;
 }
 
 const VEHICLE_TYPE_LABELS: Record<Trip["vehicle"]["type"], string> = {
@@ -28,15 +39,17 @@ const VEHICLE_TYPE_LABELS: Record<Trip["vehicle"]["type"], string> = {
   trailer: "Trailer",
 };
 
-export function TripCard({ trip, href, selected, onSelect }: TripCardProps) {
+export function TripCard({ trip, href, selected, onSelect, fitConfidence, matchExplanation }: TripCardProps) {
   const isFullyBooked = trip.remainingCapacityPct <= 0 || trip.status === "booked_full";
 
   // One-line trust signal: verified + rating or trip count.
   const trustStack = getTripTrustStack(trip);
   const trustLine = trustStack.length > 0 ? trustStack[0] : null;
 
-  // One-line match rationale (e.g. "Already travelling Inner West → Bondi with spare room").
-  const matchRationale = getTripFitSummary(trip);
+  // Prefer server-computed match explanation; fall back to formula-generated summary.
+  const matchRationale = matchExplanation ?? getTripFitSummary(trip);
+
+  const fitLabel = fitConfidence ? FIT_CONFIDENCE_LABELS[fitConfidence] : null;
 
   const allIn = getTripAllInPriceSummary(trip.priceCents, trip.minimumBasePriceCents);
 
@@ -66,6 +79,11 @@ export function TripCard({ trip, href, selected, onSelect }: TripCardProps) {
           </div>
 
           <p className="text-sm text-text">{matchRationale}</p>
+          {fitLabel ? (
+            <span className="inline-block rounded-full border border-border px-2.5 py-0.5 text-xs text-text-secondary">
+              {fitLabel}
+            </span>
+          ) : null}
         </div>
 
         {/* Right: price */}

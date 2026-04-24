@@ -34,6 +34,9 @@ export function BookingCheckoutPanel({
           </p>
           <p>Address, photo, price, payment method, then authorise.</p>
         </div>
+        <p className="mt-3 text-sm text-text-secondary">
+          You&apos;re only charged once your move is done.
+        </p>
       </Card>
 
       <BookingForm

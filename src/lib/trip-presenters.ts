@@ -1,5 +1,6 @@
 import { calculateBookingBreakdown } from "@/lib/pricing/breakdown";
 import { ITEM_CATEGORY_LABELS, SPACE_SIZE_LABELS } from "@/lib/constants";
+import type { OfferFitConfidence } from "@/types/move-request";
 import type { Trip } from "@/types/trip";
 import type { CarrierProfile } from "@/types/carrier";
 import type { TripSearchResult } from "@/types/trip";
@@ -102,6 +103,14 @@ export function getHumanCapacityLabel(
   return getHumanCapacitySummary(trip);
 }
 
+export function getTripFitNoteFromConfidence(fitConfidence: OfferFitConfidence): string | null {
+  if (fitConfidence === "likely_fits") return null;
+  if (fitConfidence === "review_photos") {
+    return "Share a photo of your item so the carrier can confirm the fit before locking it in.";
+  }
+  return "The carrier will take a look at the details and confirm the fit — usually fast.";
+}
+
 export function getTripFitConfidenceLabel(matchScore?: number | null) {
   if (typeof matchScore !== "number") {
     return "Likely fits";
@@ -157,21 +166,21 @@ export function getTripFitReviewExplanation(
 
   if (trip.matchScore >= 50) {
     if (farthestDistanceKm > 2) {
-      return `Review photos first because one end of the handoff sits about ${farthestDistanceKm.toFixed(1)} km off the core route.`;
+      return "One end of the handoff is a short detour from the main route — send your photos and the carrier will confirm.";
     }
 
     if (trip.spaceSize === "S" || trip.spaceSize === "M") {
-      return "Review photos first so the carrier can confirm the item shape and handling fit this spare-capacity space.";
+      return "Space is on the snug side — share a photo of your item so the carrier can confirm it fits.";
     }
 
-    return "Review photos first so the carrier can confirm the item sits cleanly inside the available spare space.";
+    return "Share a photo of your item so the carrier can confirm the fit before locking it in.";
   }
 
   if (!trip.rules.stairsOk || !trip.rules.helperAvailable) {
-    return "Needs approval because the route or handling rules still need a manual fit check before the carrier can say yes.";
+    return "This one needs a quick check from the carrier on handling before they can confirm.";
   }
 
-  return "Needs approval because the route fit is borderline enough that the carrier has to manually review it first.";
+  return "The carrier will take a look at the details and confirm the fit — usually fast.";
 }
 
 export function getTripRouteFitLabel(
@@ -232,9 +241,9 @@ export function getTripTrustStack(trip: Pick<Trip, "carrier">) {
 
   items.push(trip.carrier.isVerified ? "ID checked" : "Verification pending");
   items.push(
-    trip.carrier.ratingCount > 0
+    trip.carrier.ratingCount >= 3
       ? `${trip.carrier.averageRating.toFixed(1)}★ from ${trip.carrier.ratingCount} reviews`
-      : "New on moverrr",
+      : "New to MoveMate",
   );
 
   if (trip.carrier.stripeOnboardingComplete) {
