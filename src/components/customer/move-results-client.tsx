@@ -93,6 +93,8 @@ function OfferSection({
             href={getMoveRequestOfferHref({ offerId: offer.id, moveRequestId })}
             selected={selectedIds.has(trip.id)}
             onSelect={onSelect}
+            fitConfidence={offer.fitConfidence}
+            matchExplanation={offer.matchExplanation}
           />
         ))}
       </div>

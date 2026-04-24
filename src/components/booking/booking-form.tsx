@@ -1104,7 +1104,7 @@ export function BookingForm({
                   <p>No saved card on file yet.</p>
                 )
               ) : (
-                <p>Payment-method setup is not available in this environment.</p>
+                <p>Card payments are temporarily unavailable. Please try again shortly.</p>
               )}
               <p>Authorisation is placed when you submit. Capture happens only if a carrier accepts.</p>
             </div>

@@ -189,13 +189,14 @@ export function MoveOfferDetailClient({
 
   return (
     <main className="pb-28">
-      <TopAppBar title={null} backHref={resultsHref} />
+      <TopAppBar title="Offer detail" backHref={resultsHref} />
 
       <section className="screen space-y-4">
         <TripDetailSummary
           trip={selected.trip}
           preferredDate={data.moveRequest.route.preferredDate ?? undefined}
           matchExplanation={selected.offer.matchExplanation}
+          fitConfidence={selected.offer.fitConfidence}
         />
 
         <BookingCheckoutPanel

@@ -11,17 +11,20 @@ import {
 } from "@/lib/constants";
 import {
   getTripCustomerPricePreview,
+  getTripFitNoteFromConfidence,
   getTripNearbyDateExplanation,
   getTripRouteFitLabel,
 } from "@/lib/trip-presenters";
 import { getRouteContextMap } from "@/lib/maps/directions";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import type { OfferFitConfidence } from "@/types/move-request";
 import type { Trip } from "@/types/trip";
 
 interface TripDetailSummaryProps {
   trip: Trip;
   preferredDate?: string;
   matchExplanation?: string;
+  fitConfidence?: OfferFitConfidence | null;
   ctaHref?: string;
 }
 
@@ -29,6 +32,7 @@ export function TripDetailSummary({
   trip,
   preferredDate,
   matchExplanation,
+  fitConfidence,
   ctaHref = "#booking-form",
 }: TripDetailSummaryProps) {
   const pricingPreview = getTripCustomerPricePreview(
@@ -40,6 +44,7 @@ export function TripDetailSummary({
     preferredDate,
     tripDate: trip.tripDate,
   });
+  const fitNote = fitConfidence ? getTripFitNoteFromConfidence(fitConfidence) : null;
   const routeMap = getRouteContextMap({
     originLatitude: trip.route.originLatitude,
     originLongitude: trip.route.originLongitude,
@@ -78,9 +83,9 @@ export function TripDetailSummary({
                 ) : null}
               </div>
               <p className="text-sm text-text-secondary">
-                {trip.carrier.ratingCount > 0
+                {trip.carrier.ratingCount >= 3
                   ? `${trip.carrier.averageRating.toFixed(1)} rating from ${trip.carrier.ratingCount} reviews`
-                  : "New carrier profile"}
+                  : "New to MoveMate"}
               </p>
             </div>
             <p className="text-sm text-text-secondary">
@@ -97,6 +102,9 @@ export function TripDetailSummary({
             {nearbyDateExplanation ? <p>{nearbyDateExplanation}</p> : null}
             <p>Corridor radius: about {trip.detourRadiusKm} km.</p>
           </div>
+          {fitNote ? (
+            <p className="mt-3 text-sm text-text-secondary">{fitNote}</p>
+          ) : null}
         </div>
 
         <div className="rounded-xl border border-border p-4">

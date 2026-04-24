@@ -269,15 +269,16 @@ export function MoveFastMatchClient({
           </div>
           <div className="space-y-3">
             {topOffers.map(({ offer, trip }) => (
-              <div key={offer.id} className="space-y-2">
+              <div key={offer.id}>
                 <TripCard
                   trip={trip}
                   href={getMoveRequestOfferHref({
                     offerId: offer.id,
                     moveRequestId: data.moveRequest.id,
                   })}
+                  fitConfidence={offer.fitConfidence}
+                  matchExplanation={offer.matchExplanation}
                 />
-                <p className="px-1 text-sm text-text-secondary">{offer.matchExplanation}</p>
               </div>
             ))}
           </div>
