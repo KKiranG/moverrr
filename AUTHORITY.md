@@ -2,7 +2,7 @@
 
 This file is the meta-map. It tells any AI tool — Claude Code, Codex, Antigravity, Gemini/VS Code, Jules, Hermes-style orchestrators, and future entrants — which file holds universal truth, which files are tool-specific overlays, and which files are derived or reference-only.
 
-The universal contract itself is [AGENTS.md](/Users/kiranghimire/Documents/moverrr/AGENTS.md). This file tells you how to read it.
+The universal contract itself is [AGENTS.md](/Users/kiranghimire/Documents/movemate/AGENTS.md). This file tells you how to read it.
 
 ---
 
@@ -11,10 +11,10 @@ The universal contract itself is [AGENTS.md](/Users/kiranghimire/Documents/mover
 This list is definitive. Every other authority list in the repo mirrors it.
 
 1. System, developer, and direct user instructions in the active session.
-2. [movemate-product-blueprint.md](/Users/kiranghimire/Documents/moverrr/movemate-product-blueprint.md) — product source of truth.
-3. [AGENTS.md](/Users/kiranghimire/Documents/moverrr/AGENTS.md) — universal agent contract (cross-tool).
-4. Tool overlays — [CLAUDE.md](/Users/kiranghimire/Documents/moverrr/CLAUDE.md), and any future `GEMINI.md`, `COPILOT.md`, etc. Overlays are additive only.
-5. [.claude/project-ops.md](/Users/kiranghimire/Documents/moverrr/.claude/project-ops.md) — live-work operating runbook (applies to all tools despite the path).
+2. [movemate-product-blueprint.md](/Users/kiranghimire/Documents/movemate/movemate-product-blueprint.md) — product source of truth.
+3. [AGENTS.md](/Users/kiranghimire/Documents/movemate/AGENTS.md) — universal agent contract (cross-tool).
+4. Tool overlays — [CLAUDE.md](/Users/kiranghimire/Documents/movemate/CLAUDE.md), and any future `GEMINI.md`, `COPILOT.md`, etc. Overlays are additive only.
+5. [.claude/project-ops.md](/Users/kiranghimire/Documents/movemate/.claude/project-ops.md) — live-work operating runbook (applies to all tools despite the path).
 6. Relevant scoped rules under `.claude/rules/**`, domain context under `.agent-skills/**`, skills and agent briefs under `.claude/**`.
 7. The linked GitHub issue or PR for the current work unit.
 8. Derived digests under `docs/operations/**`.
@@ -43,6 +43,27 @@ MoveMate is designed to be worked on by multiple AI tools in parallel. Different
 - If an overlay disagrees with `AGENTS.md`, the overlay is stale and must be corrected in the same task.
 - Adding a new tool is a one-file task: create `NEWTOOL.md`, list it here, do not rewrite `AGENTS.md` unless a universal invariant actually changed.
 
+## Hermes / movemateOS Runtime Layer
+
+Hermes is the runtime coordinator for movemateOS: memory, scouting, planning, review support, founder digest writing, scheduled workflow running, skill creation, and amendment proposal. It is not merely a notes layer.
+
+Hermes may propose, draft, and apply local repo docs or skill amendments only under the amendment protocol in `.claude/project-ops.md`. It must amend visibly, not silently override repo truth. Codex and Claude remain primary implementation and review workers. GitHub remains the live execution state for issues, PRs, labels, comments, and project fields.
+
+Hermes cannot make founder-gated decisions. High-impact product, pricing, payout/proof, trust/safety, legal/privacy, irreversible data-model or migration cutovers, production-deploy policy changes, destructive GitHub, and conflicting-truth decisions require founder review.
+
+Routine technical implementation choices should not block on founder approval when the shaped issue scope, repo invariants, and verification plan are clear.
+
+## Authority Amendment Protocol
+
+The repo docs are the current constitution, not permanent scripture. They can be amended when product truth changes, operating truth improves, or stale instructions create risk.
+
+Amendments must be deliberate and visible:
+
+- Stale paths, broken links, typos, and obvious consistency repairs may be local edits when current truth is clear.
+- Authority, workflow, scheduled-agent, or skill-governance changes require an amendment note in the issue or PR and validation evidence.
+- Founder-gated decisions require a founder decision packet before they become durable product or operating truth.
+- Repo skills under `.agent-skills/**` are canonical. Hermes skills are synced runtime copies.
+
 ### Indexing hygiene
 
 - Antigravity indexing is controlled by `.antigravityignore` at the repo root.
@@ -52,12 +73,12 @@ MoveMate is designed to be worked on by multiple AI tools in parallel. Different
 
 ## Canonical Docs
 
-- Product truth: [movemate-product-blueprint.md](/Users/kiranghimire/Documents/moverrr/movemate-product-blueprint.md)
-- Universal agent contract: [AGENTS.md](/Users/kiranghimire/Documents/moverrr/AGENTS.md)
-- Claude overlay: [CLAUDE.md](/Users/kiranghimire/Documents/moverrr/CLAUDE.md)
-- Live work model: [.claude/project-ops.md](/Users/kiranghimire/Documents/moverrr/.claude/project-ops.md)
-- Parallelism contract: [.claude/lock-groups.md](/Users/kiranghimire/Documents/moverrr/.claude/lock-groups.md)
-- Task rules pointer: [TASK-RULES.md](/Users/kiranghimire/Documents/moverrr/TASK-RULES.md)
+- Product truth: [movemate-product-blueprint.md](/Users/kiranghimire/Documents/movemate/movemate-product-blueprint.md)
+- Universal agent contract: [AGENTS.md](/Users/kiranghimire/Documents/movemate/AGENTS.md)
+- Claude overlay: [CLAUDE.md](/Users/kiranghimire/Documents/movemate/CLAUDE.md)
+- Live work model: [.claude/project-ops.md](/Users/kiranghimire/Documents/movemate/.claude/project-ops.md)
+- Parallelism contract: [.claude/lock-groups.md](/Users/kiranghimire/Documents/movemate/.claude/lock-groups.md)
+- Task rules pointer: [TASK-RULES.md](/Users/kiranghimire/Documents/movemate/TASK-RULES.md)
 - Design system reference: [docs/product/design-system.md](docs/product/design-system.md)
 
 ---

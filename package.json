@@ -12,6 +12,7 @@
     "webhook:replay": "node --import tsx scripts/replay-payment-webhook.ts",
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run typecheck",
+    "skills:sync:hermes": "bash scripts/sync-hermes-skills.sh",
     "env:check": "node scripts/validate-env.mjs",
     "env:check:production": "node scripts/validate-env.mjs --mode=production",
     "scan:product-drift": "node scripts/scan-product-drift.mjs",

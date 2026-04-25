@@ -11,11 +11,11 @@ This repository contains two things:
 
 Start here when you are orienting to the repo:
 
-1. [AUTHORITY.md](/Users/kiranghimire/Documents/moverrr/AUTHORITY.md) — meta-map
-2. [AGENTS.md](/Users/kiranghimire/Documents/moverrr/AGENTS.md) — universal agent contract
-3. The tool overlay for the tool you are running in: [CLAUDE.md](/Users/kiranghimire/Documents/moverrr/CLAUDE.md) for Claude Code; future `GEMINI.md` for Antigravity/Gemini
-4. [.claude/project-ops.md](/Users/kiranghimire/Documents/moverrr/.claude/project-ops.md)
-5. [movemate-product-blueprint.md](/Users/kiranghimire/Documents/moverrr/movemate-product-blueprint.md)
+1. [AUTHORITY.md](/Users/kiranghimire/Documents/movemate/AUTHORITY.md) — meta-map
+2. [AGENTS.md](/Users/kiranghimire/Documents/movemate/AGENTS.md) — universal agent contract
+3. The tool overlay for the tool you are running in: [CLAUDE.md](/Users/kiranghimire/Documents/movemate/CLAUDE.md) for Claude Code; future `GEMINI.md` for Antigravity/Gemini
+4. [.claude/project-ops.md](/Users/kiranghimire/Documents/movemate/.claude/project-ops.md)
+5. [movemate-product-blueprint.md](/Users/kiranghimire/Documents/movemate/movemate-product-blueprint.md)
 
 ## Live Work System
 
@@ -27,14 +27,14 @@ GitHub is the live work system:
 
 Markdown backlog files are derived artifacts only:
 
-- [docs/operations/todolist.md](/Users/kiranghimire/Documents/moverrr/docs/operations/todolist.md)
-- [docs/operations/completed.md](/Users/kiranghimire/Documents/moverrr/docs/operations/completed.md)
+- [docs/operations/todolist.md](/Users/kiranghimire/Documents/movemate/docs/operations/todolist.md)
+- [docs/operations/completed.md](/Users/kiranghimire/Documents/movemate/docs/operations/completed.md)
 
 Do not use those files as a transactional queue.
 
 ## Product Truth
 
-Product thesis and invariants live in [AGENTS.md](/Users/kiranghimire/Documents/moverrr/AGENTS.md) (universal agent contract) and [movemate-product-blueprint.md](/Users/kiranghimire/Documents/moverrr/movemate-product-blueprint.md) (product source of truth). This README does not redeclare them.
+Product thesis and invariants live in [AGENTS.md](/Users/kiranghimire/Documents/movemate/AGENTS.md) (universal agent contract) and [movemate-product-blueprint.md](/Users/kiranghimire/Documents/movemate/movemate-product-blueprint.md) (product source of truth). This README does not redeclare them.
 
 ## Stack
 
@@ -76,7 +76,7 @@ Keep workflow libraries as global or external dependencies. Do not vendor their 
 
 The product name is `MoveMate`.
 
-Some legacy technical identifiers still use `moverrr` because changing them in-place would create unnecessary breakage or migration churn. Those aliases are tracked in [AUTHORITY.md](/Users/kiranghimire/Documents/moverrr/AUTHORITY.md) and the operating docs until an isolated rename pass is ready.
+Some legacy technical identifiers still use `moverrr` because changing them in-place would create unnecessary breakage or migration churn. Those aliases are tracked in [AUTHORITY.md](/Users/kiranghimire/Documents/movemate/AUTHORITY.md) and the operating docs until an isolated rename pass is ready.
 
 ## Reference Policy
 
