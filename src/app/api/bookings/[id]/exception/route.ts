@@ -6,7 +6,8 @@ import {
   getBookingActorRoleForUser,
   logBookingExceptionForActor,
 } from "@/lib/data/bookings";
-import { toErrorResponse } from "@/lib/errors";
+import { toErrorResponse, AppError } from "@/lib/errors";
+import { isOwnedStoragePath } from "@/lib/storage";
 import type { BookingExceptionCode } from "@/types/booking";
 
 const bookingExceptionCodeValues = [
@@ -31,6 +32,11 @@ export async function POST(
   try {
     const payload = bookingExceptionSchema.parse(await request.json());
     const user = await requireSessionUser();
+
+    if (payload.photoUrls.some((url) => !isOwnedStoragePath(user.id, url))) {
+      throw new AppError("Proof photo must be uploaded by the acting user.", 403, "proof_path_not_owned");
+    }
+
     const actorRole = await getBookingActorRoleForUser(user.id, params.id);
     const exception = await logBookingExceptionForActor({
       userId: user.id,

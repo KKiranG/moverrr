@@ -56,6 +56,14 @@ export async function createSignedPrivateUrl(params: {
   return data.signedUrl;
 }
 
+export function isOwnedStoragePath(userId: string, path: string): boolean {
+  return (
+    typeof path === "string" &&
+    path.startsWith(`${userId}/`) &&
+    !path.includes("..")
+  );
+}
+
 export async function getPrivateFileDisplay(params: {
   bucket: PrivateBucketName;
   path: string | null | undefined;

@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
+
 import { MoveIntakeClient } from "@/components/customer/move-intake-client";
 import { RecentMoveRequests } from "@/components/customer/recent-move-requests";
 import { TopAppBar } from "@/components/spec/chrome";
 import { getOptionalSessionUser } from "@/lib/auth";
 import { listRecentMoveRequestsForUser } from "@/lib/data/move-requests";
+
+export const metadata: Metadata = {
+  title: "Declare your move need",
+  description: "Tell MoveMate what needs to move and where. We match you with drivers already heading that way — no bidding, no browsing.",
+  alternates: { canonical: "/move/new" },
+};
 
 export default async function MoveNewIndexPage() {
   const user = await getOptionalSessionUser();

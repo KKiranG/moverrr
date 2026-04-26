@@ -8,9 +8,11 @@ MoveMate should be executable by shaped issues and bounded reviewers, not by rep
 
 The workflow layer is replaceable. gstack, Hermes, Codex/Claude subagents, Jules, Gemini/Antigravity, or future tools may execute this operating model, but none of them own product truth, issue authority, lock groups, or verification policy.
 
+Hermes / movemateOS is the active runtime coordinator when available: memory, scout, planner, reviewer, founder digest writer, scheduled workflow runner, skill creator, and amendment proposer. Hermes is not merely a notes layer. It may improve local docs and skills only through the amendment protocol below, and it must not silently override repo truth.
+
 ## Authority Mirror
 
-Authority order matches [AUTHORITY.md](/Users/kiranghimire/Documents/moverrr/AUTHORITY.md):
+Authority order matches [AUTHORITY.md](/Users/kiranghimire/Documents/movemate/AUTHORITY.md):
 
 1. Active session instructions
 2. `movemate-product-blueprint.md`
@@ -55,7 +57,7 @@ If work spans multiple lanes, pick the owning lane and record the others in the 
 
 ## Lock Groups
 
-Lock groups are the parallelism contract. See [.claude/lock-groups.md](/Users/kiranghimire/Documents/moverrr/.claude/lock-groups.md).
+Lock groups are the parallelism contract. See [.claude/lock-groups.md](/Users/kiranghimire/Documents/movemate/.claude/lock-groups.md).
 
 Minimum issue fields:
 
@@ -263,6 +265,60 @@ Do not spray new docs across the repo. Prefer updating:
 - this file
 - narrow scoped rules only when necessary
 
+## Autonomy Levels
+
+Use these levels for Hermes, Codex, Claude, and future tools:
+
+| Level | Meaning | Examples | Evidence |
+| --- | --- | --- | --- |
+| `autonomous` | Safe, reversible, read-heavy, or generated outside repo truth. | Audits, scout packets, local summaries, memory output, safe verification. | Surfaces inspected and command output summary. |
+| `local edit allowed` | Reversible local docs/scripts/skills change aligned with existing truth. | Stale path repairs, skill wrappers, sync scripts, typo fixes, non-product docs. | Local diff and validation command. |
+| `PR/issue required` | Shared operating truth or workflow behavior changes. | Authority model updates, scheduled-agent policy, GitHub workflow changes, CI/check scripts, skill sync behavior. | Linked issue or PR, amendment note, validation evidence. |
+| `founder decision required` | High-impact or irreversible decision. | Product strategy, pricing economics, payout/proof, trust/safety, legal/privacy, data model, migrations, production deploys, destructive GitHub actions, conflicting truths, auto-merge authority. | Founder decision packet with options, recommendation, trade-offs, and exact decision needed. |
+
+Routine technical implementation decisions should not block on founder approval when the issue scope, invariants, lock group, and verification plan are clear.
+
+## Amendment Protocol
+
+Repo docs are the current constitution, not permanent scripture. Amendments are allowed when they improve the operating system or correct stale truth.
+
+Rules:
+
+- Hermes may propose and draft amendments autonomously.
+- Hermes, Codex, or Claude may apply local docs/skills amendments when they are within the active task scope and approval level.
+- Authority-changing edits must be visible in the issue or PR as an amendment note.
+- Founder-gated changes require a founder decision before the repo records them as durable truth.
+- Conflicting truths must be resolved in the same work unit or explicitly escalated.
+- Repo skills under `.agent-skills/**` are canonical. Hermes skill copies are synced runtime artifacts.
+
+Amendment note shape:
+
+- `What changed`
+- `Why it changed`
+- `Authority affected`
+- `Founder decision needed: yes / no`
+- `Verification`
+
+## Skill Sync Rule
+
+Canonical MoveMate skills live in `.agent-skills/**`.
+
+Hermes runtime skills are synced from repo skills with:
+
+```bash
+npm run skills:sync:hermes
+```
+
+The sync must only copy `.agent-skills/movemate-*` skill directories into `~/.hermes/skills/`, preserve folder structure, and avoid deleting non-MoveMate Hermes skills.
+
+Run the sync after changing `.agent-skills/movemate-*` and record the command result in the PR or handoff.
+
+## C-Now / D-Later Posture
+
+`C now`: agents may create issues, implement scoped work, open PRs, review, prepare review packets, and produce founder digests when the work is shaped, lock-group safe, and verified.
+
+`D later`: selected autonomous scheduled loops may run only after proof of reliability. Examples include queue review, PR review packet generation, stale-path and skill-drift scans, memory digest, and weekly founder digest. Do not create cron jobs yet.
+
 ## Markdown Artifact Policy
 
 `docs/operations/todolist.md`:
@@ -309,14 +365,29 @@ Scheduled agents may:
 - refresh derived digests
 - prepare review packets
 - run safe verification
+- draft founder digests
+- detect stale paths, skill drift, and authority contradictions
+- write Hermes memory output and log entries when that memory does not override repo truth
 
 Scheduled agents may not:
 
 - claim live work without a ready issue
 - modify pricing economics
 - rewrite product truth
+- rewrite authority docs outside the amendment protocol
+- make founder-gated decisions
+- mutate legal/privacy, trust/safety, payout/proof, data-model, migration, or production-deploy policy
+- perform destructive GitHub actions
 - fabricate GitHub project application
 - force-merge or auto-merge without an explicit policy
+
+Scheduled loop candidates:
+
+- `queue-review`: inspect GitHub queue state and blockers.
+- `pr-review-packet`: prepare review packets for open PRs.
+- `drift-scan`: detect stale paths, duplicate truth, and skill sync drift.
+- `memory-digest`: summarize durable Hermes memory without changing repo truth.
+- `founder-digest`: summarize shipped, blocked, and decision-needed work.
 
 ## Checkpoint / Resume
 
@@ -328,4 +399,4 @@ For long-running work, leave a compact handoff with:
 - blockers
 - next action
 
-Use [.claude/checkpoint-template.md](/Users/kiranghimire/Documents/moverrr/.claude/checkpoint-template.md).
+Use [.claude/checkpoint-template.md](/Users/kiranghimire/Documents/movemate/.claude/checkpoint-template.md).

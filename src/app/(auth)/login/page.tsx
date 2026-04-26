@@ -21,7 +21,7 @@ export default function LoginPage() {
       <PageIntro
         eyebrow="Auth"
         title="Log in to continue a booking or manage trips"
-        description="Supabase email and password auth is the default for MVP, with route protection across customer, carrier, and admin flows."
+        description="Enter your email and password to access your account."
       />
 
       {showDevBanner ? (

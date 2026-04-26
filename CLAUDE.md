@@ -2,7 +2,7 @@
 
 This is the Claude Code tool overlay. It carries only Claude-specific workflow.
 
-**Universal truth lives in [AGENTS.md](/Users/kiranghimire/Documents/moverrr/AGENTS.md).** Read that first for product thesis, invariants (pricing, booking, matching, mobile), the bounded parallelism contract, the review model, the verification bar, and escalation policy. This file does not redeclare any of that.
+**Universal truth lives in [AGENTS.md](/Users/kiranghimire/Documents/movemate/AGENTS.md).** Read that first for product thesis, invariants (pricing, booking, matching, mobile), the bounded parallelism contract, the review model, the verification bar, and escalation policy. This file does not redeclare any of that.
 
 If this file ever appears to disagree with `AGENTS.md`, `AGENTS.md` wins — fix this file in the same task.
 
@@ -10,10 +10,10 @@ If this file ever appears to disagree with `AGENTS.md`, `AGENTS.md` wins — fix
 
 ## Read Order For A Claude Session
 
-1. [AUTHORITY.md](/Users/kiranghimire/Documents/moverrr/AUTHORITY.md) — meta-map
-2. [AGENTS.md](/Users/kiranghimire/Documents/moverrr/AGENTS.md) — universal contract
+1. [AUTHORITY.md](/Users/kiranghimire/Documents/movemate/AUTHORITY.md) — meta-map
+2. [AGENTS.md](/Users/kiranghimire/Documents/movemate/AGENTS.md) — universal contract
 3. This file — Claude-specific workflow
-4. [.claude/project-ops.md](/Users/kiranghimire/Documents/moverrr/.claude/project-ops.md) — issue lifecycle, review pipeline
+4. [.claude/project-ops.md](/Users/kiranghimire/Documents/movemate/.claude/project-ops.md) — issue lifecycle, review pipeline
 5. Relevant `.claude/rules/**` for the surface being touched
 6. The linked GitHub issue
 
@@ -21,7 +21,7 @@ If this file ever appears to disagree with `AGENTS.md`, `AGENTS.md` wins — fix
 
 ## Optional Workflow Tooling — gstack
 
-gstack is available as optional Claude/Codex workflow tooling on this Mac. It can help with planning, review, QA, and ship loops, but it is not product authority and it is not required for MoveMate work.
+gstack is available as optional Claude/Codex workflow tooling on this Mac. It can help with planning, review, QA, and ship loops, but it is not product authority and it is not required for MoveMate work. Hermes / movemateOS is the runtime coordinator and memory layer when active; it still works through the authority and amendment rules in `AGENTS.md` and `.claude/project-ops.md`.
 
 - Global paths:
   - Claude: `~/.claude/skills/gstack`

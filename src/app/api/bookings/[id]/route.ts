@@ -3,7 +3,8 @@ import { z } from "zod";
 
 import { requireAdminUser, requireSessionUser } from "@/lib/auth";
 import { getBookingActorRoleForUser, updateBookingStatusForActor } from "@/lib/data/bookings";
-import { toErrorResponse } from "@/lib/errors";
+import { toErrorResponse, AppError } from "@/lib/errors";
+import { isOwnedStoragePath } from "@/lib/storage";
 import type {
   BookingCancellationReasonCode,
   BookingExceptionCode,
@@ -99,6 +100,14 @@ export async function PATCH(
     }
 
     const user = await requireSessionUser();
+
+    if (payload.pickupProof && !isOwnedStoragePath(user.id, payload.pickupProof.photoUrl)) {
+      throw new AppError("Proof photo must be uploaded by the acting user.", 403, "proof_path_not_owned");
+    }
+    if (payload.deliveryProof && !isOwnedStoragePath(user.id, payload.deliveryProof.photoUrl)) {
+      throw new AppError("Proof photo must be uploaded by the acting user.", 403, "proof_path_not_owned");
+    }
+
     const actorRole = await getBookingActorRoleForUser(user.id, params.id);
     const booking = await updateBookingStatusForActor({
       userId: user.id,

@@ -26,7 +26,7 @@ import { PRIVATE_BUCKETS } from "@/lib/constants";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
 
 const heroToneClasses = {
-  neutral: "border-border bg-[var(--bg-elevated-1)]",
+  neutral: "border-border bg-surface",
   success: "border-success/20 bg-success/10",
   warning: "border-warning/20 bg-warning/10",
   error: "border-error/20 bg-error/10",
@@ -438,7 +438,7 @@ export async function CustomerBookingDetailView({
       </div>
 
       {hero.primaryAction.kind !== "none" ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-[var(--bg-base)]/95 px-4 pb-[env(safe-area-inset-bottom)] pt-3 backdrop-blur lg:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 pb-[env(safe-area-inset-bottom)] pt-3 backdrop-blur lg:hidden">
           <div className="mx-auto flex w-full max-w-content items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs uppercase tracking-[0.18em] text-text-secondary">{hero.eyebrow}</p>

@@ -17,13 +17,14 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://moverrr.com.au"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://movemate.app"),
   title: {
     default: "Need-first spare-capacity moves in Sydney",
     template: "%s · MoveMate",
   },
   description:
     "Declare the move need first and get ranked spare-capacity matches with clear pricing, fit notes, and trust signals.",
+  alternates: { canonical: "/" },
   openGraph: {
     title: "MoveMate",
     description:
@@ -54,7 +55,7 @@ export default function RootLayout({
           <AppClientEffects />
           <a
             href="#main-content"
-            className="sr-only rounded bg-[var(--bg-elevated-1)] px-4 py-2 text-sm font-medium text-text focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"
+            className="sr-only rounded bg-surface px-4 py-2 text-sm font-medium text-text focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:min-h-[44px] focus:min-w-[44px] focus:inline-flex focus:items-center"
           >
             Skip to main content
           </a>

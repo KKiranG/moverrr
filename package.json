@@ -1,5 +1,5 @@
 {
-  "name": "moverrr",
+  "name": "movemate",
   "version": "0.1.0",
   "private": true,
   "description": "MoveMate application repo and autonomous engineering control plane.",
@@ -12,6 +12,7 @@
     "webhook:replay": "node --import tsx scripts/replay-payment-webhook.ts",
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run typecheck",
+    "skills:sync:hermes": "bash scripts/sync-hermes-skills.sh",
     "env:check": "node scripts/validate-env.mjs",
     "env:check:production": "node scripts/validate-env.mjs --mode=production",
     "verify:local": "node scripts/verify-local.mjs",

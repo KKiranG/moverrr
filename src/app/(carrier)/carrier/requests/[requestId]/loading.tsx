@@ -25,8 +25,8 @@ export default function CarrierRequestDetailLoading() {
         </div>
 
         <div className="flex gap-3">
-          <div className="h-11 flex-1 rounded-[var(--radius-md)] bg-black/[0.08] dark:bg-white/[0.12]" />
-          <div className="h-11 flex-1 rounded-[var(--radius-md)] bg-black/[0.08] dark:bg-white/[0.12]" />
+          <div className="h-11 flex-1 rounded-md bg-black/[0.08] dark:bg-white/[0.12]" />
+          <div className="h-11 flex-1 rounded-md bg-black/[0.08] dark:bg-white/[0.12]" />
         </div>
       </div>
     </main>

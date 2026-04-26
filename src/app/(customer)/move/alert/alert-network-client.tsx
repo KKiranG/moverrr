@@ -101,7 +101,7 @@ export function AlertNetworkClient({
             </p>
             <Link
               href="/move/new"
-              className="mt-3 inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-pill)] border border-[var(--border-subtle)] px-3 text-[13px] font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+              className="mt-3 inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-pill)] border border-border px-3 text-[13px] font-medium text-text-secondary hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
             >
               Edit this move
             </Link>
@@ -115,7 +115,7 @@ export function AlertNetworkClient({
             </p>
             <Link
               href="/move/new"
-              className="mt-3 inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-pill)] border border-[var(--border-subtle)] px-3 text-[13px] font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+              className="mt-3 inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-pill)] border border-border px-3 text-[13px] font-medium text-text-secondary hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
             >
               Edit this move
             </Link>
@@ -127,7 +127,7 @@ export function AlertNetworkClient({
             </p>
             <Link
               href="/move/new"
-              className="mt-3 inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-pill)] border border-[var(--border-subtle)] px-3 text-[13px] font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+              className="mt-3 inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-pill)] border border-border px-3 text-[13px] font-medium text-text-secondary hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
             >
               Add move details
             </Link>

@@ -33,13 +33,13 @@ const presets = [
 
 export default function HomePage() {
   return (
-    <main id="main-content" className="flex min-h-screen flex-col bg-[var(--bg-base)]">
+    <main id="main-content" className="flex min-h-screen flex-col bg-background">
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-[calc(14px+var(--safe-area-top))]">
         <Wordmark />
         <Link
-          href="/auth/login"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--bg-elevated-2)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated-3)] active:opacity-70"
+          href="/login"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--bg-elevated-2)] text-text hover:bg-[var(--bg-elevated-3)] active:opacity-70"
           aria-label="Account"
         >
           <User size={18} strokeWidth={1.8} />
@@ -49,22 +49,22 @@ export default function HomePage() {
       {/* Hero */}
       <div className="px-5 pb-6 pt-12">
         <h1
-          className="text-[44px] leading-[1.03] tracking-[-0.05em] text-[var(--text-primary)]"
+          className="text-[44px] leading-[1.03] tracking-[-0.05em] text-text"
           style={{ fontFamily: "var(--font-display)", fontWeight: 400 }}
         >
           What needs<br />to move?
         </h1>
-        <p className="mt-3 max-w-[28ch] text-[15px] leading-[1.5] text-[var(--text-secondary)]">
+        <p className="mt-3 max-w-[28ch] text-[15px] leading-[1.5] text-text-secondary">
           Tell us once. We&apos;ll match you with a driver already going that way.
         </p>
       </div>
 
       {/* Route input card */}
       <div className="px-5">
-        <div className="rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] p-3.5 shadow-[var(--shadow-card)]">
+        <div className="rounded-xl border border-border bg-surface p-3.5 shadow-[var(--shadow-card)]">
           <Link
             href="/move/new"
-            className="block rounded-[var(--radius-lg)] bg-[var(--bg-elevated-2)]"
+            className="block rounded-lg bg-[var(--bg-elevated-2)]"
           >
             <div className="flex items-center gap-3 px-3.5 py-3.5">
               <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full border-2 border-[var(--text-primary)]" />
@@ -77,7 +77,7 @@ export default function HomePage() {
             </div>
           </Link>
 
-          <Button asChild className="mt-3.5 w-full rounded-[var(--radius-lg)]">
+          <Button asChild className="mt-3.5 w-full rounded-lg">
             <Link href="/move/new">
               Tell MoveMate your move
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -100,14 +100,14 @@ export default function HomePage() {
               <Link
                 key={preset.label}
                 href={preset.href}
-                className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] px-4 py-3.5 shadow-[var(--shadow-card)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+                className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3.5 shadow-[var(--shadow-card)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
               >
-                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-[var(--bg-elevated-2)] text-[var(--text-primary)]">
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-[var(--bg-elevated-2)] text-text">
                   <Icon className="h-[18px] w-[18px]" strokeWidth={1.7} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-[500] leading-[1.2] text-[var(--text-primary)]">{preset.label}</p>
-                  <p className="mt-0.5 text-[13px] text-[var(--text-secondary)]">{preset.detail}</p>
+                  <p className="text-[15px] font-[500] leading-[1.2] text-text">{preset.label}</p>
+                  <p className="mt-0.5 text-[13px] text-text-secondary">{preset.detail}</p>
                 </div>
                 <ArrowRight className="h-4 w-4 flex-shrink-0 text-[var(--text-tertiary)]" strokeWidth={1.6} />
               </Link>
@@ -120,11 +120,11 @@ export default function HomePage() {
 
       {/* Carrier side-door — understated */}
       <div className="flex justify-center px-5 pb-8 pt-5">
-        <p className="text-[13px] text-[var(--text-secondary)]">
+        <p className="text-[13px] text-text-secondary">
           Have spare space in your van?{" "}
           <Link
             href="/carrier"
-            className="font-[500] text-[var(--text-primary)] underline decoration-[var(--border-strong)] underline-offset-[3px] hover:no-underline"
+            className="inline-flex min-h-[44px] items-center font-[500] text-text underline decoration-[var(--border-strong)] underline-offset-[3px] hover:no-underline"
           >
             Drive with MoveMate
           </Link>

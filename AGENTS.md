@@ -10,15 +10,27 @@ This file is the universal contract for every AI tool working in this repo — C
 
 ---
 
+## Living Constitution And Amendment Model
+
+This file is the current universal contract, not a frozen artifact. It may be amended when the operating system improves, product truth changes, or stale instructions create risk.
+
+Authority-changing edits must be deliberate, visible, and logged in the linked issue or PR. Routine consistency repairs may be made as local edits when existing truth is clear. Changes that affect high-impact product direction, pricing economics, payout/proof, trust/safety, legal/privacy, irreversible data-model or migration cutovers, production-deploy policy, destructive GitHub actions, conflicting truths, architecture reversals, or auto-merge authority require a founder decision.
+
+Hermes / movemateOS may propose, draft, review, and, at the correct approval level, apply amendments to local docs and skills. Hermes is the runtime coordinator, memory, scout, planner, reviewer, digest writer, scheduled workflow runner, skill creator, and amendment proposer. It is not merely a notes layer and must not silently override repo truth; it must amend visibly.
+
+Codex and Claude remain primary implementation and review workers. GitHub remains the live execution state. Routine technical implementation decisions should not block on founder approval when issue scope, invariants, and verification are clear.
+
+---
+
 ## Read Order
 
 Before any non-trivial work, read in this order:
 
-1. [AUTHORITY.md](/Users/kiranghimire/Documents/moverrr/AUTHORITY.md) — meta-map, alias policy, reference-tree rules
+1. [AUTHORITY.md](/Users/kiranghimire/Documents/movemate/AUTHORITY.md) — meta-map, alias policy, reference-tree rules
 2. **This file** — product truth, invariants, parallelism contract
-3. The tool overlay for the tool you are running in: [CLAUDE.md](/Users/kiranghimire/Documents/moverrr/CLAUDE.md) for Claude Code; other overlays if present
-4. [.claude/project-ops.md](/Users/kiranghimire/Documents/moverrr/.claude/project-ops.md) — issue lifecycle, review pipeline, founder digest (applies to all tools despite path)
-5. [.claude/lock-groups.md](/Users/kiranghimire/Documents/moverrr/.claude/lock-groups.md) — parallelism contract detail
+3. The tool overlay for the tool you are running in: [CLAUDE.md](/Users/kiranghimire/Documents/movemate/CLAUDE.md) for Claude Code; other overlays if present
+4. [.claude/project-ops.md](/Users/kiranghimire/Documents/movemate/.claude/project-ops.md) — issue lifecycle, review pipeline, founder digest (applies to all tools despite path)
+5. [.claude/lock-groups.md](/Users/kiranghimire/Documents/movemate/.claude/lock-groups.md) — parallelism contract detail
 6. Relevant `.claude/rules/**` scoped rules for the surface you are touching
 7. Relevant `.agent-skills/**` domain context
 8. The linked GitHub issue and the PR template
@@ -30,10 +42,10 @@ Before any non-trivial work, read in this order:
 This list is definitive. Every other authority list in the repo mirrors it.
 
 1. Active session instructions from the human user
-2. [movemate-product-blueprint.md](/Users/kiranghimire/Documents/moverrr/movemate-product-blueprint.md) — product source of truth
+2. [movemate-product-blueprint.md](/Users/kiranghimire/Documents/movemate/movemate-product-blueprint.md) — product source of truth
 3. This file (`AGENTS.md`) — universal agent contract
 4. Tool overlays (`CLAUDE.md`, future `GEMINI.md`, etc.) — additive tool-specific rules only
-5. [.claude/project-ops.md](/Users/kiranghimire/Documents/moverrr/.claude/project-ops.md) — live-work operating runbook
+5. [.claude/project-ops.md](/Users/kiranghimire/Documents/movemate/.claude/project-ops.md) — live-work operating runbook
 6. Relevant scoped rules, skills, and agent briefs under `.claude/**`
 7. The linked GitHub issue or PR for the current work unit
 8. Derived snapshots in `docs/operations/**`
@@ -142,7 +154,7 @@ Parallelism is deliberate and bounded. Always-on unbounded session sprawl is an 
 - **One review / ship lane** — merges PRs, runs final verification, closes issues, refreshes derived digests.
 - **Optional QA / browser lane** — runs browser-driven verification, design review, or QA skills on demand. Read-heavy.
 
-Lock groups (full detail in [`.claude/lock-groups.md`](/Users/kiranghimire/Documents/moverrr/.claude/lock-groups.md)):
+Lock groups (full detail in [`.claude/lock-groups.md`](/Users/kiranghimire/Documents/movemate/.claude/lock-groups.md)):
 
 - `customer-acquisition`
 - `customer-booking-lifecycle`
@@ -161,7 +173,7 @@ Only one build agent may own one lock group at a time unless the issue is explic
 - Builders touching shared pricing, booking-state, or matching code without `Touches shared logic: yes` and coordinator approval.
 - Long-running background agents that rewrite product truth.
 
-Workflow layers that provide parallelism scaffolding (gstack, Hermes-style orchestrators, Codex/Claude subagents, Jules, or similar) are optional adapters. They are welcome only when they respect this contract and can be replaced without changing product truth or task authority.
+Workflow layers that provide parallelism scaffolding (gstack, Hermes / movemateOS, Codex/Claude subagents, Jules, or similar) are adapters over this contract. Hermes is the active runtime brain for coordination, memory, scouting, planning, review support, scheduled workflows, skill creation, and amendment proposals, but it cannot overrule product truth, founder-gated decisions, issue authority, or lock groups.
 
 ---
 
@@ -188,7 +200,7 @@ Every build-ready issue must define:
 - `Rollout / fallback`
 - `Rollback risk`
 
-Template: [.claude/issue-shaping-template.md](/Users/kiranghimire/Documents/moverrr/.claude/issue-shaping-template.md).
+Template: [.claude/issue-shaping-template.md](/Users/kiranghimire/Documents/movemate/.claude/issue-shaping-template.md).
 
 ---
 
@@ -200,7 +212,7 @@ Review happens through packets, not raw diffs by default.
 2. **Frontier adjudication** — required for pricing, booking, trust and safety, matching, migrations, and core product logic. Packet states verdict, rationale, risk, required revisions, and any founder-packet ask.
 3. **Founder digest** — only when a real decision is needed.
 
-Packet template: [.claude/review-packet-template.md](/Users/kiranghimire/Documents/moverrr/.claude/review-packet-template.md).
+Packet template: [.claude/review-packet-template.md](/Users/kiranghimire/Documents/movemate/.claude/review-packet-template.md).
 
 Packets must separate must-fix merge blockers from queueable follow-up issues. Scope drift that is real but non-blocking becomes a follow-up issue, not an ambiguous note.
 
@@ -236,22 +248,28 @@ If a simpler product-aligned version is better than the literal instruction, imp
 
 Escalate only when the work truly needs a founder decision:
 
+- high-impact product direction
 - pricing economics
-- product-strategy forks
+- payout/proof policy
+- trust and safety policy
+- legal or privacy policy
+- irreversible data-model or migration cutovers
+- production-deploy policy changes
+- destructive GitHub actions
 - risky migration cutovers
-- legal or trust-policy changes
 - cases where preserving two incompatible truths would silently ship confusion
 
-Do not escalate routine engineering judgment, doc cleanup, or obvious stale wording.
+Do not escalate routine engineering judgment, technical implementation details, doc cleanup, or obvious stale wording when the issue scope, invariants, and verification plan are clear.
 
 ---
 
 ## Workflow Layers
 
-MoveMate's operating system is tool-neutral. gstack, Hermes-style orchestrators, Codex/Claude subagents, Jules, Gemini/Antigravity, and future workflow layers may help with planning, delegation, QA, review, or shipping, but they are adapters over the repo contract, not the contract itself.
+MoveMate's operating system is tool-neutral. gstack, Hermes / movemateOS, Codex/Claude subagents, Jules, Gemini/Antigravity, and future workflow layers may help with planning, delegation, QA, review, or shipping, but they are adapters over the repo contract, not the contract itself.
 
 - Tool overlays may list optional skills, commands, and routing conventions for their runtime.
 - No workflow layer may overrule product truth, pricing truth, repo invariants, issue authority, lock groups, or verification rules declared here.
+- Hermes may amend local docs and skills only through the visible amendment protocol in `.claude/project-ops.md`; synced Hermes skills are runtime copies, not the canonical repo source.
 - Agents should be able to swap workflow layers without rewriting issues, PR templates, product docs, or lock-group policy.
 - Do not vendor external workflow libraries into the repo root. Keep them as global installs or external local references.
 

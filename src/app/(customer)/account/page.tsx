@@ -45,7 +45,7 @@ export default async function AccountPage() {
             <Link
               key={`${row.href}-${row.label}`}
               href={row.href}
-              className="flex min-h-[54px] min-w-[44px] items-center justify-between rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] px-4 text-[15px] font-medium text-[var(--text-primary)] shadow-[var(--shadow-card)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+              className="flex min-h-[54px] min-w-[44px] items-center justify-between rounded-lg border border-border bg-surface px-4 text-[15px] font-medium text-text shadow-[var(--shadow-card)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
             >
               {row.label}
               <ChevronRight className="h-4 w-4 text-[var(--text-tertiary)]" />
@@ -55,7 +55,7 @@ export default async function AccountPage() {
 
         <Link
           href="/carrier"
-          className="flex min-h-[54px] items-center justify-center gap-2 rounded-[var(--radius-pill)] border border-[var(--border-subtle)] px-4 text-[14px] font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-elevated-1)] active:bg-[var(--bg-elevated-2)]"
+          className="flex min-h-[54px] items-center justify-center gap-2 rounded-[var(--radius-pill)] border border-border px-4 text-[14px] font-medium text-text-secondary hover:bg-surface active:bg-[var(--bg-elevated-2)]"
         >
           <Truck className="h-4 w-4" />
           Have spare space in your van? Drive with MoveMate

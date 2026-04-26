@@ -48,7 +48,7 @@ export function UndoPublishToast({ tripId }: { tripId: string }) {
           type="button"
           disabled={isTakingOffline}
           onClick={handleTakeOffline}
-          className="min-h-[44px] min-w-[44px] rounded-[var(--radius-md)] border border-[var(--brand-paper)]/30 px-4 py-2 text-sm font-medium text-[var(--brand-paper)] hover:bg-[var(--brand-paper)]/10 active:bg-[var(--brand-paper)]/20 disabled:opacity-50"
+          className="min-h-[44px] min-w-[44px] rounded-md border border-[var(--brand-paper)]/30 px-4 py-2 text-sm font-medium text-[var(--brand-paper)] hover:bg-[var(--brand-paper)]/10 active:bg-[var(--brand-paper)]/20 disabled:opacity-50"
         >
           {isTakingOffline ? "Taking offline…" : "Take offline"}
         </button>

@@ -226,7 +226,7 @@ export function MoveFastMatchClient({
         <div className="space-y-2">
           <p className="eyebrow">First accept wins</p>
           <h1 className="heading">Ask up to three matching carriers at once</h1>
-          <p className="body text-[var(--text-secondary)]">
+          <p className="body text-text-secondary">
             Fast Match keeps the request explicit. It is not bidding, and it does not create a free-form negotiation thread.
           </p>
         </div>

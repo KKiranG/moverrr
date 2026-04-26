@@ -28,17 +28,17 @@ function TripSection({
     <section className="grid gap-4">
       <div>
         <p className="eyebrow">{title}</p>
-        <p className="mt-1 text-sm text-[var(--text-secondary)]">{description}</p>
+        <p className="mt-1 text-sm text-text-secondary">{description}</p>
       </div>
       <div className="grid gap-4">
         {trips.map((trip) => (
           <Link key={trip.id} href={`/carrier/trips/${trip.id}`}>
             <Card className="p-4">
-              <h2 className="text-lg text-[var(--text-primary)]">{trip.route.label}</h2>
+              <h2 className="text-lg text-text">{trip.route.label}</h2>
               <p className="mt-2 caption">
                 {trip.tripDate} · {trip.timeWindow} · Remaining {trip.remainingCapacityPct}%
               </p>
-              <p className="mt-2 text-sm text-[var(--text-secondary)]">
+              <p className="mt-2 text-sm text-text-secondary">
                 Status {trip.status?.replace("_", " ") ?? "active"} · Vehicle{" "}
                 {trip.vehicle.type.replaceAll("_", " ")}
               </p>
@@ -78,7 +78,7 @@ export default async function CarrierTripsPage({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-medium text-success">Trip posted successfully</p>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              <p className="mt-1 text-sm text-text-secondary">
                 Your route is live. Head back to carrier home to watch incoming activity.
               </p>
             </div>

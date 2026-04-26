@@ -26,12 +26,12 @@ export default function ActivityPage() {
         <div className="space-y-2">
           <p className="eyebrow">Activity</p>
           <h1 className="heading">Everything currently moving</h1>
-          <p className="body text-[var(--text-secondary)]">
+          <p className="body text-text-secondary">
             Requests, live bookings, and recovery paths stay together here so you don’t lose the thread.
           </p>
         </div>
 
-        <div className="rounded-[var(--radius-pill)] border border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] p-1 shadow-[var(--shadow-card)]">
+        <div className="rounded-[var(--radius-pill)] border border-border bg-surface p-1 shadow-[var(--shadow-card)]">
           <div className="grid grid-cols-3 gap-1 text-center text-[13px]">
             {(Object.keys(tabLabels) as ActivityTab[]).map((key) => (
               <button
@@ -41,7 +41,7 @@ export default function ActivityPage() {
                 className={`min-h-[46px] min-w-[44px] rounded-[var(--radius-pill)] ${
                   tab === key
                     ? "bg-[var(--text-primary)] text-[var(--bg-base)]"
-                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+                    : "text-text-secondary hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
                 }`}
               >
                 {tabLabels[key]}
@@ -63,7 +63,7 @@ export default function ActivityPage() {
               <Link
                 key={item.id}
                 href={item.href}
-                className="block rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] p-4 shadow-[var(--shadow-card)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+                className="block rounded-lg border border-border bg-surface p-4 shadow-[var(--shadow-card)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
               >
                 <p className="title">{item.title}</p>
                 <p className="mt-1 caption">{item.subtitle}</p>

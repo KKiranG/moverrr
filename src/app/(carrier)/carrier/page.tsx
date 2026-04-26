@@ -28,11 +28,11 @@ function ActivationScreen({
   const completedCount = Math.max(0, steps.length - blockers.length);
 
   return (
-    <main className="flex min-h-screen flex-col bg-[var(--bg-base)] pb-[calc(88px+env(safe-area-inset-bottom))]">
+    <main className="flex min-h-screen flex-col bg-background pb-[calc(88px+env(safe-area-inset-bottom))]">
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-[calc(14px+var(--safe-area-top))]">
         <Wordmark color="var(--text-primary)" />
-        <span className="rounded-[var(--radius-pill)] border border-[var(--border-subtle)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+        <span className="rounded-[var(--radius-pill)] border border-border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
           Driver
         </span>
       </div>
@@ -45,7 +45,7 @@ function ActivationScreen({
 
         {/* Headline */}
         <h1
-          className="mt-3.5 text-[36px] leading-[1.05] tracking-[-0.04em] text-[var(--text-primary)]"
+          className="mt-3.5 text-[36px] leading-[1.05] tracking-[-0.04em] text-text"
           style={{ fontFamily: "var(--font-display)", fontWeight: 400 }}
         >
           {hasCarrier
@@ -60,7 +60,7 @@ function ActivationScreen({
             return (
               <div
                 key={step.key}
-                className="flex items-center gap-3 rounded-[var(--radius-lg)] border px-4 py-3.5"
+                className="flex items-center gap-3 rounded-lg border px-4 py-3.5"
                 style={{
                   background: done
                     ? "var(--bg-elevated-1)"
@@ -108,7 +108,7 @@ function ActivationScreen({
                 {!done && (
                   <ArrowRight
                     size={16}
-                    className="text-[var(--text-secondary)]"
+                    className="text-text-secondary"
                     strokeWidth={1.8}
                   />
                 )}
@@ -120,19 +120,19 @@ function ActivationScreen({
         {/* Blurred demand teaser */}
         <div className="mt-7">
           <p className="eyebrow mb-2.5">Waiting for drivers like you</p>
-          <div className="relative overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] p-4">
+          <div className="relative overflow-hidden rounded-xl border border-border bg-surface p-4">
             {/* Blurred content */}
             <div className="pointer-events-none select-none blur-[6px]">
-              <p className="text-[15px] font-[500] text-[var(--text-primary)]">
+              <p className="text-[15px] font-[500] text-text">
                 Inner West → Northern Beaches
               </p>
-              <p className="mt-1 text-[13px] text-[var(--text-secondary)]">
+              <p className="mt-1 text-[13px] text-text-secondary">
                 9 customers this week · avg $94 payout
               </p>
-              <p className="mt-3.5 text-[15px] font-[500] text-[var(--text-primary)]">
+              <p className="mt-3.5 text-[15px] font-[500] text-text">
                 Parramatta → Sydney CBD
               </p>
-              <p className="mt-1 text-[13px] text-[var(--text-secondary)]">
+              <p className="mt-1 text-[13px] text-text-secondary">
                 6 customers this week · avg $78 payout
               </p>
             </div>
@@ -145,7 +145,7 @@ function ActivationScreen({
               }}
             />
             {/* Label */}
-            <p className="absolute bottom-3.5 left-0 right-0 text-center text-[13px] font-[500] text-[var(--text-primary)]">
+            <p className="absolute bottom-3.5 left-0 right-0 text-center text-[13px] font-[500] text-text">
               Finish setup to see real jobs
             </p>
           </div>
@@ -156,7 +156,7 @@ function ActivationScreen({
       <div className="sticky-cta">
         <Link
           href="/carrier/activate"
-          className="flex min-h-[56px] w-full items-center justify-center gap-2.5 rounded-[var(--radius-xl)] bg-[var(--text-primary)] text-[16px] font-[600] text-[var(--bg-base)] shadow-[0_8px_24px_rgba(20,18,15,0.22)] hover:opacity-90 active:opacity-80"
+          className="flex min-h-[56px] w-full items-center justify-center gap-2.5 rounded-xl bg-[var(--text-primary)] text-[16px] font-[600] text-[var(--bg-base)] shadow-[0_8px_24px_rgba(20,18,15,0.22)] hover:opacity-90 active:opacity-80"
         >
           {hasCarrier ? "Resume setup" : "Start driver setup"}
           <ArrowRight size={18} strokeWidth={2} />
@@ -178,7 +178,7 @@ function ReadyScreen({
 }) {
 
   return (
-    <main className="flex min-h-screen flex-col bg-[var(--bg-base)] pb-[calc(88px+env(safe-area-inset-bottom))]">
+    <main className="flex min-h-screen flex-col bg-background pb-[calc(88px+env(safe-area-inset-bottom))]">
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-[calc(14px+var(--safe-area-top))]">
         <Wordmark color="var(--text-primary)" />
@@ -199,12 +199,12 @@ function ReadyScreen({
       <div className="flex-1 overflow-auto px-5 pt-6">
         {/* Headline */}
         <h1
-          className="text-[38px] leading-[1.04] tracking-[-0.04em] text-[var(--text-primary)]"
+          className="text-[38px] leading-[1.04] tracking-[-0.04em] text-text"
           style={{ fontFamily: "var(--font-display)", fontWeight: 400 }}
         >
           Post your<br />next route.
         </h1>
-        <p className="mt-2.5 text-[14px] text-[var(--text-secondary)]">
+        <p className="mt-2.5 text-[14px] text-text-secondary">
           {routes.length > 0
             ? `${routes.length} saved route${routes.length === 1 ? "" : "s"}. One-tap repost.`
             : "Quick-post a new trip in under 30 seconds."}
@@ -218,10 +218,10 @@ function ReadyScreen({
               {routes.map((route) => (
                 <div
                   key={route.id}
-                  className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] p-4"
+                  className="rounded-lg border border-border bg-surface p-4"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-[16px] font-[600] leading-[1.2] tracking-[-0.02em] text-[var(--text-primary)]">
+                    <p className="text-[16px] font-[600] leading-[1.2] tracking-[-0.02em] text-text">
                       {route.label}
                     </p>
                     <Link
@@ -246,7 +246,7 @@ function ReadyScreen({
         <div className="mt-6">
           <p className="eyebrow mb-2.5">Demand signals</p>
           <div
-            className="rounded-[var(--radius-lg)] border p-4"
+            className="rounded-lg border p-4"
             style={{
               background: "rgba(201,82,28,0.05)",
               borderColor: "rgba(201,82,28,0.18)",
@@ -254,11 +254,11 @@ function ReadyScreen({
           >
             <div className="flex items-center gap-2.5">
               <Sparkles size={14} color="var(--accent)" strokeWidth={2} />
-              <p className="text-[14px] font-[500] text-[var(--text-primary)]">
+              <p className="text-[14px] font-[500] text-text">
                 Coming soon
               </p>
             </div>
-            <p className="mt-1.5 text-[13px] text-[var(--text-secondary)]">
+            <p className="mt-1.5 text-[13px] text-text-secondary">
               Post your next route to be matched first when customers in your
               corridor request a move.
             </p>
@@ -270,7 +270,7 @@ function ReadyScreen({
       <div className="sticky-cta">
         <Link
           href="/carrier/trips/new"
-          className="flex min-h-[56px] w-full items-center justify-center gap-2.5 rounded-[var(--radius-xl)] bg-[var(--text-primary)] text-[16px] font-[600] text-[var(--bg-base)] shadow-[0_8px_24px_rgba(20,18,15,0.22)] hover:opacity-90 active:opacity-80"
+          className="flex min-h-[56px] w-full items-center justify-center gap-2.5 rounded-xl bg-[var(--text-primary)] text-[16px] font-[600] text-[var(--bg-base)] shadow-[0_8px_24px_rgba(20,18,15,0.22)] hover:opacity-90 active:opacity-80"
         >
           <Plus size={18} strokeWidth={2.4} />
           Post a new trip
@@ -295,24 +295,24 @@ function RequestCard({
 }) {
   return (
     <Link href="/carrier/requests" className="block">
-      <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] p-4 shadow-[var(--shadow-card)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]">
+      <div className="rounded-lg border border-border bg-surface p-4 shadow-[var(--shadow-card)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-[600] leading-[1.2] text-[var(--text-primary)]">
+            <p className="text-[15px] font-[600] leading-[1.2] text-text">
               {description}
             </p>
-            <p className="mt-1.5 text-[13px] text-[var(--text-secondary)]">
+            <p className="mt-1.5 text-[13px] text-text-secondary">
               {explanation} {accessSummary}
             </p>
           </div>
           <div className="flex-shrink-0 text-right">
-            <p className="tabular text-[20px] font-[600] leading-none tracking-[-0.03em] text-[var(--text-primary)]">
+            <p className="tabular text-[20px] font-[600] leading-none tracking-[-0.03em] text-text">
               {formatCurrency(payout)}
             </p>
-            <p className="mt-0.5 text-[11px] text-[var(--text-secondary)]">payout</p>
+            <p className="mt-0.5 text-[11px] text-text-secondary">payout</p>
           </div>
         </div>
-        <p className="mt-3 text-[13px] font-[500] text-[var(--text-primary)]">
+        <p className="mt-3 text-[13px] font-[500] text-text">
           Review decision →
         </p>
       </div>
@@ -374,11 +374,11 @@ function ActiveScreen({
         : (payoutHold?.explanation ?? "One missing step is holding money back.");
 
   return (
-    <main className="flex min-h-screen flex-col bg-[var(--bg-base)] pb-[calc(88px+env(safe-area-inset-bottom))]">
+    <main className="flex min-h-screen flex-col bg-background pb-[calc(88px+env(safe-area-inset-bottom))]">
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-[calc(14px+var(--safe-area-top))]">
         <Wordmark color="var(--text-primary)" />
-        <span className="rounded-[var(--radius-pill)] border border-[var(--border-subtle)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+        <span className="rounded-[var(--radius-pill)] border border-border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
           Driver
         </span>
       </div>
@@ -393,17 +393,17 @@ function ActiveScreen({
               : "Payout blockers"}
         </p>
         <h1
-          className="mt-2 text-[30px] leading-[1.1] tracking-[-0.04em] text-[var(--text-primary)]"
+          className="mt-2 text-[30px] leading-[1.1] tracking-[-0.04em] text-text"
           style={{ fontFamily: "var(--font-display)", fontWeight: 400 }}
         >
           {heroTitle}
         </h1>
-        <p className="mt-2 text-[14px] leading-[1.5] text-[var(--text-secondary)]">
+        <p className="mt-2 text-[14px] leading-[1.5] text-text-secondary">
           {heroDesc}
         </p>
         <Link
           href={heroHref}
-          className="mt-4 inline-flex min-h-[48px] items-center gap-2 rounded-[var(--radius-lg)] bg-[var(--text-primary)] px-5 text-[15px] font-[600] text-[var(--bg-base)] hover:opacity-90 active:opacity-80"
+          className="mt-4 inline-flex min-h-[48px] items-center gap-2 rounded-lg bg-[var(--text-primary)] px-5 text-[15px] font-[600] text-[var(--bg-base)] hover:opacity-90 active:opacity-80"
         >
           {heroLabel}
           <ArrowRight size={16} strokeWidth={2} />
@@ -437,12 +437,12 @@ function ActiveScreen({
                 .slice(0, 3)
                 .map((action) => (
                   <Link key={action.key} href={action.href} className="block">
-                    <div className="flex items-center justify-between rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] px-4 py-3.5 hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]">
+                    <div className="flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-3.5 hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]">
                       <div className="min-w-0">
-                        <p className="text-[15px] font-[500] text-[var(--text-primary)]">
+                        <p className="text-[15px] font-[500] text-text">
                           {action.title} · {action.count}
                         </p>
-                        <p className="mt-0.5 text-[13px] text-[var(--text-secondary)]">
+                        <p className="mt-0.5 text-[13px] text-text-secondary">
                           {action.description}
                         </p>
                       </div>
@@ -461,12 +461,12 @@ function ActiveScreen({
             <div className="flex flex-col gap-2.5">
               {todayTrips.slice(0, 2).map((trip) => (
                 <Link key={trip.id} href={`/carrier/trips/${trip.id}`} className="block">
-                  <div className="flex items-center justify-between rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] px-4 py-3.5 hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]">
+                  <div className="flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-3.5 hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]">
                     <div className="min-w-0">
-                      <p className="text-[15px] font-[500] text-[var(--text-primary)]">
+                      <p className="text-[15px] font-[500] text-text">
                         {trip.route.label}
                       </p>
-                      <p className="mt-0.5 text-[13px] text-[var(--text-secondary)]">
+                      <p className="mt-0.5 text-[13px] text-text-secondary">
                         {trip.tripDate} · {trip.timeWindow}
                       </p>
                     </div>

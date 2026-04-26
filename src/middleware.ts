@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { getAdminEmails, hasSupabaseEnv } from "@/lib/env";
 import { CARRIER_HOST, CUSTOMER_HOSTS, resolveHostRouting } from "@/lib/host-routing";
 
-const csrfProtectedPrefixes = ["/api/bookings", "/api/payments"];
+const csrfExemptPaths = new Set(["/api/payments/webhook"]);
 const mutatingMethods = new Set(["POST", "PATCH", "PUT", "DELETE"]);
 const HOST_PREFERENCE_COOKIE = "moverrr_host_preference";
 
@@ -98,8 +98,8 @@ export async function middleware(request: NextRequest) {
 
   if (
     mutatingMethods.has(request.method) &&
-    pathname !== "/api/payments/webhook" &&
-    csrfProtectedPrefixes.some((prefix) => pathname.startsWith(prefix)) &&
+    pathname.startsWith("/api/") &&
+    !csrfExemptPaths.has(pathname) &&
     !hasValidOrigin(request)
   ) {
     return NextResponse.json({ error: "Invalid origin." }, { status: 403 });
@@ -174,7 +174,7 @@ export async function middleware(request: NextRequest) {
 
   if (!user) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/auth/login";
+    redirectUrl.pathname = "/login";
     redirectUrl.searchParams.set("next", originalPathname);
     return NextResponse.redirect(redirectUrl);
   }
@@ -215,7 +215,6 @@ export const config = {
     "/carrier",
     "/carrier/:path*",
     "/admin/:path*",
-    "/api/bookings/:path*",
-    "/api/payments/:path*",
+    "/api/:path*",
   ],
 };
