@@ -17,13 +17,14 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://moverrr.com.au"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://movemate.app"),
   title: {
     default: "Need-first spare-capacity moves in Sydney",
     template: "%s · MoveMate",
   },
   description:
     "Declare the move need first and get ranked spare-capacity matches with clear pricing, fit notes, and trust signals.",
+  alternates: { canonical: "/" },
   openGraph: {
     title: "MoveMate",
     description:
