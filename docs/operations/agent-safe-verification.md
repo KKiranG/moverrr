@@ -29,7 +29,9 @@ Run these before opening a PR or handing work to another agent:
 4. `npm run build`
 5. `npm run dev -- --port 3000`
 6. `curl -i http://localhost:3000/api/health`
-7. Browser-load `/`, `/move/new`, `/login`, `/signup`, and `/carrier`
+7. Browser-load `/`, `/move/new`, `/auth/login`, `/auth/signup`, and `/carrier`
+
+One-command automation for steps 1-4: `npm run verify:local`
 
 Expected local health result with the current contract:
 
@@ -47,6 +49,24 @@ Use probes that exercise the service, not only env presence:
 - Stripe: retrieve test-mode balance with the configured secret key. This must succeed and the key prefixes must remain test-mode.
 - Maps: if real Maps keys are configured, verify browser Places script loading and server geocoding. If keys are blank and `E2E_MOCK_MAPS=true`, record Maps as intentionally mocked/degraded.
 - Webhooks: use Stripe CLI forwarding before claiming webhook handling is end-to-end verified.
+
+## E2E verification (Playwright)
+
+Before running E2E tests:
+
+1. Fill `.env.e2e.local` from `.env.e2e.example`.
+2. Run `npm run supabase:reset` (local) or `npm run e2e:reset` (cloud dev) to seed data.
+3. Run `npm run e2e:install` once to download browser binaries.
+4. Run `npm run verify:e2e:preflight` — must pass before `npm run e2e`.
+
+E2E test coverage (see `tests/e2e/`):
+
+- `public-smoke.test.ts` — `/`, `/move/new`, `/api/health`, `/auth/login`, `/auth/signup`, `/carrier`
+- `auth-smoke.test.ts` — customer and carrier login/logout, redirect guards
+- `customer-move.test.ts` — move wizard, zero-match alert path
+- `carrier-trip.test.ts` — trip wizard, trips list, requests list
+- `booking-visibility.test.ts` — bookings list, carrier requests, booking detail
+- `payment-intent.test.ts` — Stripe test-mode health; webhook gate (requires Stripe CLI)
 
 ## Preview and production
 
