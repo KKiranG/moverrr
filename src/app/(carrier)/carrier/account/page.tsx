@@ -27,8 +27,8 @@ export default async function CarrierAccountPage() {
       <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
         <Card className="p-4">
           <p className="eyebrow">Carrier profile</p>
-          <h2 className="mt-1 text-lg text-[var(--text-primary)]">{carrier?.businessName ?? user.email ?? "Carrier account"}</h2>
-          <div className="mt-3 grid gap-2 text-sm text-[var(--text-secondary)]">
+          <h2 className="mt-1 text-lg text-text">{carrier?.businessName ?? user.email ?? "Carrier account"}</h2>
+          <div className="mt-3 grid gap-2 text-sm text-text-secondary">
             <p>Email: {user.email ?? "Not available"}</p>
             <p>Activation: {carrier ? getCarrierActivationLabel(carrier.activationStatus) : "Not started"}</p>
             <p>Payout setup: {carrier?.stripeOnboardingComplete ? "Ready" : "Still required"}</p>
@@ -41,31 +41,31 @@ export default async function CarrierAccountPage() {
           <div className="mt-3 grid gap-2">
             <Link
               href="/carrier/account/profile"
-              className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-md)] border border-[var(--border-subtle)] px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-md border border-border px-4 py-3 text-sm text-text hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
             >
               Profile
             </Link>
             <Link
               href="/carrier/account/vehicle"
-              className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-md)] border border-[var(--border-subtle)] px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-md border border-border px-4 py-3 text-sm text-text hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
             >
               Vehicle
             </Link>
             <Link
               href="/carrier/account/documents"
-              className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-md)] border border-[var(--border-subtle)] px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-md border border-border px-4 py-3 text-sm text-text hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
             >
               Documents
             </Link>
             <Link
               href="/carrier/account/verification"
-              className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-md)] border border-[var(--border-subtle)] px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-md border border-border px-4 py-3 text-sm text-text hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
             >
               Verification
             </Link>
             <Link
               href="/carrier/account/settings"
-              className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-md)] border border-[var(--border-subtle)] px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-md border border-border px-4 py-3 text-sm text-text hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
             >
               Settings
             </Link>
