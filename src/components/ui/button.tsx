@@ -5,20 +5,20 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-md)] border text-[15px] font-medium leading-[22px] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] disabled:cursor-not-allowed disabled:opacity-40",
+  "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border text-[15px] font-medium leading-[22px] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] disabled:cursor-not-allowed disabled:opacity-40",
   {
     variants: {
       variant: {
         primary:
           "border-transparent bg-[var(--text-primary)] px-4 py-3 text-[var(--bg-base)] shadow-[0_8px_24px_rgba(20,18,15,0.22)] hover:opacity-90 active:opacity-80",
         secondary:
-          "border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] px-4 py-3 text-[var(--text-primary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]",
+          "border-border bg-surface px-4 py-3 text-text hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]",
         ghost:
-          "border-transparent bg-transparent px-3 py-2 text-[var(--text-secondary)] hover:bg-[var(--bg-elevated-2)] hover:text-[var(--text-primary)] active:bg-[var(--bg-elevated-3)] active:text-[var(--text-primary)]",
+          "border-transparent bg-transparent px-3 py-2 text-text-secondary hover:bg-[var(--bg-elevated-2)] hover:text-text active:bg-[var(--bg-elevated-3)] active:text-text",
         destructive:
           "border-transparent bg-[var(--danger)] px-4 py-3 text-[var(--text-on-accent)] hover:brightness-110 active:brightness-90",
-        icon: "h-10 w-10 rounded-[var(--radius-sm)] border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] p-2 text-[var(--text-primary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]",
-        chip: "rounded-[var(--radius-pill)] border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] px-3 py-1.5 text-[13px] leading-[18px] text-[var(--text-primary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]",
+        icon: "h-10 w-10 rounded-sm border-border bg-surface p-2 text-text hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]",
+        chip: "rounded-[var(--radius-pill)] border-border bg-surface px-3 py-1.5 text-[13px] leading-[18px] text-text hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]",
       },
       size: {
         default: "min-h-[54px]",

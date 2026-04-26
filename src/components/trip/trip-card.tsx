@@ -119,7 +119,7 @@ export function TripCard({ trip, href, selected, onSelect, fitConfidence, matchE
       <button
         type="button"
         onClick={() => onSelect(trip.id)}
-        className="block w-full rounded-[var(--radius-lg)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/25 active:opacity-95"
+        className="block w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/25 active:opacity-95"
       >
         {content}
       </button>
@@ -134,7 +134,7 @@ export function TripCard({ trip, href, selected, onSelect, fitConfidence, matchE
   return (
     <Link
       href={href}
-      className="group block rounded-[var(--radius-lg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/25 active:opacity-95"
+      className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/25 active:opacity-95"
     >
       {content}
     </Link>

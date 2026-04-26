@@ -152,7 +152,7 @@ function ProofCaptureButton({
       <button
         type="button"
         onClick={onCapture}
-        className="inline-flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--brand-ink)] px-4 py-2 text-sm font-medium text-[var(--brand-paper)] hover:opacity-90 active:opacity-80"
+        className="inline-flex min-h-[44px] w-full items-center justify-center rounded-md bg-[var(--brand-ink)] px-4 py-2 text-sm font-medium text-[var(--brand-paper)] hover:opacity-90 active:opacity-80"
       >
         {label}
       </button>
@@ -161,7 +161,7 @@ function ProofCaptureButton({
 
   if (captureState.step === "gps_acquiring") {
     return (
-      <div className="rounded-[var(--radius-md)] border border-border px-4 py-3 text-sm text-text-secondary">
+      <div className="rounded-md border border-border px-4 py-3 text-sm text-text-secondary">
         Locating you…
       </div>
     );
@@ -169,7 +169,7 @@ function ProofCaptureButton({
 
   if (captureState.step === "camera_ready") {
     return (
-      <div className="rounded-[var(--radius-md)] border border-border px-4 py-3 text-sm text-text-secondary">
+      <div className="rounded-md border border-border px-4 py-3 text-sm text-text-secondary">
         Opening camera…
       </div>
     );
@@ -177,7 +177,7 @@ function ProofCaptureButton({
 
   if (captureState.step === "uploading") {
     return (
-      <div className="rounded-[var(--radius-md)] border border-border px-4 py-3 text-sm text-text-secondary">
+      <div className="rounded-md border border-border px-4 py-3 text-sm text-text-secondary">
         Uploading photo…
       </div>
     );
@@ -185,7 +185,7 @@ function ProofCaptureButton({
 
   if (captureState.step === "patching") {
     return (
-      <div className="rounded-[var(--radius-md)] border border-border px-4 py-3 text-sm text-text-secondary">
+      <div className="rounded-md border border-border px-4 py-3 text-sm text-text-secondary">
         Saving proof…
       </div>
     );
@@ -199,14 +199,14 @@ function ProofCaptureButton({
           <button
             type="button"
             onClick={onRetry}
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-[var(--radius-md)] bg-[var(--brand-ink)] px-4 py-2 text-sm font-medium text-[var(--brand-paper)] hover:opacity-90 active:opacity-80"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-md bg-[var(--brand-ink)] px-4 py-2 text-sm font-medium text-[var(--brand-paper)] hover:opacity-90 active:opacity-80"
           >
             Retry
           </button>
           <button
             type="button"
             onClick={onDismiss}
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-[var(--radius-md)] border border-border px-4 py-2 text-sm text-text-secondary hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-md border border-border px-4 py-2 text-sm text-text-secondary hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
           >
             Cancel
           </button>

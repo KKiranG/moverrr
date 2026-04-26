@@ -53,8 +53,8 @@ export default async function CarrierAccountVerificationPage() {
           <dl className="grid gap-3">
             {items.map(({ label, value }) => (
               <div key={label} className="flex items-center justify-between">
-                <dt className="text-sm text-[var(--text-secondary)]">{label}</dt>
-                <dd className="text-sm font-medium text-[var(--text-primary)]">{value}</dd>
+                <dt className="text-sm text-text-secondary">{label}</dt>
+                <dd className="text-sm font-medium text-text">{value}</dd>
               </div>
             ))}
           </dl>
@@ -63,13 +63,13 @@ export default async function CarrierAccountVerificationPage() {
         <div className="flex gap-3">
           <Link
             href="/carrier/account"
-            className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-md)] border border-[var(--border-subtle)] px-4 py-3 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-md border border-border px-4 py-3 text-sm text-text hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
           >
             Back to account
           </Link>
           <Link
             href="/carrier/activate"
-            className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-md)] bg-[var(--brand-ink)] px-4 py-3 text-sm font-medium text-[var(--brand-paper)] hover:opacity-90 active:opacity-80"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-md bg-[var(--brand-ink)] px-4 py-3 text-sm font-medium text-[var(--brand-paper)] hover:opacity-90 active:opacity-80"
           >
             Resume activation
           </Link>

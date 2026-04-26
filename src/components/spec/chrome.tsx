@@ -46,13 +46,13 @@ export function TopAppBar({
   const tinted = tone === "dark";
 
   return (
-    <header className="sticky top-0 z-20 border-b border-[var(--border-subtle)] bg-[color:rgba(247,246,242,0.88)] px-4 pb-3 pt-[calc(var(--safe-area-top)+10px)] backdrop-blur-[18px]">
+    <header className="sticky top-0 z-20 border-b border-border bg-[color:rgba(247,246,242,0.88)] px-4 pb-3 pt-[calc(var(--safe-area-top)+10px)] backdrop-blur-[18px]">
       <div className="flex items-center justify-between gap-3">
         <div className="w-12">
           {backHref ? (
             <Link
               href={backHref}
-              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-pill)] border border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-pill)] border border-border bg-surface text-text hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
               aria-label="Go back"
             >
               <ChevronLeft size={20} />
@@ -61,7 +61,7 @@ export function TopAppBar({
         </div>
         <div className="min-w-0 flex-1 text-center">
           {title ? (
-            <p className="truncate text-[16px] font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
+            <p className="truncate text-[16px] font-semibold tracking-[-0.02em] text-text">
               {title}
             </p>
           ) : (
@@ -72,7 +72,7 @@ export function TopAppBar({
           {rightHref && rightLabel ? (
             <Link
               href={rightHref}
-              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-pill)] border border-transparent px-2 text-[13px] font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-elevated-2)] hover:text-[var(--text-primary)] active:bg-[var(--bg-elevated-3)] active:text-[var(--text-primary)]"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-pill)] border border-transparent px-2 text-[13px] font-medium text-text-secondary hover:bg-[var(--bg-elevated-2)] hover:text-text active:bg-[var(--bg-elevated-3)] active:text-text"
             >
               {rightLabel}
             </Link>
@@ -97,8 +97,8 @@ export function BottomTabBar({
       className={cn(
         "fixed bottom-0 left-1/2 z-40 flex w-full max-w-[460px] -translate-x-1/2 items-center justify-around border-t px-2 pb-[calc(10px+env(safe-area-inset-bottom))] pt-2 backdrop-blur-[18px]",
         tone === "dark"
-          ? "border-[var(--border-subtle)] bg-[color:rgba(20,18,15,0.88)]"
-          : "border-[var(--border-subtle)] bg-[color:rgba(247,246,242,0.9)]",
+          ? "border-border bg-[color:rgba(20,18,15,0.88)]"
+          : "border-border bg-[color:rgba(247,246,242,0.9)]",
       )}
       aria-label="Primary"
     >
@@ -113,8 +113,8 @@ export function BottomTabBar({
             className={cn(
               "flex min-h-[48px] min-w-[52px] flex-col items-center justify-center gap-1 rounded-[18px] px-3",
               active
-                ? "bg-[var(--bg-elevated-2)] text-[var(--text-primary)]"
-                : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated-1)] active:bg-[var(--bg-elevated-2)]",
+                ? "bg-[var(--bg-elevated-2)] text-text"
+                : "text-text-secondary hover:bg-surface active:bg-[var(--bg-elevated-2)]",
             )}
             aria-current={active ? "page" : undefined}
           >
@@ -146,7 +146,7 @@ export function AmbientMap({ tone = "light" }: { tone?: "light" | "dark" }) {
               : "radial-gradient(circle at 50% 22%, rgba(255,255,255,0.88), transparent 32%), linear-gradient(180deg, rgba(201,82,28,0.08) 0%, transparent 44%), repeating-linear-gradient(135deg, rgba(20,18,15,0.035) 0 16px, transparent 16px 32px)",
         }}
       />
-      <div className="absolute left-10 top-[28%] h-3 w-3 rounded-full border-2 border-[var(--text-primary)] bg-[var(--bg-base)]" />
+      <div className="absolute left-10 top-[28%] h-3 w-3 rounded-full border-2 border-[var(--text-primary)] bg-background" />
       <div className="absolute right-16 top-[53%] h-3 w-3 rounded-full bg-[var(--accent)]" />
       <div className="absolute left-[22%] top-[32%] h-[2px] w-[56%] rotate-[18deg] rounded-full bg-[color:rgba(20,18,15,0.16)]" />
       <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-[var(--bg-base)]" />
@@ -164,7 +164,7 @@ export function InlineBackLink({
   return (
     <Link
       href={href}
-      className="inline-flex min-h-[44px] min-w-[44px] items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--border-subtle)] px-3 text-[13px] font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+      className="inline-flex min-h-[44px] min-w-[44px] items-center gap-2 rounded-[var(--radius-pill)] border border-border px-3 text-[13px] font-medium text-text-secondary hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
     >
       <ArrowLeft size={16} />
       {label}

@@ -85,7 +85,7 @@ export function MoveIntakeClient({ isAuthenticated }: { isAuthenticated: boolean
     <section className="screen screen-wide space-y-5">
       <div className="space-y-1">
         <h1 className="heading">What needs to move?</h1>
-        <p className="body text-[var(--text-secondary)]">
+        <p className="body text-text-secondary">
           Tell us once. We&apos;ll match you with a driver already going that way.
         </p>
       </div>
@@ -103,10 +103,10 @@ export function MoveIntakeClient({ isAuthenticated }: { isAuthenticated: boolean
                 key={category.label}
                 type="button"
                 onClick={() => updateDraft({ itemCategory: category.value })}
-                className={`flex min-h-[100px] min-w-[44px] flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border px-3 text-center ${
+                className={`flex min-h-[100px] min-w-[44px] flex-col items-center justify-center gap-2 rounded-lg border px-3 text-center ${
                   active
                     ? "border-transparent bg-[var(--text-primary)] text-[var(--bg-base)]"
-                    : "border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+                    : "border-border bg-surface text-text hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
                 }`}
               >
                 <Icon className="h-6 w-6" />
@@ -184,10 +184,10 @@ export function MoveIntakeClient({ isAuthenticated }: { isAuthenticated: boolean
                 key={option.value}
                 type="button"
                 onClick={() => updateDraft({ preferredTimeWindow: option.value })}
-                className={`min-h-[64px] rounded-[var(--radius-lg)] border p-3 text-left ${
+                className={`min-h-[64px] rounded-lg border p-3 text-left ${
                   active
                     ? "border-[color:rgba(201,82,28,0.24)] bg-[var(--accent-subtle)]"
-                    : "border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+                    : "border-border bg-surface hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
                 }`}
               >
                 <p className="text-sm font-medium text-text">{option.label}</p>

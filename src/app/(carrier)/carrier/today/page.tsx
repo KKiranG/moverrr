@@ -14,13 +14,13 @@ export default function CarrierTodayLegacyRoute() {
       <div className="grid gap-2 sm:grid-cols-2">
         <Link
           href="/carrier/trips"
-          className="touch-52 inline-flex min-w-[44px] items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-subtle)] px-4 text-[15px] font-medium text-[var(--text-primary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+          className="touch-52 inline-flex min-w-[44px] items-center justify-center rounded-md border border-border px-4 text-[15px] font-medium text-text hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
         >
           Open trips
         </Link>
         <Link
           href="/carrier"
-          className="touch-52 inline-flex min-w-[44px] items-center justify-center rounded-[var(--radius-md)] border border-transparent bg-[var(--accent)] px-4 text-[15px] font-medium text-[var(--text-on-accent)] hover:bg-[var(--accent-hover)] active:bg-[var(--accent-pressed)]"
+          className="touch-52 inline-flex min-w-[44px] items-center justify-center rounded-md border border-transparent bg-[var(--accent)] px-4 text-[15px] font-medium text-[var(--text-on-accent)] hover:bg-[var(--accent-hover)] active:bg-[var(--accent-pressed)]"
         >
           Go to carrier home
         </Link>

@@ -12,11 +12,11 @@ export function WizardHeader({
   closeHref?: string;
 }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-[var(--border-subtle)] bg-[color:rgba(247,246,242,0.88)] px-5 pb-3 pt-[calc(var(--safe-area-top)+10px)] backdrop-blur-[18px]">
+    <header className="sticky top-0 z-20 border-b border-border bg-[color:rgba(247,246,242,0.88)] px-5 pb-3 pt-[calc(var(--safe-area-top)+10px)] backdrop-blur-[18px]">
       <div className="flex items-center justify-between gap-3">
         <Link
           href={backHref}
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-pill)] border border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-pill)] border border-border bg-surface text-text hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
           aria-label="Back"
         >
           ←
@@ -36,7 +36,7 @@ export function WizardHeader({
         </div>
         <Link
           href={closeHref}
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-pill)] border border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-pill)] border border-border bg-surface text-text hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
           aria-label="Close"
         >
           ✕

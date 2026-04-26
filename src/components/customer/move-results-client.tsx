@@ -307,7 +307,7 @@ export function MoveResultsClient({
               ? "No drivers going that way — yet."
               : `${offers.length} ${offers.length === 1 ? "match" : "matches"}`}
           </h1>
-          <p className="body text-[var(--text-secondary)]">
+          <p className="body text-text-secondary">
             {itemLabel}
             {moveRequest.route.preferredDate
               ? ` · ${formatDate(moveRequest.route.preferredDate)}`
@@ -330,9 +330,9 @@ export function MoveResultsClient({
             <div className="space-y-5">
               <div>
                 <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bg-elevated-2)]">
-                  <Route className="h-5 w-5 text-[var(--text-primary)]" strokeWidth={1.7} />
+                  <Route className="h-5 w-5 text-text" strokeWidth={1.7} />
                 </div>
-                <p className="mt-3 text-[15px] leading-[1.5] text-[var(--text-secondary)]">
+                <p className="mt-3 text-[15px] leading-[1.5] text-text-secondary">
                   {moveRequest.route.pickupSuburb} → {moveRequest.route.dropoffSuburb} is quiet
                   right now. We&apos;ll alert drivers on similar corridors and notify you the moment
                   one posts.
@@ -340,7 +340,7 @@ export function MoveResultsClient({
               </div>
 
               <Card className="p-4">
-                <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text-secondary)]">What happens</p>
+                <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.06em] text-text-secondary">What happens</p>
                 <div className="space-y-4">
                   {[
                     ["We alert drivers now", "Usually a match within 24 hrs on popular weekends"],
@@ -352,8 +352,8 @@ export function MoveResultsClient({
                         <span className="text-[11px] font-bold tabular-nums">{i + 1}</span>
                       </div>
                       <div>
-                        <p className="text-[14px] font-semibold text-[var(--text-primary)]">{title}</p>
-                        <p className="mt-0.5 text-[13px] leading-[1.45] text-[var(--text-secondary)]">{note}</p>
+                        <p className="text-[14px] font-semibold text-text">{title}</p>
+                        <p className="mt-0.5 text-[13px] leading-[1.45] text-text-secondary">{note}</p>
                       </div>
                     </div>
                   ))}
@@ -370,7 +370,7 @@ export function MoveResultsClient({
               </div>
             </div>
 
-            <div className="fixed bottom-0 left-0 right-0 border-t border-[var(--border-subtle)] bg-[var(--bg-base)] px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-3">
+            <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-3">
               <Button asChild className="w-full">
                 <Link href={`/move/alert?moveRequestId=${moveRequest.id}`}>
                   <Bell className="mr-2 h-4 w-4" />
@@ -422,7 +422,7 @@ export function MoveResultsClient({
 
       {/* Fast Match sticky bottom bar — appears when 1+ cards selected */}
       {selectedIds.size > 0 ? (
-        <div className="fixed bottom-0 left-0 right-0 border-t border-[var(--border-subtle)] bg-[var(--bg-base)] px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-3">
+        <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-3">
           {fastMatchMessage ? (
             <p className="mb-2 text-sm text-error">{fastMatchMessage}</p>
           ) : null}

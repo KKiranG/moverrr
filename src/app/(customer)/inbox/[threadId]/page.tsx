@@ -11,7 +11,7 @@ export default function InboxThreadPage({ params }: { params: { threadId: string
       <section className="screen space-y-3">
         <Link
           href="/bookings/demo-booking"
-          className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-[var(--radius-sm)] bg-[var(--bg-elevated-1)] px-3 text-[13px] font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-sm bg-surface px-3 text-[13px] font-medium text-text-secondary hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
         >
           View booking
         </Link>
@@ -28,7 +28,7 @@ export default function InboxThreadPage({ params }: { params: { threadId: string
             <button
               key={chip}
               type="button"
-              className="min-h-[44px] min-w-[44px] shrink-0 rounded-[var(--radius-pill)] bg-[var(--bg-elevated-2)] px-3 text-[13px] text-[var(--text-secondary)] hover:bg-[var(--bg-elevated-3)] active:bg-[var(--bg-elevated-3)]"
+              className="min-h-[44px] min-w-[44px] shrink-0 rounded-[var(--radius-pill)] bg-[var(--bg-elevated-2)] px-3 text-[13px] text-text-secondary hover:bg-[var(--bg-elevated-3)] active:bg-[var(--bg-elevated-3)]"
             >
               {chip}
             </button>

@@ -19,7 +19,7 @@ export function PageIntro({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
           <h1 className="heading max-w-[14ch]">{title}</h1>
-          <p className="max-w-2xl text-[15px] leading-7 text-[var(--text-secondary)]">
+          <p className="max-w-2xl text-[15px] leading-7 text-text-secondary">
             {description}
           </p>
         </div>

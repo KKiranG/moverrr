@@ -29,7 +29,7 @@ export default async function AlertNetworkPage({
         <div className="space-y-2">
           <p className="eyebrow">Zero-match recovery</p>
           <h1 className="heading">No drivers going that way — yet.</h1>
-          <p className="body text-[var(--text-secondary)]">
+          <p className="body text-text-secondary">
             We’ll alert verified drivers on similar corridors and tell you the moment someone posts your route.
           </p>
         </div>

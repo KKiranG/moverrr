@@ -27,12 +27,12 @@ export default function InboxPage() {
         <div className="space-y-2">
           <p className="eyebrow">Updates</p>
           <h1 className="heading">Booking updates, not noisy chat</h1>
-          <p className="body text-[var(--text-secondary)]">
+          <p className="body text-text-secondary">
             MoveMate keeps coordination structured so you can follow the move without message chaos.
           </p>
         </div>
 
-        <div className="rounded-[var(--radius-pill)] border border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] p-1 shadow-[var(--shadow-card)]">
+        <div className="rounded-[var(--radius-pill)] border border-border bg-surface p-1 shadow-[var(--shadow-card)]">
           <div className="grid grid-cols-2 gap-1 text-center text-[13px]">
             {([
               ["all", "All"],
@@ -45,7 +45,7 @@ export default function InboxPage() {
                 className={`min-h-[46px] min-w-[44px] rounded-[var(--radius-pill)] ${
                   tab === key
                     ? "bg-[var(--text-primary)] text-[var(--bg-base)]"
-                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+                    : "text-text-secondary hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
                 }`}
               >
                 {label}
@@ -62,7 +62,7 @@ export default function InboxPage() {
               <Link
                 key={thread.id}
                 href={thread.href}
-                className="block rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-elevated-1)] p-4 shadow-[var(--shadow-card)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
+                className="block rounded-lg border border-border bg-surface p-4 shadow-[var(--shadow-card)] hover:bg-[var(--bg-elevated-2)] active:bg-[var(--bg-elevated-3)]"
               >
                 <div className="flex items-center justify-between gap-3">
                   <p className="title">{thread.title}</p>
