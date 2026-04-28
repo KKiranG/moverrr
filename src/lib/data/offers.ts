@@ -298,6 +298,7 @@ export async function ensureOfferForMoveRequestSelection(params: {
     base_price_cents: derivedOffer.pricing.basePriceCents,
     stairs_fee_cents: derivedOffer.pricing.stairsFeeCents,
     helper_fee_cents: derivedOffer.pricing.helperFeeCents,
+    second_mover_fee_cents: derivedOffer.pricing.secondMoverFeeCents,
     booking_fee_cents: derivedOffer.pricing.bookingFeeCents,
     platform_fee_cents: derivedOffer.pricing.platformFeeCents,
     gst_cents: derivedOffer.pricing.gstCents,

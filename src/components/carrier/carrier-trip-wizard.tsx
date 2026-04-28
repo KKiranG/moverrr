@@ -149,9 +149,9 @@ export function CarrierTripWizard({
   const [availableVolumeM3, setAvailableVolumeM3] = useState(initialAvailableVolumeM3 ?? "1");
   const [availableWeightKg, setAvailableWeightKg] = useState(initialAvailableWeightKg ?? "100");
   const [stairsOk, setStairsOk] = useState(initialStairsOk);
-  const [stairsExtraDollars, setStairsExtraDollars] = useState(initialStairsExtraDollars);
-  const [helperAvailable, setHelperAvailable] = useState(initialHelperAvailable);
-  const [helperExtraDollars, setHelperExtraDollars] = useState(initialHelperExtraDollars);
+  const [stairsExtraDollars] = useState(initialStairsExtraDollars);
+  const [helperAvailable] = useState(initialHelperAvailable);
+  const [helperExtraDollars] = useState(initialHelperExtraDollars);
   const [handlingPolicy, setHandlingPolicy] = useState<"solo_only" | "solo_customer_help" | "two_movers">(
     initialHandlingPolicy,
   );

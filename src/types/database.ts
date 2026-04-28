@@ -462,6 +462,7 @@ export interface Database {
           base_price_cents: number;
           stairs_fee_cents: number;
           helper_fee_cents: number;
+          second_mover_fee_cents: number;
           booking_fee_cents: number;
           platform_fee_cents: number;
           gst_cents: number;
@@ -485,6 +486,7 @@ export interface Database {
           base_price_cents: number;
           stairs_fee_cents?: number;
           helper_fee_cents?: number;
+          second_mover_fee_cents?: number;
           booking_fee_cents?: number;
           platform_fee_cents?: number;
           gst_cents?: number;

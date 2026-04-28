@@ -26,6 +26,7 @@ export function calculateBookingBreakdown(params: {
   stairsExtraCents?: number;
   needsHelper?: boolean;
   helperExtraCents?: number;
+  secondMoverFeeCents?: number;
   // New handling-policy fields (issue #70)
   carrierHandlingPolicy?: "solo_only" | "solo_customer_help" | "two_movers";
   customerMoverPreference?: MoverPreference;
@@ -85,7 +86,7 @@ export function calculateBookingBreakdown(params: {
     // Legacy model
     stairsFeeCents = (params.needsStairs ?? false) ? (params.stairsExtraCents ?? 0) : 0;
     helperFeeCents = (params.needsHelper ?? false) ? (params.helperExtraCents ?? 0) : 0;
-    secondMoverFeeCents = 0;
+    secondMoverFeeCents = params.secondMoverFeeCents ?? 0;
   }
 
   const subtotalCents =
