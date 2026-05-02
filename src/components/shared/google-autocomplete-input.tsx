@@ -320,22 +320,26 @@ export function GoogleAutocompleteInput({
         className={inputClassName}
         autoComplete={placesAvailable ? "off" : "street-address"}
         aria-autocomplete={placesAvailable ? "list" : "none"}
-        aria-controls={listboxId}
+        aria-controls={placesAvailable ? listboxId : undefined}
         aria-expanded={placesAvailable ? isOpen : undefined}
         aria-activedescendant={activeDescendant}
         onChange={(event) => {
           const next = event.target.value;
           setQuery(next);
           onRawChange?.(next);
-          if (!placesAvailable && next.trim().length > 0) {
+          if (!placesAvailable) {
             const fallbackSuburbMatch = next.match(/([A-Za-z][A-Za-z\s]+?)\s+(\d{4})/);
-            onResolved?.({
-              label: next,
-              suburb: fallbackSuburbMatch?.[1]?.trim() ?? "",
-              postcode: fallbackSuburbMatch?.[2] ?? "",
-              latitude: 0,
-              longitude: 0,
-            });
+            // Only resolve once the address contains a recognisable postcode — partial
+            // keystrokes must not fire onResolved with incomplete suburb/postcode data.
+            if (fallbackSuburbMatch) {
+              onResolved?.({
+                label: next,
+                suburb: fallbackSuburbMatch[1].trim(),
+                postcode: fallbackSuburbMatch[2],
+                latitude: 0,
+                longitude: 0,
+              });
+            }
           }
         }}
         onFocus={() => {

@@ -163,8 +163,8 @@ test("replayed payment_intent.amount_capturable_updated events do not double-aut
   const second = await applyPaymentIntentEvent(event, { repository });
 
   assert.equal(first.outcome, "marked_authorized");
-  // Second delivery should treat the booking as already authorised — not flip it back or fail.
-  assert.notEqual(second.outcome, "marked_authorized");
+  // Second delivery must return the exact skipped outcome, not a state change.
+  assert.equal(second.outcome, "skipped_already_authorized");
   assert.equal(state.booking?.payment_status, "authorized");
   assert.equal(calls.filter((entry) => entry === "markAuthorized").length, 1);
 });

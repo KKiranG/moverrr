@@ -367,6 +367,7 @@ export function CarrierTripBookingsPanel({
   }, [carrierId, listingId, variant]);
 
   function startProofConsent(booking: Booking, proofType: "pickup" | "delivery") {
+    if (PROOF_BLOCKED_STATUSES.includes(booking.status)) return;
     setProofCapture({
       bookingId: booking.id,
       proofType,
@@ -431,6 +432,13 @@ export function CarrierTripBookingsPanel({
     const capture = proofCapture;
     const booking = bookings.find((b) => b.id === capture.bookingId);
     if (!booking || !capture.gps) return;
+
+    // Guard: stale client state could allow a capture attempt on a booking that has
+    // since moved into a blocked status (disputed / cancelled / completed).
+    if (PROOF_BLOCKED_STATUSES.includes(booking.status)) {
+      setProofCapture(null);
+      return;
+    }
 
     // Reset input so the same file can be re-selected on retry
     event.target.value = "";

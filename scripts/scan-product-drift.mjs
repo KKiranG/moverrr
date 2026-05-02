@@ -75,7 +75,7 @@ const result = spawnSync("rg", args, {
 });
 
 if (result.status === 0) {
-  process.stdout.write(result.stdout);
+  process.stdout.write(result.stdout ?? "");
   process.stderr.write("Product drift terms found. Resolve them or narrow the scanner with a documented exception.\n");
   process.exit(1);
 }
@@ -85,6 +85,11 @@ if (result.status === 1) {
   process.exit(0);
 }
 
-process.stdout.write(result.stdout);
-process.stderr.write(result.stderr);
+if (result.error) {
+  process.stderr.write(`scan-product-drift: could not run rg: ${result.error.message}\n`);
+  process.stderr.write("Install ripgrep (rg) to run this check.\n");
+  process.exit(1);
+}
+process.stdout.write(result.stdout ?? "");
+process.stderr.write(result.stderr ?? "");
 process.exit(result.status ?? 1);
